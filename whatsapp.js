@@ -10,7 +10,6 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY || 'gsk_6A9188K0QZbfVj1vIDg0WGdyb3
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || 'sk_d8cdecde8064554b78717f3b401bcb77ae558122308e6280';
 const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || 'lUw5v6CxT9ABm7KRDSmo';
 const PORT = process.env.PORT || 3000;
-const AUTO_PAIR_PHONE = process.env.AUTO_PAIR_PHONE || '12494874637';
 
 const groq = new Groq({ apiKey: GROQ_API_KEY });
 const userMemory = {};
@@ -90,7 +89,6 @@ http.createServer(async (req, res) => {
   res.end(`
     <html><head><meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Ariana Reyes</title>
-    ${!isConnected && !pairingCode ? '<meta http-equiv="refresh" content="5">' : ''}
     <style>body{background:#111;color:white;font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}
     h2{color:#25D366;text-align:center}
     .status{font-size:18px;margin:10px 0;text-align:center}
@@ -103,26 +101,13 @@ http.createServer(async (req, res) => {
     <h2>Ariana Reyes Bot</h2>
     <div class="status">${isConnected ? '🟢 WhatsApp Connected' : '🔴 Not Connected'}</div>
 
-    <div class="card">
-      <h3>💬 Chat on WhatsApp</h3>
-      <p style="color:#aaa;font-size:14px">Open a direct WhatsApp chat with Ariana instantly.</p>
-      <a href="https://wa.me/12494874637" target="_blank" style="display:block;text-align:center;background:#25D366;color:white;padding:12px;border-radius:8px;font-size:16px;font-weight:bold;text-decoration:none;margin-top:8px">Open in WhatsApp</a>
-    </div>
-
     ${!isConnected ? `
-
-    ${pairingCode ? `
-    <div class="card" style="border:2px solid #25D366">
-      <h3 style="margin-top:0">Your Pairing Code</h3>
-      <div style="font-size:42px;font-weight:bold;color:#25D366;letter-spacing:8px;text-align:center;background:#111;padding:16px;border-radius:8px;margin:10px 0">${pairingCode}</div>
-      <p style="color:#aaa;font-size:13px;text-align:center">WhatsApp > Linked Devices > Link a Device > Link with phone number</p>
-      <p style="color:#555;font-size:12px;text-align:center">Refresh page if expired — a new code will auto-generate</p>
-    </div>
-    ` : `
     <div class="card">
-      <p style="color:#aaa;text-align:center;font-size:14px">Generating pairing code for +1 (249) 487-4637...<br><br>Refresh in a few seconds.</p>
+      <h3>Option 1 - Phone Number</h3>
+      <p style="color:#aaa;font-size:14px">No QR scan needed. Enter Ariana's WhatsApp number with country code.</p>
+      <input type="tel" id="phone" placeholder="e.g. 2348012345678" />
+      <button onclick="getPairingCode()">Get Pairing Code</button>
     </div>
-    `}
 
     <div class="card">
       <h3>Option 2 - QR Code</h3>
@@ -192,36 +177,16 @@ async function startAriana() {
   const { version } = await fetchLatestBaileysVersion();
 
   const sock = makeWASocket({
-    version, auth: state,
+    version,
+    auth: state,
     printQRInTerminal: false,
     logger: pino({ level: 'silent' }),
     browser: ['Ariana Reyes', 'Chrome', '1.0.0'],
-    auth: { creds: state.creds, keys: state.keys }
+    usePairingCode: true
   });
 
   sockGlobal = sock;
   sock.ev.on('creds.update', saveCreds);
-
-  // Auto-request pairing code for hardcoded number on startup
-  if (!sock.authState.creds.registered && AUTO_PAIR_PHONE) {
-    setTimeout(async () => {
-      try {
-        const code = await sock.requestPairingCode(AUTO_PAIR_PHONE);
-        pairingCode = code;
-        console.log(`\n Pairing code for +${AUTO_PAIR_PHONE}: ${code}\n`);
-      } catch (e) {
-        console.error('Auto-pair failed:', e.message);
-        // Retry once after 5s in case socket wasn't fully ready
-        setTimeout(async () => {
-          try {
-            const code = await sock.requestPairingCode(AUTO_PAIR_PHONE);
-            pairingCode = code;
-            console.log(`\n Pairing code (retry): ${code}\n`);
-          } catch (e2) { console.error('Retry failed:', e2.message); }
-        }, 5000);
-      }
-    }, 4000);
-  }
 
   sock.ev.on('connection.update', (update) => {
     const { connection, lastDisconnect, qr } = update;
