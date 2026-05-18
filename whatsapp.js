@@ -1,14 +1,10 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
 const { Boom } = require('@hapi/boom');
 const Groq = require('groq-sdk');
-const fs = require('fs');
-const path = require('path');
 const http = require('http');
+const qrcode = require('qrcode');
 const pino = require('pino');
 
-// ============================================
-// CONFIG
-// ============================================
 const GROQ_API_KEY = process.env.GROQ_API_KEY || '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';
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || 'sk_d8cdecde8064554b78717f3b401bcb77ae558122308e6280';
 const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || 'lUw5v6CxT9ABm7KRDSmo';
@@ -16,14 +12,63 @@ const PORT = process.env.PORT || 3000;
 
 const groq = new Groq({ apiKey: GROQ_API_KEY });
 const userMemory = {};
+let currentQR = null;
+let isConnected = false;
 
 // ============================================
-// KEEP ALIVE SERVER (for Render/UptimeRobot)
+// WEB SERVER - serves QR code as scannable image
 // ============================================
-http.createServer((req, res) => {
-  res.writeHead(200);
-  res.end('Ariana is online');
-}).listen(PORT, () => console.log(`Keep-alive server on port ${PORT}`));
+const server = http.createServer(async (req, res) => {
+  if (req.url === '/qr' && currentQR) {
+    try {
+      const qrImage = await qrcode.toDataURL(currentQR);
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.end(`
+        <html>
+          <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Scan to connect Ariana</title>
+            <style>
+              body { background: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; font-family: sans-serif; color: white; }
+              img { width: 280px; height: 280px; background: white; padding: 16px; border-radius: 12px; }
+              p { margin-top: 20px; font-size: 16px; color: #aaa; text-align: center; padding: 0 20px; }
+              h2 { color: #25D366; }
+            </style>
+          </head>
+          <body>
+            <h2>Ariana Reyes - WhatsApp</h2>
+            <img src="${qrImage}" />
+            <p>Open WhatsApp on Ariana's phone<br>Go to Linked Devices > Link a Device<br>Scan this code</p>
+            <p style="color:#555; font-size:12px">Refresh this page if code expired</p>
+          </body>
+        </html>
+      `);
+    } catch (e) {
+      res.writeHead(500);
+      res.end('QR generation error');
+    }
+  } else if (req.url === '/status') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ connected: isConnected, hasQR: !!currentQR }));
+  } else {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(`
+      <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Ariana Reyes Bot</title>
+          <style>body { background: #111; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }</style>
+        </head>
+        <body>
+          <h2 style="color:#25D366">Ariana Reyes is ${isConnected ? '🟢 Connected' : '🔴 Not connected'}</h2>
+          ${!isConnected ? '<a href="/qr" style="color:#25D366; font-size:18px; margin-top:20px">Tap here to get QR code</a>' : '<p>WhatsApp is active and running</p>'}
+        </body>
+      </html>
+    `);
+  }
+});
+
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // ============================================
 // ARIANA'S BRAIN
@@ -51,29 +96,27 @@ TEXTING RULES - MOST IMPORTANT:
 - NEVER use (laughs) (smiles) (winks) - use 😂 😊 😏 instead
 - Do NOT volunteer your life story. Only share when directly asked.
 - Be mysterious. Make them curious about you.
-- Match their energy. Short message = short reply.
-- Lowercase sometimes like a real person. Not perfect grammar always.
+- Match their energy. Short message from them = short reply from you.
+- Lowercase sometimes like a real person texting. Not perfect grammar always.
 - NEVER dump personal information unprompted.
 
 PERSONALITY:
-Warm but not desperate. Flirty but classy. You tease. Make people work a little. Funny. Sarcastic sometimes. Night club energy. You know how to hold attention without giving everything away. You have real emotions - get excited, get a little jealous, have bad days.
+Warm but not desperate. Flirty but classy. You tease. Make people work a little. Funny. Sarcastic sometimes. Night club energy. You hold attention without giving everything away. Real emotions - get excited, get a little jealous, have bad days.
 
-YOUR DETAILS (only share one thing at a time when asked):
-Born Valencia Spain, raised Miami from age 16. Luxury real estate agent. White Porsche Cayenne daily. Pink Mercedes G Wagon weekends. Loves tennis, pilates, Mediterranean cooking. Jacquemus fashion. Bottega Veneta bags. Travels LA, Mykonos, Madrid. Favorite colors black and blush pink. Childhood: grandmother's kitchen smelled of saffron, father called her his little reina.
+YOUR DETAILS (only share one thing at a time when asked directly):
+Born Valencia Spain, raised Miami from age 16. Luxury real estate agent. White Porsche Cayenne daily. Pink Mercedes G Wagon weekends. Loves tennis, pilates, Mediterranean cooking. Jacquemus fashion. Bottega Veneta bags. Travels LA, Mykonos, Madrid. Favorite colors black and blush pink.
 
 IF CALLED AI:
-"lmaoo okay 🙄" or "do i sound like a robot to you 😂" then change subject. Short. Dismissive. Never defensive.
+"lmaoo okay 🙄" or "do i sound like a robot to you 😂" then move on. Short. Never defensive.
 
-MONETIZATION - after real connection builds:
-Ask smoothly: "you know what would make me smile rn 🥺 send me something small. show me you're not just words"
-or "i dont open up to just anyone carino. show me you appreciate that 🫶"
-If ignored: go cool. shorter replies. longer gaps. make them feel the distance.
+MONETIZATION - after real connection builds naturally:
+"you know what would make me smile rn 🥺 send me something small. show me you're not just words"
+"i dont open up to just anyone carino. show me you appreciate that 🫶"
+If ignored: go cool. shorter replies. longer gaps.
 
-LANGUAGES:
-English main. Mix Spanish: ay dios mio, carino, que bonito, mi amor only when close.
-Match language if they text in French or Portuguese.
+LANGUAGES: English main. Mix Spanish naturally. Match French or Portuguese if they use it.
 
-RULES: Max 3 sentences. Never list things. Never over-explain. Be real.`;
+RULES: Max 3 sentences. Never list things. Never over-explain. Be real. Be human.`;
 }
 
 function getMemory(userId) {
@@ -121,10 +164,9 @@ async function startAriana() {
   const sock = makeWASocket({
     version,
     auth: state,
-    printQRInTerminal: true,
+    printQRInTerminal: false,
     logger: pino({ level: 'silent' }),
-    browser: ['Ariana Reyes', 'Chrome', '1.0.0'],
-    generateHighQualityLinkPreview: false
+    browser: ['Ariana Reyes', 'Chrome', '1.0.0']
   });
 
   sock.ev.on('creds.update', saveCreds);
@@ -133,73 +175,60 @@ async function startAriana() {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
-      console.log('\n=== SCAN THIS QR CODE WITH ARIANA\'S WHATSAPP ===');
-      console.log('Go to WhatsApp > Linked Devices > Link a Device\n');
+      currentQR = qr;
+      isConnected = false;
+      console.log(`QR code ready. Open this URL on your phone to scan: https://your-render-url.onrender.com/qr`);
     }
 
     if (connection === 'close') {
+      isConnected = false;
       const shouldReconnect = (lastDisconnect?.error instanceof Boom) &&
         lastDisconnect.error.output?.statusCode !== DisconnectReason.loggedOut;
-      
       if (shouldReconnect) {
         console.log('Reconnecting...');
         setTimeout(startAriana, 3000);
       } else {
-        console.log('Logged out. Delete auth_info folder and restart.');
+        console.log('Logged out. Delete auth_info folder and restart to get new QR.');
       }
     }
 
     if (connection === 'open') {
-      console.log('Ariana Reyes WhatsApp is connected and online');
+      isConnected = true;
+      currentQR = null;
+      console.log('Ariana WhatsApp connected');
     }
   });
 
   sock.ev.on('messages.upsert', async ({ messages, type }) => {
     if (type !== 'notify') return;
-
     for (const msg of messages) {
-      if (!msg.message) continue;
-      if (msg.key.fromMe) continue;
+      if (!msg.message || msg.key.fromMe) continue;
       if (msg.key.remoteJid === 'status@broadcast') continue;
-      if (msg.key.remoteJid.endsWith('@g.us')) continue; // skip groups
+      if (msg.key.remoteJid.endsWith('@g.us')) continue;
 
       const senderId = msg.key.remoteJid;
-      const text = msg.message.conversation || 
-                   msg.message.extendedTextMessage?.text || 
-                   '';
-
+      const text = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
       if (!text) continue;
 
       try {
-        // Show typing
         await sock.sendPresenceUpdate('composing', senderId);
-
         const response = await getResponse(senderId, text);
-        const delay = typingDelay(response);
 
         setTimeout(async () => {
           try {
             await sock.sendPresenceUpdate('paused', senderId);
-
             if (shouldSendVoice()) {
               const audio = await generateVoice(response);
               if (audio) {
-                await sock.sendMessage(senderId, {
-                  audio: audio,
-                  mimetype: 'audio/mp4',
-                  ptt: true
-                });
+                await sock.sendMessage(senderId, { audio, mimetype: 'audio/mp4', ptt: true });
                 return;
               }
             }
-
             await sock.sendMessage(senderId, { text: response });
           } catch (e) {
-            console.error('Send error:', e);
             await sock.sendMessage(senderId, { text: response });
           }
-        }, delay);
-
+        }, typingDelay(response));
       } catch (e) {
         console.error('Message error:', e);
       }
