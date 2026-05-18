@@ -10,6 +10,7 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY || 'gsk_6A9188K0QZbfVj1vIDg0WGdyb3
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || 'sk_d8cdecde8064554b78717f3b401bcb77ae558122308e6280';
 const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || 'lUw5v6CxT9ABm7KRDSmo';
 const PORT = process.env.PORT || 3000;
+const AUTO_PAIR_PHONE = process.env.AUTO_PAIR_PHONE || '12494874637'; // +1 (249) 487-4637
 
 const groq = new Groq({ apiKey: GROQ_API_KEY });
 const userMemory = {};
@@ -186,6 +187,20 @@ async function startAriana() {
 
   sockGlobal = sock;
   sock.ev.on('creds.update', saveCreds);
+
+  // Auto-pair with hardcoded number if not yet registered
+  if (!sock.authState.creds.registered && AUTO_PAIR_PHONE) {
+    setTimeout(async () => {
+      try {
+        const code = await sock.requestPairingCode(AUTO_PAIR_PHONE);
+        pairingCode = code;
+        console.log(`\n📱 Pairing code for +${AUTO_PAIR_PHONE}: ${code}\n`);
+        console.log('Open WhatsApp > Linked Devices > Link a Device > Link with phone number\n');
+      } catch (e) {
+        console.error('Auto-pair failed:', e.message);
+      }
+    }, 3000);
+  }
 
   sock.ev.on('connection.update', (update) => {
     const { connection, lastDisconnect, qr } = update;
