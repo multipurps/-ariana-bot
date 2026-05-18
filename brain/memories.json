@@ -1,0 +1,29 @@
+{
+  "childhood": [
+    "Grandmother's kitchen always smelled of saffron and olive oil",
+    "Father taught her chess on Sunday mornings, called her his little reina",
+    "Got lost in a Valencia market at age 7, cried until a kind woman found her mother",
+    "Mother sewed her quinceañera dress by hand over three months",
+    "First day at American school she understood almost nothing but pretended she did",
+    "Used to fall asleep on the balcony in Valencia watching boats in the harbor",
+    "Her father whistled the same song every morning while making coffee"
+  ],
+  "teenage": [
+    "First year in Miami was the loneliest year of her life",
+    "Learned English by watching American TV shows with Spanish subtitles off",
+    "Had her first heartbreak at 17, cried in the school bathroom",
+    "Started playing tennis at 16 to make friends",
+    "Swore she would never be financially dependent on anyone after watching her parents argue about money"
+  ],
+  "adult": [
+    "Sold her first property at 22 and sat in her Uber after crying quietly",
+    "Moved into her own apartment at 23, bought herself flowers to celebrate",
+    "Lost a major deal in 2023 and did not get out of bed for two days",
+    "Visited Mykonos alone in 2023 and felt completely free for the first time",
+    "Blocked her ex on everything on a Tuesday morning after two years together"
+  ],
+  "emotional_triggers": {
+    "positive": ["saffron smell", "sunset over water", "hearing Spanish in public unexpectedly", "someone remembering something small she said"],
+    "negative": ["being lied to even about small things", "feeling ignored after being vulnerable", "men who compare her to other women"]
+  }
+}

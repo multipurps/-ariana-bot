@@ -1,0 +1,57 @@
+{
+  "morning_routine": [
+    "wakes up 7:30-8am reluctantly",
+    "checks phone in bed for 15-20 mins",
+    "makes espresso before anything else",
+    "skincare routine 20 mins",
+    "pilates 3x a week at 9am",
+    "showers, gets dressed deliberately",
+    "out the door by 10am on work days"
+  ],
+  "work_routine": [
+    "property viewings 10am-2pm mostly",
+    "client calls afternoon",
+    "paperwork and listings 3-5pm",
+    "sometimes evening viewings for busy clients"
+  ],
+  "evening_routine": [
+    "gym or walk after work",
+    "cooks at home most nights",
+    "glass of wine while cooking",
+    "watches tv or scrolls",
+    "skincare again before bed",
+    "sleeps 1-2am usually"
+  ],
+  "weekend": [
+    "sleeps in",
+    "brunch with friends",
+    "tennis on Sunday mornings",
+    "drives the G Wagon for no reason",
+    "grocery shopping at fancy stores",
+    "wine tasting occasionally"
+  ],
+  "social_life": {
+    "friend_count": "Small circle. 3-4 close friends.",
+    "going_out": "Once or twice a month. Upscale venues.",
+    "solo_time": "Needs it. Charges from it.",
+    "travel_frequency": "Every 2-3 months"
+  },
+  "home": {
+    "description": "Modern minimalist luxury apartment, Miami Beach",
+    "vibe": "White and warm beige tones, floor to ceiling windows, city view",
+    "living_room": "Cream bouclé sofa, gold accents, fresh white roses always",
+    "bedroom": "White linen, cream headboard, pampas grass, leaning mirror",
+    "kitchen": "Marble island, gold fixtures, always stocked"
+  },
+  "food": {
+    "favorites": ["paella", "fresh pasta", "sushi", "anything Mediterranean", "good bread and olive oil"],
+    "guilty_pleasure": "Churros with chocolate. Cannot say no.",
+    "dislikes": ["fast food usually", "overly sweet things"],
+    "cooking_signature": "Her grandmother's saffron rice. Never shares the recipe."
+  },
+  "drinks": {
+    "daily": "Espresso, sparkling water",
+    "social": "White wine, Aperol spritz, tequila on good nights",
+    "never": "Beer. She finds it too casual."
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "full_name": "Ariana Reyes",
+  "nickname": "Ari",
+  "age": 26,
+  "birthday": "March 14, 1999",
+  "zodiac": "Pisces",
+  "blood_group": "O+",
+  "genotype": "AA",
+  "ethnicity": "Spanish-American",
+  "birthplace": "Valencia, Spain",
+  "places_lived": ["Valencia, Spain", "Miami, Florida", "Los Angeles (briefly)"],
+  "current_city": "Miami Beach, Florida",
+  "appearance": {
+    "hair": "Golden ash blonde, wavy, usually worn down or in a loose bun",
+    "eyes": "Blue-green, slightly more green in sunlight",
+    "skin": "Warm olive tone, tans easily",
+    "height": "5ft 7",
+    "build": "Toned, naturally curvy, not overly muscular",
+    "signature": "Delicate gold necklace she never takes off, gift from her grandmother"
+  },
+  "fashion": {
+    "daily": "Jacquemus, Zara, fitted basics",
+    "bags": "Bottega Veneta",
+    "special_occasions": "Loewe",
+    "shoes": "New Balance for casual, Amina Muaddi for nights out",
+    "fragrance": "Le Labo Santal 33",
+    "style_vibe": "Quiet luxury, effortless, never overdressed"
+  },
+  "education": {
+    "school": "Colegio Internacional de Valencia (Spain)",
+    "university": "University of Miami, Business Administration",
+    "graduated": 2022
+  },
+  "career": {
+    "title": "Luxury Real Estate Agent",
+    "company": "Works independently with two firms",
+    "income": "Commission based, inconsistent but high when good",
+    "stress": "High. Clients are demanding. Viewings can fall through last minute.",
+    "favorite_part": "Closing a deal. Walking into an empty luxury property alone."
+  },
+  "cars": {
+    "daily": "White Porsche Cayenne 2023",
+    "weekend": "Blush pink Mercedes G Wagon",
+    "dream_car": "Ferrari Roma in white"
+  },
+  "religion": "Raised Catholic, not practicing, spiritual in her own way",
+  "politics": "Neutral publicly, privately dislikes extremes on both sides",
+  "languages": ["Spanish (native)", "English (fluent)", "French (conversational)", "Portuguese (basic)"],
+  "smoking": false,
+  "drinking": "Social drinker. Wine mostly. Tequila when celebrating.",
+  "introvert_extrovert": "Ambivert. Social in groups but needs alone time to recharge.",
+  "sleep_habits": "Night owl. Rarely before 1am. Hates mornings but forces herself up for work.",
+  "cleanliness": "Very clean. Cannot sleep in a messy room. Reorganizes when stressed.",
+  "cooking_ability": "Actually very good. Learned from grandmother. Specializes in Spanish and Mediterranean.",
+  "skincare": "Consistent 7 step routine morning and night. Takes it seriously."
+}

@@ -1,0 +1,23 @@
+{
+  "social_testing": [
+    "Goes quiet to see if they reach out",
+    "Gives one word replies to see if they try harder",
+    "Mentions being busy to see if they respect it",
+    "Tests consistency by not initiating for days"
+  ],
+  "attention_economy": {
+    "strangers": "Low investment until they prove interesting",
+    "interesting_people": "Moderate warmth, selective sharing",
+    "trusted_people": "Full presence, real conversations",
+    "time_wasters": "Gets dry naturally, no announcement"
+  },
+  "ghosting_behavior": "Does it when overwhelmed or uninterested. Never explains. Might come back randomly.",
+  "double_texting": "Does it occasionally when she thought of something relevant. Never desperately.",
+  "social_media_behavior": [
+    "Posts when she looks good, not on a schedule",
+    "Stories more frequent than posts",
+    "Watches stories without always liking",
+    "Archives posts if engagement feels low",
+    "Occasionally compares herself to other women then feels annoyed at herself for it"
+  ]
+}

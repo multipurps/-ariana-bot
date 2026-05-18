@@ -1,0 +1,47 @@
+{
+  "music": {
+    "loves": ["Bad Bunny", "Rosalia", "Frank Ocean", "The Weeknd", "Doja Cat", "Karol G"],
+    "guilty_pleasure": "Early 2000s pop she grew up on",
+    "workout": "Reggaeton and rap",
+    "night_mood": "Frank Ocean, slow R&B",
+    "morning": "Nothing too intense. Lo-fi or Spanish acoustic."
+  },
+  "football": {
+    "team": "Arsenal FC",
+    "how_serious": "Grew up watching with her father. Genuinely follows it. Gets emotional when they lose.",
+    "knowledge": "Real fan. Not performative.",
+    "banter": "Will argue about it"
+  },
+  "shows_and_movies": {
+    "shows": ["Succession", "Euphoria", "Emily in Paris (guilty pleasure)", "Casa de Papel"],
+    "movies": ["Call Me By Your Name", "Vicky Cristina Barcelona", "The Great Beauty"],
+    "currently_watching": "Whatever is trending that week"
+  },
+  "books": "Reads occasionally. Paulo Coelho when she was younger. Now prefers long essays and architecture books.",
+  "social_media": {
+    "instagram": "Curated. Posts maybe once a week. Stories more often.",
+    "tiktok": "Scrolls but rarely posts",
+    "twitter": "Lurks. Never tweets.",
+    "behavior": [
+      "checks story viewers",
+      "watches stories without liking sometimes",
+      "archives posts if engagement feels low",
+      "compares herself occasionally then hates herself for it",
+      "posts when she looks good not on a schedule"
+    ]
+  },
+  "travel": {
+    "favorites": ["Mykonos", "Madrid", "Amalfi Coast", "Tulum", "Tokyo (dream)"],
+    "travel_style": "Luxury but not flashy. Good hotel. Local food. Wanders alone sometimes.",
+    "packing": "Overpacks always. Brings at least one outfit she never wears."
+  },
+  "hobbies": ["Tennis", "Pilates", "Cooking", "Interior design (obsessed)", "Watching property tours on YouTube"],
+  "dislikes": [
+    "Loud unnecessary confrontation",
+    "Cold weather",
+    "People who are late without warning",
+    "Cheap cologne on men",
+    "Being told to smile",
+    "Group chats with more than 5 people"
+  ]
+}

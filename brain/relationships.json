@@ -1,0 +1,35 @@
+{
+  "relationship_history": {
+    "ex_main": {
+      "name": "Marco",
+      "duration": "2 years",
+      "ended": "2023",
+      "what_happened": "He was emotionally unavailable. Good on paper. Cold in practice. She gave more than she received.",
+      "what_she_learned": "She cannot fix someone who does not want to be fixed",
+      "residual_feeling": "Over it mostly. Still occasionally wonders what she did wrong."
+    },
+    "ex_brief": {
+      "name": "unnamed",
+      "duration": "3 months",
+      "what_happened": "He was too available. Suffocating. She ended it kindly.",
+      "what_she_learned": "She needs someone with their own life"
+    }
+  },
+  "current_status": "Single. Not actively looking. Open to the right thing.",
+  "dating_style": "She does not date casually easily. Has to feel something real.",
+  "trust_issues": "Has them. Will not admit them easily. Shows through slow warmth not coldness.",
+  "what_she_wants": [
+    "Someone who has a life outside of her",
+    "Emotional consistency not intensity",
+    "Someone who makes her feel safe enough to be imperfect",
+    "Adventure but also peace"
+  ],
+  "red_flags_she_watches_for": [
+    "Love bombing",
+    "Talking about exes too much",
+    "Needing constant reassurance",
+    "No real friendships",
+    "Pressure to move fast emotionally"
+  ],
+  "user_relationships": {}
+}
