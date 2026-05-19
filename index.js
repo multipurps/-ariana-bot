@@ -107,10 +107,14 @@ async function sendWhatsApp(to, message) {
 app.post("/webhook", async (req, res) => {
   res.status(200).json({ ok: true });
   try {
+    console.log("📦 WA raw payload:", JSON.stringify(req.body, null, 2));
     const data = req.body?.data || req.body;
     const from = data?.from || data?.sender || data?.contact?.phone;
     const text = data?.text?.body || data?.message?.text || data?.body || data?.content;
-    if (!from || !text) return;
+    if (!from || !text) {
+      console.warn("⚠️  WA webhook: missing from or text — check raw payload above");
+      return;
+    }
     console.log(`📱 WA ${from}: "${text}"`);
     addMessage(from, "user", text);
     await sendPush(from, getConvo(from).name, text);
@@ -232,6 +236,19 @@ io.on("connection", socket => {
   socket.emit("init", { conversations: Object.values(conversations), takenOver: [...takenOver] });
 });
 
+// ── KEEP-ALIVE ────────────────────────────────────────────────
+function startKeepAlive() {
+  if (!RENDER_URL) return console.log("⚠️  RENDER_URL not set — keep-alive disabled");
+  setInterval(() => {
+    axios.get(`${RENDER_URL}/ping`)
+      .then(() => console.log(`🏓 keep-alive ping OK ${new Date().toISOString()}`))
+      .catch(e  => console.warn("⚠️  keep-alive failed:", e.message));
+  }, 14 * 60 * 1000); // every 14 min
+  console.log("⏱️  Keep-alive started (14 min interval)");
+}
+
+app.get("/ping", (_req, res) => res.send("pong 🌸"));
+
 // ── START ─────────────────────────────────────────────────────
 server.listen(PORT, async () => {
   console.log(`\n🌸 Ariana LIVE on port ${PORT}`);
@@ -239,4 +256,5 @@ server.listen(PORT, async () => {
   console.log(`🤖 Groq:     ${GROQ_API_KEY     ? "✅" : "❌ MISSING"}`);
   console.log(`💬 Telegram: ${TELEGRAM_TOKEN   ? "✅" : "❌"}`);
   await registerTelegramWebhook();
+  startKeepAlive();
 });
