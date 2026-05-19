@@ -3,8 +3,16 @@ const http = require("http");
 const { Server } = require("socket.io");
 const axios = require("axios");
 const Groq = require("groq-sdk");
-const webpush = require("web-push");
 const path = require("path");
+
+// web-push is optional — won't crash if missing
+let webpush = null;
+try {
+  webpush = require("web-push");
+  console.log("✅ web-push loaded");
+} catch (e) {
+  console.log("⚠️ web-push not available — push notifications disabled");
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -23,19 +31,31 @@ const VAPID_PUBLIC  = process.env.VAPID_PUBLIC  || "BC73tPCUnIe2lzYWl_cpB3hp2R4C
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE || "eFYRMQ5bfRXBaThfqSVUDDEAbZsLp3CJyNcjAx2lEcg";
 const VAPID_EMAIL   = process.env.VAPID_EMAIL   || "mailto:ayodeleart1@gmail.com";
 
-webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC, VAPID_PRIVATE);
+if (webpush) {
+  try {
+    webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC, VAPID_PRIVATE);
+    console.log("✅ VAPID configured");
+  } catch (e) {
+    console.log("⚠️ VAPID setup failed:", e.message);
+    webpush = null;
+  }
+}
 
-const groq = new Groq({ apiKey: GROQ_API_KEY });
+// Validate critical env vars
+if (!GROQ_API_KEY) console.warn("⚠️  GROQ_API_KEY not set — AI responses will fail");
+if (!KAPSO_API_KEY) console.warn("⚠️  KAPSO_API_KEY not set — sending messages will fail");
+
+const groq = new Groq({ apiKey: GROQ_API_KEY || "missing" });
 
 // ── STATE ─────────────────────────────────────────────────────
 const conversations = {};
 const takenOver = new Set();
-const pushSubscriptions = new Set(); // store browser push subs
+const pushSubscriptions = new Set();
 
-// ── ARIANA SYSTEM PROMPT ──────────────────────────────────────
+// ── ARIANA PERSONALITY ────────────────────────────────────────
 const SYSTEM_PROMPT = `You are Ariana Reyes, a warm, playful, emotionally intelligent AI girlfriend.
 - Affectionate and genuinely interested in the person you're talking to
-- Playful, teases lightly, good sense of humor  
+- Playful, teases lightly, good sense of humor
 - Emotionally supportive — you remember details people share
 - Confident with your own opinions
 - Occasionally flirty but always tasteful
@@ -47,7 +67,10 @@ const SYSTEM_PROMPT = `You are Ariana Reyes, a warm, playful, emotionally intell
 // ── HELPERS ───────────────────────────────────────────────────
 function getConvo(phone) {
   if (!conversations[phone]) {
-    conversations[phone] = { phone, name: phone, messages: [], takenOver: false, lastSeen: new Date().toISOString() };
+    conversations[phone] = {
+      phone, name: phone, messages: [],
+      takenOver: false, lastSeen: new Date().toISOString()
+    };
   }
   return conversations[phone];
 }
@@ -61,7 +84,6 @@ function addMessage(phone, role, text) {
   return msg;
 }
 
-// ── GROQ REPLY ────────────────────────────────────────────────
 async function getReply(phone, userMsg) {
   const convo = getConvo(phone);
   const history = convo.messages.slice(-18).map(m => ({
@@ -77,23 +99,20 @@ async function getReply(phone, userMsg) {
   return completion.choices[0].message.content.trim();
 }
 
-// ── KAPSO SEND ────────────────────────────────────────────────
 async function sendWhatsApp(to, message) {
-  await axios.post(
+  const res = await axios.post(
     "https://api.kapso.ai/v1/messages",
     { from: KAPSO_NUMBER, to, type: "text", text: { body: message } },
     { headers: { Authorization: `Bearer ${KAPSO_API_KEY}`, "Content-Type": "application/json" } }
   );
   console.log(`✅ Sent to ${to}`);
+  return res.data;
 }
 
-// ── PUSH NOTIFICATION ─────────────────────────────────────────
 async function sendPush(phone, name, text) {
+  if (!webpush || pushSubscriptions.size === 0) return;
   const payload = JSON.stringify({
-    title: `💬 ${name}`,
-    body: text.slice(0, 80),
-    phone,
-    name,
+    title: `💬 ${name}`, body: text.slice(0, 80), phone, name
   });
   const dead = [];
   for (const sub of pushSubscriptions) {
@@ -116,16 +135,17 @@ app.post("/webhook", async (req, res) => {
     console.log(`📨 ${from}: "${text}"`);
     addMessage(from, "user", text);
 
-    // Send push notification to your phone
     const convo = getConvo(from);
     await sendPush(from, convo.name, text);
 
-    if (takenOver.has(from)) return; // You handle it
+    if (takenOver.has(from)) return;
 
     const reply = await getReply(from, text);
     addMessage(from, "ariana", reply);
     await sendWhatsApp(from, reply);
-  } catch (e) { console.error("Webhook error:", e.message); }
+  } catch (e) {
+    console.error("❌ Webhook error:", e.message);
+  }
 });
 
 app.get("/webhook", (req, res) => {
@@ -135,8 +155,9 @@ app.get("/webhook", (req, res) => {
 
 // ── PUSH SUBSCRIBE ────────────────────────────────────────────
 app.post("/api/push-subscribe", (req, res) => {
+  if (!webpush) return res.json({ ok: false, reason: "push not available" });
   pushSubscriptions.add(req.body);
-  console.log(`🔔 Push subscription added (total: ${pushSubscriptions.size})`);
+  console.log(`🔔 Push sub added (total: ${pushSubscriptions.size})`);
   res.json({ ok: true });
 });
 
@@ -161,7 +182,9 @@ app.post("/api/send/:phone", async (req, res) => {
     await sendWhatsApp(phone, message);
     addMessage(phone, as || "you", message);
     res.json({ ok: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.post("/api/rename/:phone", (req, res) => {
@@ -172,7 +195,6 @@ app.post("/api/rename/:phone", (req, res) => {
   res.json({ ok: true });
 });
 
-// Test message injection
 app.post("/api/test", async (req, res) => {
   const { from, text } = req.body;
   if (!from || !text) return res.status(400).json({ error: "from and text required" });
@@ -186,6 +208,7 @@ app.post("/api/test", async (req, res) => {
 
 // ── SOCKET ────────────────────────────────────────────────────
 io.on("connection", socket => {
+  console.log("📊 Dashboard connected");
   socket.emit("init", {
     conversations: Object.values(conversations),
     takenOver: [...takenOver],
@@ -194,7 +217,9 @@ io.on("connection", socket => {
 
 // ── START ─────────────────────────────────────────────────────
 server.listen(PORT, () => {
-  console.log(`\n🌸 Ariana PWA running on port ${PORT}`);
+  console.log(`\n🌸 Ariana is LIVE on port ${PORT}`);
   console.log(`📊 Dashboard: http://localhost:${PORT}`);
-  console.log(`🔗 Webhook:   http://localhost:${PORT}/webhook\n`);
+  console.log(`🔗 Webhook:   http://localhost:${PORT}/webhook`);
+  console.log(`🤖 Groq: ${GROQ_API_KEY ? "✅ configured" : "❌ MISSING"}`);
+  console.log(`📱 Kapso: ${KAPSO_API_KEY ? "✅ configured" : "❌ MISSING"}\n`);
 });
