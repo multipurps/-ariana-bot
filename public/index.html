@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ariana">
+<meta name="theme-color" content="#00a884">
+<title>Ariana Monitor</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/icon-192.svg">
+<script src="/socket.io/socket.io.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0b141a;
+  --sidebar:#111b21;
+  --header:#202c33;
+  --panel:#0b141a;
+  --sent:#005c4b;
+  --received:#202c33;
+  --input-bg:#2a3942;
+  --green:#00a884;
+  --green-dark:#008069;
+  --text:#e9edef;
+  --text2:#8696a0;
+  --border:#2a3942;
+  --hover:#202c33;
+  --takeover:#ef4444;
+  --unread:#00a884;
+  --search-bg:#2a3942;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;overflow:hidden}
+button{cursor:pointer;border:none;background:none;color:inherit;font-family:inherit}
+input,textarea,select{font-family:inherit;color:inherit}
+
+/* ── LAYOUT ───────────────────────────── */
+#app{display:flex;height:100vh;position:relative}
+
+/* ── LEFT PANEL ────────────────────────── */
+#left{width:375px;min-width:375px;display:flex;flex-direction:column;background:var(--sidebar);border-right:1px solid var(--border);z-index:10;transition:transform .25s}
+
+/* Header */
+#left-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px;background:var(--header);min-height:56px;
+}
+.header-title{font-size:20px;font-weight:700;color:var(--text)}
+.header-icons{display:flex;gap:4px}
+.icon-btn{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;transition:background .15s}
+.icon-btn:hover{background:var(--hover)}
+
+/* Story bar */
+#story-bar{
+  display:flex;gap:12px;padding:12px 16px;overflow-x:auto;background:var(--sidebar);
+  border-bottom:1px solid var(--border);
+}
+#story-bar::-webkit-scrollbar{display:none}
+.story-item{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;flex-shrink:0}
+.story-ring{width:50px;height:50px;border-radius:50%;border:2px solid var(--green);padding:2px}
+.story-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--header)}
+.story-label{font-size:11px;color:var(--text2);white-space:nowrap}
+
+/* Search */
+#search-bar{padding:8px 12px;background:var(--sidebar)}
+#search-wrap{display:flex;align-items:center;gap:8px;background:var(--search-bg);border-radius:8px;padding:0 12px}
+#search-wrap svg{flex-shrink:0;color:var(--text2)}
+#search-input{flex:1;background:none;border:none;outline:none;padding:8px 0;font-size:14px;color:var(--text)}
+#search-input::placeholder{color:var(--text2)}
+
+/* Tabs */
+#tabs{display:flex;border-bottom:1px solid var(--border)}
+.tab{flex:1;padding:10px;font-size:13px;font-weight:600;color:var(--text2);text-align:center;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
+.tab.active{color:var(--green);border-color:var(--green)}
+
+/* Contact list */
+#contact-list{flex:1;overflow-y:auto}
+#contact-list::-webkit-scrollbar{width:3px}
+#contact-list::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+
+.contact-item{
+  display:flex;align-items:center;gap:12px;padding:10px 16px;
+  cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s;
+  position:relative;
+}
+.contact-item:hover,.contact-item.active{background:var(--hover)}
+.contact-item.takeover-mode .c-avatar::after{
+  content:"👤";position:absolute;bottom:-2px;right:-2px;
+  background:var(--takeover);border-radius:50%;font-size:10px;
+  width:16px;height:16px;display:flex;align-items:center;justify-content:center;
+}
+
+.c-avatar{
+  width:49px;height:49px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;font-weight:700;position:relative;overflow:hidden;
+  background:linear-gradient(135deg,#1f3849,#2a4a5e);
+}
+.c-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+
+.c-info{flex:1;min-width:0}
+.c-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px}
+.c-name{font-size:16px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px}
+.c-time{font-size:12px;color:var(--text2);flex-shrink:0}
+.c-time.unread-time{color:var(--green)}
+.c-bottom{display:flex;align-items:center;gap:4px}
+.c-preview{font-size:13px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.c-preview.ariana-msg::before{content:"🌸 ";font-size:11px}
+.c-preview.you-msg::before{content:"👤 ";font-size:11px}
+.badge{
+  background:var(--green);color:#000;border-radius:50%;
+  min-width:20px;height:20px;font-size:12px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  padding:0 4px;flex-shrink:0;
+}
+.badge.takeover-badge{background:var(--takeover);color:#fff}
+
+/* ── RIGHT PANEL ────────────────────────── */
+#right{flex:1;display:flex;flex-direction:column;position:relative;overflow:hidden}
+
+/* No chat state */
+#no-chat{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:16px;color:var(--text2);background:var(--panel);
+  padding:40px;
+}
+#no-chat .nc-icon{font-size:80px;opacity:.6}
+#no-chat h2{font-size:24px;color:var(--text);font-weight:300}
+#no-chat p{font-size:14px;text-align:center;max-width:340px;line-height:1.6}
+#no-chat .nc-lock{font-size:12px;display:flex;align-items:center;gap:6px;margin-top:8px}
+
+/* Chat wallpaper */
+#chat-bg{
+  position:absolute;inset:56px 0 72px 0;
+  background-size:cover;background-position:center;
+  z-index:0;
+  transition:background .3s;
+}
+
+/* Chat header */
+#chat-header{
+  display:flex;align-items:center;gap:12px;padding:8px 16px;
+  background:var(--header);min-height:56px;z-index:2;
+  position:relative;
+}
+#chat-back{font-size:22px;display:none;padding:4px}
+#chat-avatar-wrap{position:relative}
+#chat-avatar{
+  width:40px;height:40px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:700;cursor:pointer;overflow:hidden;
+  background:linear-gradient(135deg,#1f3849,#2a4a5e);
+}
+#chat-avatar img{width:100%;height:100%;object-fit:cover}
+#chat-info{flex:1}
+#chat-name{font-size:16px;font-weight:500;cursor:pointer}
+#chat-sub{font-size:13px;color:var(--text2)}
+#chat-actions{display:flex;gap:2px}
+
+/* Messages */
+#messages{
+  flex:1;overflow-y:auto;padding:12px 8%;
+  display:flex;flex-direction:column;gap:2px;
+  position:relative;z-index:1;
+}
+#messages::-webkit-scrollbar{width:4px}
+#messages::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:4px}
+
+.msg-wrap{display:flex;flex-direction:column;margin:1px 0}
+.msg-wrap.in{align-self:flex-start;max-width:75%}
+.msg-wrap.out{align-self:flex-end;max-width:75%}
+
+.bubble{
+  padding:6px 9px 8px;border-radius:7.5px;
+  font-size:14.2px;line-height:1.5;word-break:break-word;
+  position:relative;min-width:80px;
+}
+.msg-wrap.in .bubble{
+  background:var(--received);border-top-left-radius:0;
+  color:var(--text);
+}
+.msg-wrap.out .bubble{
+  background:var(--sent);border-top-right-radius:0;
+  color:#e9edef;
+}
+.bubble-tail-in,.bubble-tail-out{
+  position:absolute;top:0;width:8px;height:8px;overflow:hidden;
+}
+.bubble-tail-in{left:-8px}
+.bubble-tail-in::before{content:"";position:absolute;top:0;right:0;width:0;height:0;border-top:8px solid var(--received);border-left:8px solid transparent}
+.bubble-tail-out{right:-8px}
+.bubble-tail-out::before{content:"";position:absolute;top:0;left:0;width:0;height:0;border-top:8px solid var(--sent);border-right:8px solid transparent}
+
+.bubble-footer{
+  display:flex;align-items:center;justify-content:flex-end;
+  gap:4px;margin-top:2px;
+}
+.bubble-time-text{font-size:11px;color:rgba(233,237,239,.6);white-space:nowrap}
+.msg-wrap.in .bubble-time-text{color:var(--text2)}
+.tick{font-size:12px;color:var(--green)}
+
+.msg-sender{font-size:13px;font-weight:500;color:#53bdeb;margin-bottom:2px;padding:0 2px}
+.msg-sender.ariana{color:#c97de0}
+.msg-sender.you{color:#53bdeb}
+
+.date-divider{
+  align-self:center;background:var(--header);color:var(--text2);
+  font-size:12px;padding:5px 12px;border-radius:8px;margin:8px 0;
+  position:relative;z-index:1;
+}
+
+/* Input area */
+#input-area{
+  display:flex;align-items:flex-end;gap:8px;padding:8px 12px;
+  background:var(--header);min-height:62px;z-index:2;position:relative;
+}
+#takeover-notice{
+  display:none;position:absolute;top:-38px;left:0;right:0;
+  background:rgba(239,68,68,.9);color:#fff;font-size:13px;font-weight:600;
+  padding:8px 16px;text-align:center;z-index:5;
+}
+#takeover-notice.show{display:block}
+
+.input-icon{
+  width:44px;height:44px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:22px;flex-shrink:0;color:var(--text2);
+  transition:color .15s;
+}
+.input-icon:hover{color:var(--text)}
+
+#msg-box{
+  flex:1;background:var(--input-bg);border-radius:24px;
+  padding:10px 16px;font-size:15px;outline:none;border:none;
+  color:var(--text);resize:none;max-height:150px;line-height:1.4;
+}
+#msg-box::placeholder{color:var(--text2)}
+
+#send-btn{
+  width:48px;height:48px;border-radius:50%;background:var(--green);
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+  flex-shrink:0;transition:background .2s;
+}
+#send-btn:hover{background:var(--green-dark)}
+#send-btn.takeover-mode{background:var(--takeover)}
+
+/* Send-as selector */
+#send-as-wrap{
+  display:flex;background:var(--input-bg);border-radius:20px;
+  padding:4px;gap:2px;flex-shrink:0;
+}
+.sa-btn{
+  padding:4px 10px;border-radius:14px;font-size:12px;font-weight:600;
+  color:var(--text2);transition:all .2s;
+}
+.sa-btn.active{background:var(--green);color:#000}
+.sa-btn.active.takeover{background:var(--takeover);color:#fff}
+
+/* ── MODALS ─────────────────────────────── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;
+  display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(4px);
+}
+.modal-overlay.hidden{display:none}
+.modal{background:#1f2c34;border-radius:16px;padding:24px;width:340px;max-width:90vw}
+.modal h3{font-size:18px;font-weight:600;margin-bottom:16px;color:var(--text)}
+.modal-input{
+  width:100%;background:var(--input-bg);border:none;border-radius:8px;
+  padding:12px 14px;font-size:15px;color:var(--text);outline:none;margin-bottom:12px;
+}
+.modal-input::placeholder{color:var(--text2)}
+.modal-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
+.modal-btn{padding:8px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+.modal-btn.cancel{color:var(--green);background:none}
+.modal-btn.confirm{background:var(--green);color:#000}
+.modal-btn.danger{background:var(--takeover);color:#fff}
+
+/* Wallpaper modal */
+.wallpaper-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.wp-thumb{
+  aspect-ratio:9/16;border-radius:8px;cursor:pointer;border:2px solid transparent;
+  transition:border-color .2s;overflow:hidden;display:flex;align-items:center;justify-content:center;
+  font-size:24px;
+}
+.wp-thumb.active{border-color:var(--green)}
+.wp-thumb:hover{border-color:rgba(0,168,132,.5)}
+
+/* Contact info drawer */
+#contact-drawer{
+  position:absolute;top:0;right:-360px;width:360px;height:100%;
+  background:#1f2c34;z-index:50;transition:right .3s;overflow-y:auto;
+  display:flex;flex-direction:column;
+}
+#contact-drawer.open{right:0}
+.drawer-header{background:var(--green-dark);padding:16px;padding-top:40px}
+.drawer-avatar-big{
+  width:96px;height:96px;border-radius:50%;background:var(--header);
+  display:flex;align-items:center;justify-content:center;font-size:48px;
+  margin:0 auto 12px;cursor:pointer;overflow:hidden;position:relative;
+}
+.drawer-avatar-big img{width:100%;height:100%;object-fit:cover}
+.avatar-upload-overlay{
+  position:absolute;inset:0;background:rgba(0,0,0,.5);
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;opacity:0;transition:opacity .2s;border-radius:50%;
+}
+.drawer-avatar-big:hover .avatar-upload-overlay{opacity:1}
+.drawer-name{font-size:20px;font-weight:600;text-align:center;margin-bottom:4px}
+.drawer-phone{font-size:14px;color:rgba(233,237,239,.7);text-align:center}
+.drawer-body{padding:16px;flex:1}
+.drawer-section{background:#2a3942;border-radius:12px;padding:16px;margin-bottom:12px}
+.drawer-section h4{font-size:13px;color:var(--green);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.drawer-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.drawer-row:last-child{border:none}
+.drawer-row-label{font-size:14px;color:var(--text2)}
+.drawer-row-val{font-size:14px}
+.toggle-switch{position:relative;width:44px;height:24px}
+.toggle-switch input{opacity:0;width:0;height:0}
+.toggle-slider{
+  position:absolute;inset:0;background:#555;border-radius:24px;cursor:pointer;transition:.3s;
+}
+.toggle-slider::before{
+  content:"";position:absolute;left:2px;top:2px;width:20px;height:20px;
+  background:#fff;border-radius:50%;transition:.3s;
+}
+.toggle-switch input:checked+.toggle-slider{background:var(--green)}
+.toggle-switch input:checked+.toggle-slider::before{transform:translateX(20px)}
+.drawer-action{
+  width:100%;padding:12px;border-radius:10px;font-size:14px;font-weight:600;
+  text-align:center;cursor:pointer;margin-bottom:8px;
+}
+.drawer-action.danger{background:rgba(239,68,68,.15);color:var(--takeover);border:1px solid rgba(239,68,68,.3)}
+.drawer-action.primary{background:rgba(0,168,132,.15);color:var(--green);border:1px solid rgba(0,168,132,.3)}
+
+/* Toast / snackbar */
+#toast{
+  position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:#2a3942;color:var(--text);border-radius:8px;padding:10px 18px;
+  font-size:13px;opacity:0;transition:all .3s;z-index:200;white-space:nowrap;
+  pointer-events:none;max-width:90vw;text-overflow:ellipsis;overflow:hidden;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* Push notification banner */
+#push-banner{
+  background:rgba(0,168,132,.12);border-top:1px solid rgba(0,168,132,.3);
+  padding:10px 16px;display:flex;align-items:center;gap:10px;font-size:13px;
+  cursor:pointer;
+}
+#push-banner.hidden{display:none}
+#push-banner span{flex:1}
+#push-banner button{background:var(--green);color:#000;border-radius:16px;padding:4px 14px;font-size:12px;font-weight:700}
+
+/* ── MOBILE ──────────────────────────────── */
+@media(max-width:700px){
+  #left{position:absolute;inset:0;z-index:20;width:100%;min-width:unset}
+  #left.hidden{transform:translateX(-100%)}
+  #right{width:100%}
+  #chat-back{display:flex !important}
+  #chat-header{padding-left:4px}
+  #contact-drawer{width:100%;right:-100%}
+  #messages{padding:12px 4%}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- LEFT PANEL -->
+<div id="left">
+  <div id="left-header">
+    <span class="header-title">🌸 Ariana</span>
+    <div class="header-icons">
+      <button class="icon-btn" onclick="openWallpaperModal()" title="Wallpaper">🖼️</button>
+      <button class="icon-btn" id="notif-btn" onclick="requestPush()" title="Notifications">🔔</button>
+      <button class="icon-btn" onclick="showToast('Online — Webhook active ✅')" title="Status">⋮</button>
+    </div>
+  </div>
+
+  <!-- Push banner -->
+  <div id="push-banner">
+    <span>🔔 Enable notifications to get alerts even when app is closed</span>
+    <button onclick="requestPush()">Enable</button>
+  </div>
+
+  <!-- Search -->
+  <div id="search-bar">
+    <div id="search-wrap">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input id="search-input" type="text" placeholder="Search or start new chat" oninput="filterContacts()">
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div id="tabs">
+    <div class="tab active" onclick="setTab(this,'all')">All</div>
+    <div class="tab" onclick="setTab(this,'takeover')">Waiting 👤</div>
+    <div class="tab" onclick="setTab(this,'ariana')">Ariana 🌸</div>
+  </div>
+
+  <div id="contact-list"></div>
+</div>
+
+<!-- RIGHT PANEL -->
+<div id="right">
+  <div id="no-chat">
+    <div class="nc-icon">🌸</div>
+    <h2>Ariana Monitor</h2>
+    <p>Select a conversation to monitor it. New messages appear automatically in real-time.</p>
+    <div class="nc-lock">🔒 End-to-end encrypted · You are in control</div>
+  </div>
+
+  <!-- Chat header (hidden until chat opened) -->
+  <div id="chat-header" style="display:none">
+    <button id="chat-back" onclick="closeChat()">‹</button>
+    <div id="chat-avatar-wrap">
+      <div id="chat-avatar" onclick="openDrawer()">?</div>
+    </div>
+    <div id="chat-info" onclick="openDrawer()" style="cursor:pointer">
+      <div id="chat-name">—</div>
+      <div id="chat-sub">tap for contact info</div>
+    </div>
+    <div id="chat-actions">
+      <div id="send-as-wrap">
+        <button class="sa-btn active" id="sa-ariana" onclick="setSendAs('ariana')">🌸 Ariana</button>
+        <button class="sa-btn" id="sa-you" onclick="setSendAs('you')">👤 You</button>
+      </div>
+      <button class="icon-btn" id="takeover-icon" onclick="toggleTakeover()" title="Take Over / Release">🎯</button>
+    </div>
+  </div>
+
+  <!-- Chat wallpaper layer -->
+  <div id="chat-bg"></div>
+
+  <!-- Messages -->
+  <div id="messages" style="display:none"></div>
+
+  <!-- Input -->
+  <div id="input-area" style="display:none">
+    <div id="takeover-notice">🎯 YOU are in control — Ariana is paused</div>
+    <div class="input-icon" onclick="showToast('Emoji picker coming soon 😊')">😊</div>
+    <div class="input-icon" onclick="showToast('Attachments coming soon 📎')">📎</div>
+    <textarea id="msg-box" rows="1" placeholder="Type a message" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button id="send-btn" onclick="sendMsg()">➤</button>
+  </div>
+</div>
+
+<!-- Contact info drawer -->
+<div id="contact-drawer">
+  <div class="drawer-header">
+    <div class="drawer-avatar-big" id="drawer-avatar-big" onclick="triggerAvatarUpload()">
+      <div id="drawer-avatar-img">👤</div>
+      <div class="avatar-upload-overlay">📷</div>
+    </div>
+    <div class="drawer-name" id="drawer-name">—</div>
+    <div class="drawer-phone" id="drawer-phone">—</div>
+  </div>
+  <div class="drawer-body">
+    <div class="drawer-section">
+      <h4>Controls</h4>
+      <div class="drawer-row">
+        <span class="drawer-row-label">🎯 Takeover (you reply)</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="drawer-takeover-toggle" onchange="toggleTakeoverFromDrawer()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="drawer-row">
+        <span class="drawer-row-label">🔔 Notifications</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="drawer-notif-toggle" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+    <div class="drawer-section">
+      <h4>Stats</h4>
+      <div class="drawer-row"><span class="drawer-row-label">Messages</span><span class="drawer-row-val" id="drawer-msg-count">0</span></div>
+      <div class="drawer-row"><span class="drawer-row-label">First contact</span><span class="drawer-row-val" id="drawer-first"></span></div>
+      <div class="drawer-row"><span class="drawer-row-label">Last seen</span><span class="drawer-row-val" id="drawer-last"></span></div>
+    </div>
+    <button class="drawer-action primary" onclick="renameFromDrawer()">✏️ Rename Contact</button>
+    <button class="drawer-action danger" onclick="closeDrawer()">✕ Close</button>
+  </div>
+</div>
+<input type="file" id="avatar-file-input" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)">
+
+<!-- Wallpaper Modal -->
+<div class="modal-overlay hidden" id="wallpaper-modal">
+  <div class="modal" style="width:380px">
+    <h3>🖼️ Chat Wallpaper</h3>
+    <div class="wallpaper-grid" id="wp-grid"></div>
+    <div style="margin-top:8px">
+      <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:8px">Or upload your own:</label>
+      <input type="file" id="wp-upload" accept="image/*" style="font-size:13px;color:var(--text2)" onchange="handleWpUpload(event)">
+    </div>
+    <div class="modal-btns">
+      <button class="modal-btn cancel" onclick="closeWallpaperModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rename Modal -->
+<div class="modal-overlay hidden" id="rename-modal">
+  <div class="modal">
+    <h3>✏️ Rename Contact</h3>
+    <input class="modal-input" id="rename-input" type="text" placeholder="Enter name">
+    <div class="modal-btns">
+      <button class="modal-btn cancel" onclick="closeModal('rename-modal')">Cancel</button>
+      <button class="modal-btn confirm" onclick="submitRename()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────
+const socket = io();
+let convos = {};
+let takenOverSet = new Set();
+let currentPhone = null;
+let sendAs = "ariana";
+let activeTab = "all";
+let avatars = JSON.parse(localStorage.getItem("ariana_avatars")||"{}");
+let wallpaper = localStorage.getItem("ariana_wallpaper") || "wp-default";
+let pushSubscription = null;
+const VAPID_PUBLIC = "BC73tPCUnIe2lzYWl_cpB3hp2R4CN5F3PM9Z6_kRIX7gC91pxowUlxdijQCM7X1mTxo7qrA9h32Rw3XgwBFWvjc";
+
+// ── PWA / SERVICE WORKER ───────────────────────────────────────
+const WALLPAPERS = [
+  {id:"wp-default",label:"Dark",bg:"#0b141a",preview:"#0b141a"},
+  {id:"wp-green",label:"Forest",bg:"linear-gradient(135deg,#0d1f17,#0b1a0f)",preview:"#0d2a1a"},
+  {id:"wp-night",label:"Night",bg:"linear-gradient(135deg,#0d0d1a,#1a0d2e)",preview:"#12103a"},
+  {id:"wp-dots",label:"Dots",bg:"radial-gradient(circle,#1a2530 1px,#0b141a 1px) 0 0/20px 20px",preview:"#1a2530"},
+  {id:"wp-warm",label:"Warm",bg:"linear-gradient(135deg,#1a1008,#2a1a0a)",preview:"#2a1205"},
+  {id:"wp-blue",label:"Ocean",bg:"linear-gradient(135deg,#071828,#0a1f35)",preview:"#092040"},
+];
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js").then(reg => {
+    navigator.serviceWorker.addEventListener("message", e => {
+      if (e.data?.type === "OPEN_CHAT") openChat(e.data.phone);
+    });
+  });
+}
+
+function hidePushBanner() { document.getElementById("push-banner").classList.add("hidden"); }
+
+async function requestPush() {
+  if (!("Notification" in window) || !("serviceWorker" in navigator)) {
+    showToast("Push not supported on this browser"); return;
+  }
+  const perm = await Notification.requestPermission();
+  if (perm !== "granted") { showToast("Notification permission denied"); return; }
+  hidePushBanner();
+  document.getElementById("notif-btn").textContent = "🔕";
+
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC),
+    });
+    pushSubscription = sub;
+    await fetch("/api/push-subscribe", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(sub)
+    });
+    showToast("🔔 Notifications enabled!");
+  } catch(e) { showToast("Push setup failed: "+e.message); }
+}
+
+function urlBase64ToUint8Array(b64) {
+  const pad = "=".repeat((4 - b64.length % 4) % 4);
+  const raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+// Check if push already granted
+if (Notification.permission === "granted") hidePushBanner();
+
+// ── SOCKET ────────────────────────────────────────────────────
+socket.on("connect", () => document.getElementById("push-banner").style.display="flex");
+socket.on("init", ({conversations, takenOver}) => {
+  takenOverSet = new Set(takenOver);
+  conversations.forEach(c => convos[c.phone] = c);
+  renderList(); updateTabBadges();
+});
+socket.on("new_message", ({phone, msg, convo}) => {
+  convos[phone] = convo;
+  renderList(); updateTabBadges();
+  if (phone === currentPhone) { appendMsg(msg); scrollBottom(); }
+  else {
+    // Unread badge
+    if (!convos[phone]._unread) convos[phone]._unread = 0;
+    convos[phone]._unread++;
+    renderList();
+    const n = convos[phone].name || phone;
+    showToast(`${n}: ${msg.text.slice(0,40)}`);
+  }
+});
+socket.on("takeover_update", ({phone, active}) => {
+  if (active) takenOverSet.add(phone); else takenOverSet.delete(phone);
+  if (convos[phone]) convos[phone].takenOver = active;
+  if (phone === currentPhone) updateTakeoverUI();
+  renderList(); updateTabBadges();
+});
+socket.on("rename", ({phone, name}) => {
+  if (convos[phone]) convos[phone].name = name;
+  renderList();
+  if (phone === currentPhone) {
+    document.getElementById("chat-name").textContent = name;
+    updateDrawer();
+  }
+});
+
+// ── CONTACT LIST ───────────────────────────────────────────────
+function renderList() {
+  const q = document.getElementById("search-input").value.toLowerCase();
+  const list = Object.values(convos)
+    .filter(c => {
+      const n = (c.name||c.phone).toLowerCase();
+      if (q && !n.includes(q)) return false;
+      if (activeTab === "takeover") return takenOverSet.has(c.phone);
+      if (activeTab === "ariana") return !takenOverSet.has(c.phone);
+      return true;
+    })
+    .sort((a,b) => new Date(b.lastSeen)-new Date(a.lastSeen));
+
+  document.getElementById("contact-list").innerHTML = list.map(c => {
+    const last = c.messages?.[c.messages.length-1];
+    const preview = last ? last.text.slice(0,42)+(last.text.length>42?"…":"") : "";
+    const previewClass = last?.role==="ariana"?"ariana-msg":last?.role==="you"?"you-msg":"";
+    const isTakeover = takenOverSet.has(c.phone);
+    const isActive = c.phone === currentPhone;
+    const initial = (c.name||c.phone)[0].toUpperCase();
+    const time = last ? fmtTime(last.time) : "";
+    const unread = c._unread || 0;
+    const avatarSrc = avatars[c.phone];
+
+    return `<div class="contact-item${isActive?" active":""}${isTakeover?" takeover-mode":""}"
+         onclick="openChat('${c.phone}')">
+      <div class="c-avatar">
+        ${avatarSrc ? `<img src="${avatarSrc}" alt="">` : initial}
+      </div>
+      <div class="c-info">
+        <div class="c-top">
+          <span class="c-name">${esc(c.name||c.phone)}</span>
+          <span class="c-time${unread?" unread-time":""}">${time}</span>
+        </div>
+        <div class="c-bottom">
+          <span class="c-preview ${previewClass}">${esc(preview)}</span>
+          ${unread ? `<span class="badge${isTakeover?" takeover-badge":""}">${unread}</span>` : ""}
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function filterContacts() { renderList(); }
+function setTab(el, tab) {
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  el.classList.add("active"); activeTab = tab; renderList();
+}
+function updateTabBadges() {}
+
+// ── OPEN CHAT ──────────────────────────────────────────────────
+function openChat(phone) {
+  currentPhone = phone;
+  const c = convos[phone];
+  if (c) c._unread = 0;
+
+  document.getElementById("no-chat").style.display = "none";
+  document.getElementById("chat-header").style.display = "flex";
+  document.getElementById("messages").style.display = "flex";
+  document.getElementById("input-area").style.display = "flex";
+
+  // Avatar
+  updateChatAvatar(phone);
+  document.getElementById("chat-name").textContent = c?.name || phone;
+  document.getElementById("chat-sub").textContent = phone;
+
+  // Render messages
+  const msgs = document.getElementById("messages");
+  msgs.innerHTML = "";
+  let lastDate = "";
+  (c?.messages || []).forEach(m => {
+    const d = new Date(m.time).toDateString();
+    if (d !== lastDate) {
+      msgs.innerHTML += `<div class="date-divider">${fmtDate(m.time)}</div>`;
+      lastDate = d;
+    }
+    msgs.innerHTML += buildBubble(m);
+  });
+  scrollBottom();
+
+  updateTakeoverUI();
+  applyWallpaper();
+  renderList();
+
+  // Mobile: hide left panel
+  if (window.innerWidth <= 700) document.getElementById("left").classList.add("hidden");
+}
+
+function closeChat() {
+  currentPhone = null;
+  document.getElementById("no-chat").style.display = "flex";
+  document.getElementById("chat-header").style.display = "none";
+  document.getElementById("messages").style.display = "none";
+  document.getElementById("input-area").style.display = "none";
+  document.getElementById("left").classList.remove("hidden");
+  closeDrawer();
+}
+
+// ── BUBBLE BUILDER ─────────────────────────────────────────────
+function buildBubble(msg) {
+  const isIn = msg.role === "user";
+  const isAriana = msg.role === "ariana";
+  const dir = isIn ? "in" : "out";
+  const tail = isIn ? '<span class="bubble-tail-in"></span>' : '<span class="bubble-tail-out"></span>';
+  const senderTag = isAriana
+    ? '<div class="msg-sender ariana">Ariana 🌸</div>'
+    : msg.role === "you" ? '<div class="msg-sender you">You 👤</div>' : "";
+
+  return `<div class="msg-wrap ${dir}">
+    ${senderTag}
+    <div class="bubble">
+      ${tail}
+      ${esc(msg.text).replace(/\n/g,"<br>")}
+      <div class="bubble-footer">
+        <span class="bubble-time-text">${fmtTimeFull(msg.time)}</span>
+        ${!isIn ? '<span class="tick">✓✓</span>' : ""}
+      </div>
+    </div>
+  </div>`;
+}
+
+function appendMsg(msg) {
+  const msgs = document.getElementById("messages");
+  const wrap = document.createElement("div");
+  wrap.innerHTML = buildBubble(msg);
+  msgs.appendChild(wrap.firstElementChild);
+}
+
+function scrollBottom() {
+  const m = document.getElementById("messages");
+  m.scrollTop = m.scrollHeight;
+}
+
+// ── SEND ───────────────────────────────────────────────────────
+function setSendAs(as) {
+  sendAs = as;
+  document.getElementById("sa-ariana").classList.toggle("active", as==="ariana");
+  document.getElementById("sa-you").classList.toggle("active", as==="you");
+  document.getElementById("sa-ariana").classList.remove("takeover");
+  document.getElementById("sa-you").classList.toggle("takeover", as==="you");
+  document.getElementById("send-btn").classList.toggle("takeover-mode", as==="you");
+}
+
+async function sendMsg() {
+  if (!currentPhone) return;
+  const box = document.getElementById("msg-box");
+  const text = box.value.trim();
+  if (!text) return;
+  box.value = ""; box.style.height="auto";
+
+  await fetch(`/api/send/${encodeURIComponent(currentPhone)}`, {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({message:text, as:sendAs})
+  });
+}
+
+function handleKey(e) {
+  if (e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();}
+}
+
+function autoResize(el) {
+  el.style.height="auto";
+  el.style.height=Math.min(el.scrollHeight,150)+"px";
+}
+
+// ── TAKEOVER ───────────────────────────────────────────────────
+async function toggleTakeover() {
+  if (!currentPhone) return;
+  const active = !takenOverSet.has(currentPhone);
+  await fetch(`/api/takeover/${encodeURIComponent(currentPhone)}`, {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({active})
+  });
+}
+
+async function toggleTakeoverFromDrawer() {
+  if (!currentPhone) return;
+  const active = document.getElementById("drawer-takeover-toggle").checked;
+  await fetch(`/api/takeover/${encodeURIComponent(currentPhone)}`, {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({active})
+  });
+}
+
+function updateTakeoverUI() {
+  if (!currentPhone) return;
+  const on = takenOverSet.has(currentPhone);
+  document.getElementById("takeover-notice").classList.toggle("show", on);
+  document.getElementById("takeover-icon").textContent = on ? "🎯" : "🎯";
+  document.getElementById("takeover-icon").style.color = on ? "var(--takeover)" : "";
+  document.getElementById("drawer-takeover-toggle").checked = on;
+  if (on) setSendAs("you"); else setSendAs("ariana");
+}
+
+// ── DRAWER ─────────────────────────────────────────────────────
+function openDrawer() {
+  if (!currentPhone) return;
+  document.getElementById("contact-drawer").classList.add("open");
+  updateDrawer();
+}
+
+function closeDrawer() { document.getElementById("contact-drawer").classList.remove("open"); }
+
+function updateDrawer() {
+  const c = convos[currentPhone];
+  if (!c) return;
+  document.getElementById("drawer-name").textContent = c.name || currentPhone;
+  document.getElementById("drawer-phone").textContent = currentPhone;
+  document.getElementById("drawer-msg-count").textContent = c.messages?.length || 0;
+  const msgs = c.messages || [];
+  document.getElementById("drawer-first").textContent = msgs[0] ? fmtDate(msgs[0].time) : "—";
+  document.getElementById("drawer-last").textContent = msgs[msgs.length-1] ? fmtDate(msgs[msgs.length-1].time) : "—";
+  document.getElementById("drawer-takeover-toggle").checked = takenOverSet.has(currentPhone);
+  // Avatar
+  const avEl = document.getElementById("drawer-avatar-img");
+  if (avatars[currentPhone]) {
+    avEl.innerHTML = `<img src="${avatars[currentPhone]}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  } else {
+    avEl.textContent = (c.name||currentPhone)[0].toUpperCase();
+  }
+}
+
+function triggerAvatarUpload() { document.getElementById("avatar-file-input").click(); }
+
+function handleAvatarUpload(e) {
+  const file = e.target.files[0];
+  if (!file || !currentPhone) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    avatars[currentPhone] = ev.target.result;
+    localStorage.setItem("ariana_avatars", JSON.stringify(avatars));
+    updateChatAvatar(currentPhone);
+    updateDrawer();
+    renderList();
+    showToast("Profile photo updated!");
+  };
+  reader.readAsDataURL(file);
+  e.target.value = "";
+}
+
+function updateChatAvatar(phone) {
+  const el = document.getElementById("chat-avatar");
+  const c = convos[phone];
+  if (avatars[phone]) {
+    el.innerHTML = `<img src="${avatars[phone]}" alt="">`;
+  } else {
+    el.textContent = (c?.name||phone)[0].toUpperCase();
+  }
+}
+
+function renameFromDrawer() {
+  document.getElementById("rename-input").value = convos[currentPhone]?.name || "";
+  document.getElementById("rename-modal").classList.remove("hidden");
+  setTimeout(() => document.getElementById("rename-input").focus(), 100);
+}
+
+async function submitRename() {
+  if (!currentPhone) return;
+  const name = document.getElementById("rename-input").value.trim();
+  if (!name) return;
+  await fetch(`/api/rename/${encodeURIComponent(currentPhone)}`, {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({name})
+  });
+  closeModal("rename-modal");
+}
+
+function closeModal(id) { document.getElementById(id).classList.add("hidden"); }
+
+// ── WALLPAPER ──────────────────────────────────────────────────
+function buildWallpaperGrid() {
+  const grid = document.getElementById("wp-grid");
+  grid.innerHTML = WALLPAPERS.map(w => `
+    <div class="wp-thumb${wallpaper===w.id?" active":""}"
+         style="background:${w.bg}" onclick="setWallpaper('${w.id}','${w.bg}')">
+      <span style="font-size:11px;color:rgba(255,255,255,.5)">${w.label}</span>
+    </div>`).join("");
+}
+
+function setWallpaper(id, bg) {
+  wallpaper = id;
+  localStorage.setItem("ariana_wallpaper", id);
+  localStorage.setItem("ariana_wallpaper_bg", bg);
+  applyWallpaper();
+  buildWallpaperGrid();
+}
+
+function applyWallpaper() {
+  const el = document.getElementById("chat-bg");
+  const saved = localStorage.getItem("ariana_wallpaper_bg");
+  if (saved && wallpaper !== "wp-default") el.style.background = saved;
+  else el.style.background = "#0b141a";
+}
+
+function handleWpUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const bg = `url(${ev.target.result})`;
+    setWallpaper("wp-custom", bg);
+    showToast("Wallpaper set!");
+  };
+  reader.readAsDataURL(file);
+}
+
+function openWallpaperModal() {
+  buildWallpaperGrid();
+  document.getElementById("wallpaper-modal").classList.remove("hidden");
+}
+function closeWallpaperModal() { document.getElementById("wallpaper-modal").classList.add("hidden"); }
+
+// ── UTILS ──────────────────────────────────────────────────────
+function esc(s) {
+  return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+function fmtTime(iso) {
+  if (!iso) return "";
+  const d = new Date(iso), now = new Date();
+  if (d.toDateString()===now.toDateString())
+    return d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+  const diff = (now-d)/864e5;
+  if (diff < 7) return ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()];
+  return d.toLocaleDateString([],{month:"numeric",day:"numeric"});
+}
+function fmtTimeFull(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+}
+function fmtDate(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso), now = new Date();
+  if (d.toDateString()===now.toDateString()) return "Today";
+  if (new Date(now-864e5).toDateString()===d.toDateString()) return "Yesterday";
+  return d.toLocaleDateString([],{month:"short",day:"numeric",year:"numeric"});
+}
+
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove("show"), 3000);
+}
+
+// Check URL for direct chat open (from notification click)
+const urlP = new URLSearchParams(location.search);
+if (urlP.get("chat")) {
+  const phone = urlP.get("chat");
+  socket.on("init", () => { if (convos[phone]) openChat(phone); });
+}
+</script>
+</body>
+</html>
