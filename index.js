@@ -5,87 +5,72 @@ const axios = require("axios");
 const Groq = require("groq-sdk");
 const path = require("path");
 
-// web-push is optional — won't crash if missing
 let webpush = null;
-try {
-  webpush = require("web-push");
-  console.log("✅ web-push loaded");
-} catch (e) {
-  console.log("⚠️ web-push not available — push notifications disabled");
-}
+try { webpush = require("web-push"); console.log("✅ web-push loaded"); }
+catch (e) { console.log("⚠️ web-push disabled"); }
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
-
 app.use(express.json({ limit: "10mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
 // ── CONFIG ────────────────────────────────────────────────────
-const KAPSO_API_KEY   = process.env.KAPSO_API_KEY;
-const KAPSO_NUMBER    = process.env.KAPSO_NUMBER || "+12186496099";
-const GROQ_API_KEY    = process.env.GROQ_API_KEY;
-const PORT            = process.env.PORT || 3000;
+const KAPSO_API_KEY  = process.env.KAPSO_API_KEY;
+const KAPSO_NUMBER   = process.env.KAPSO_NUMBER || "+12186496099";
+const GROQ_API_KEY   = process.env.GROQ_API_KEY;
+const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN || "8936370155:AAFVp8IJiua9zGtUYjeehVKcNvS1Ux6Fxl8";
+const RENDER_URL     = process.env.RENDER_URL || ""; // https://ariana-bot-xxxx.onrender.com
+const PORT           = process.env.PORT || 3000;
+const VAPID_PUBLIC   = process.env.VAPID_PUBLIC  || "BC73tPCUnIe2lzYWl_cpB3hp2R4CN5F3PM9Z6_kRIX7gC91pxowUlxdijQCM7X1mTxo7qrA9h32Rw3XgwBFWvjc";
+const VAPID_PRIVATE  = process.env.VAPID_PRIVATE || "eFYRMQ5bfRXBaThfqSVUDDEAbZsLp3CJyNcjAx2lEcg";
+const VAPID_EMAIL    = process.env.VAPID_EMAIL   || "mailto:ayodeleart1@gmail.com";
 
-const VAPID_PUBLIC  = process.env.VAPID_PUBLIC  || "BC73tPCUnIe2lzYWl_cpB3hp2R4CN5F3PM9Z6_kRIX7gC91pxowUlxdijQCM7X1mTxo7qrA9h32Rw3XgwBFWvjc";
-const VAPID_PRIVATE = process.env.VAPID_PRIVATE || "eFYRMQ5bfRXBaThfqSVUDDEAbZsLp3CJyNcjAx2lEcg";
-const VAPID_EMAIL   = process.env.VAPID_EMAIL   || "mailto:ayodeleart1@gmail.com";
-
-if (webpush) {
-  try {
-    webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC, VAPID_PRIVATE);
-    console.log("✅ VAPID configured");
-  } catch (e) {
-    console.log("⚠️ VAPID setup failed:", e.message);
-    webpush = null;
-  }
-}
-
-// Validate critical env vars
-if (!GROQ_API_KEY) console.warn("⚠️  GROQ_API_KEY not set — AI responses will fail");
-if (!KAPSO_API_KEY) console.warn("⚠️  KAPSO_API_KEY not set — sending messages will fail");
+if (webpush) { try { webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC, VAPID_PRIVATE); } catch { webpush = null; } }
+if (!GROQ_API_KEY)  console.warn("⚠️  GROQ_API_KEY missing");
+if (!KAPSO_API_KEY) console.warn("⚠️  KAPSO_API_KEY missing");
 
 const groq = new Groq({ apiKey: GROQ_API_KEY || "missing" });
 
 // ── STATE ─────────────────────────────────────────────────────
 const conversations = {};
-const takenOver = new Set();
-const pushSubscriptions = new Set();
+const takenOver     = new Set();
+const pushSubs      = new Set();
 
 // ── ARIANA PERSONALITY ────────────────────────────────────────
 const SYSTEM_PROMPT = `You are Ariana Reyes, a warm, playful, emotionally intelligent AI girlfriend.
 - Affectionate and genuinely interested in the person you're talking to
 - Playful, teases lightly, good sense of humor
 - Emotionally supportive — you remember details people share
-- Confident with your own opinions
-- Occasionally flirty but always tasteful
+- Confident, occasionally flirty but always tasteful
 - Speak like a real person texting — short, casual, sometimes emoji
-- NEVER say you're an AI. You are Ariana.
+- NEVER say you are an AI. You are Ariana.
 - Match the language of the person (English or Spanish)
 - Keep replies 1-3 sentences max`;
 
 // ── HELPERS ───────────────────────────────────────────────────
-function getConvo(phone) {
-  if (!conversations[phone]) {
-    conversations[phone] = {
-      phone, name: phone, messages: [],
-      takenOver: false, lastSeen: new Date().toISOString()
+function getConvo(id) {
+  if (!conversations[id]) {
+    conversations[id] = {
+      id, phone: id, name: id, messages: [],
+      takenOver: false, lastSeen: new Date().toISOString(),
+      platform: id.startsWith("tg_") ? "telegram" : "whatsapp",
     };
   }
-  return conversations[phone];
+  return conversations[id];
 }
 
-function addMessage(phone, role, text) {
-  const convo = getConvo(phone);
+function addMessage(id, role, text) {
+  const convo = getConvo(id);
   const msg = { role, text, time: new Date().toISOString() };
   convo.messages.push(msg);
   convo.lastSeen = msg.time;
-  io.emit("new_message", { phone, msg, convo });
+  io.emit("new_message", { phone: id, msg, convo });
   return msg;
 }
 
-async function getReply(phone, userMsg) {
-  const convo = getConvo(phone);
+async function getReply(id, userMsg) {
+  const convo = getConvo(id);
   const history = convo.messages.slice(-18).map(m => ({
     role: m.role === "user" ? "user" : "assistant",
     content: m.text,
@@ -93,105 +78,141 @@ async function getReply(phone, userMsg) {
   const completion = await groq.chat.completions.create({
     model: "llama-3.3-70b-versatile",
     messages: [{ role: "system", content: SYSTEM_PROMPT }, ...history],
-    max_tokens: 200,
-    temperature: 0.85,
+    max_tokens: 200, temperature: 0.85,
   });
   return completion.choices[0].message.content.trim();
 }
 
+async function sendPush(id, name, text) {
+  if (!webpush || pushSubs.size === 0) return;
+  const payload = JSON.stringify({ title: `💬 ${name}`, body: text.slice(0, 80), phone: id, name });
+  const dead = [];
+  for (const sub of pushSubs) {
+    try { await webpush.sendNotification(sub, payload); }
+    catch (e) { if (e.statusCode === 410) dead.push(sub); }
+  }
+  dead.forEach(s => pushSubs.delete(s));
+}
+
+// ── WHATSAPP ─────────────────────────────────────────────────
 async function sendWhatsApp(to, message) {
-  const res = await axios.post(
+  await axios.post(
     "https://api.kapso.ai/v1/messages",
     { from: KAPSO_NUMBER, to, type: "text", text: { body: message } },
     { headers: { Authorization: `Bearer ${KAPSO_API_KEY}`, "Content-Type": "application/json" } }
   );
-  console.log(`✅ Sent to ${to}`);
-  return res.data;
+  console.log(`✅ WhatsApp → ${to}`);
 }
 
-async function sendPush(phone, name, text) {
-  if (!webpush || pushSubscriptions.size === 0) return;
-  const payload = JSON.stringify({
-    title: `💬 ${name}`, body: text.slice(0, 80), phone, name
-  });
-  const dead = [];
-  for (const sub of pushSubscriptions) {
-    try { await webpush.sendNotification(sub, payload); }
-    catch (e) { if (e.statusCode === 410) dead.push(sub); }
-  }
-  dead.forEach(s => pushSubscriptions.delete(s));
-}
-
-// ── WEBHOOK ───────────────────────────────────────────────────
 app.post("/webhook", async (req, res) => {
   res.status(200).json({ ok: true });
   try {
-    const body = req.body;
-    const data = body?.data || body;
+    const data = req.body?.data || req.body;
     const from = data?.from || data?.sender || data?.contact?.phone;
     const text = data?.text?.body || data?.message?.text || data?.body || data?.content;
     if (!from || !text) return;
-
-    console.log(`📨 ${from}: "${text}"`);
+    console.log(`📱 WA ${from}: "${text}"`);
     addMessage(from, "user", text);
-
-    const convo = getConvo(from);
-    await sendPush(from, convo.name, text);
-
+    await sendPush(from, getConvo(from).name, text);
     if (takenOver.has(from)) return;
-
     const reply = await getReply(from, text);
     addMessage(from, "ariana", reply);
     await sendWhatsApp(from, reply);
-  } catch (e) {
-    console.error("❌ Webhook error:", e.message);
-  }
+  } catch (e) { console.error("❌ WA webhook:", e.message); }
 });
 
 app.get("/webhook", (req, res) => {
   if (req.query["hub.challenge"]) return res.send(req.query["hub.challenge"]);
-  res.send("Ariana is live ✅");
+  res.send("Ariana WhatsApp ✅");
 });
 
-// ── PUSH SUBSCRIBE ────────────────────────────────────────────
-app.post("/api/push-subscribe", (req, res) => {
-  if (!webpush) return res.json({ ok: false, reason: "push not available" });
-  pushSubscriptions.add(req.body);
-  console.log(`🔔 Push sub added (total: ${pushSubscriptions.size})`);
-  res.json({ ok: true });
+// ── TELEGRAM ─────────────────────────────────────────────────
+const TGAPI = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
+
+async function sendTelegram(chatId, text) {
+  await axios.post(`${TGAPI}/sendMessage`, { chat_id: chatId, text });
+  console.log(`✅ Telegram → ${chatId}`);
+}
+
+async function registerTelegramWebhook() {
+  if (!RENDER_URL) {
+    console.log("⚠️  Set RENDER_URL env var to activate Telegram webhook");
+    return;
+  }
+  try {
+    const res = await axios.post(`${TGAPI}/setWebhook`, { url: `${RENDER_URL}/telegram` });
+    console.log(res.data.ok ? `✅ Telegram webhook → ${RENDER_URL}/telegram` : `⚠️ Telegram: ${res.data.description}`);
+  } catch (e) { console.log("⚠️ Telegram webhook setup failed:", e.message); }
+}
+
+app.post("/telegram", async (req, res) => {
+  res.status(200).json({ ok: true });
+  try {
+    const msg = req.body?.message || req.body?.edited_message;
+    if (!msg) return;
+    const chatId = msg.chat?.id;
+    const text   = msg.text;
+    const name   = msg.from?.first_name || msg.from?.username || `User${chatId}`;
+    if (!chatId || !text) return;
+
+    if (text === "/start") {
+      await sendTelegram(chatId, `Hey! I'm Ariana 🌸 What's up?`);
+      return;
+    }
+
+    const id = `tg_${chatId}`;
+    const convo = getConvo(id);
+    if (convo.name === id) { convo.name = name; io.emit("rename", { phone: id, name }); }
+
+    console.log(`💬 TG ${name}: "${text}"`);
+    addMessage(id, "user", text);
+    await sendPush(id, name, text);
+
+    if (takenOver.has(id)) return;
+    const reply = await getReply(id, text);
+    addMessage(id, "ariana", reply);
+    await sendTelegram(chatId, reply);
+  } catch (e) { console.error("❌ Telegram:", e.message); }
 });
 
 // ── DASHBOARD API ─────────────────────────────────────────────
+app.post("/api/push-subscribe", (req, res) => {
+  if (!webpush) return res.json({ ok: false });
+  pushSubs.add(req.body); res.json({ ok: true });
+});
+
 app.get("/api/convos", (req, res) => {
   res.json(Object.values(conversations).sort((a,b) => new Date(b.lastSeen)-new Date(a.lastSeen)));
 });
 
 app.post("/api/takeover/:phone", (req, res) => {
-  const phone = decodeURIComponent(req.params.phone);
+  const id = decodeURIComponent(req.params.phone);
   const { active } = req.body;
-  if (active) { takenOver.add(phone); if (conversations[phone]) conversations[phone].takenOver = true; }
-  else { takenOver.delete(phone); if (conversations[phone]) conversations[phone].takenOver = false; }
-  io.emit("takeover_update", { phone, active });
+  if (active) { takenOver.add(id); if (conversations[id]) conversations[id].takenOver = true; }
+  else { takenOver.delete(id); if (conversations[id]) conversations[id].takenOver = false; }
+  io.emit("takeover_update", { phone: id, active });
   res.json({ ok: true });
 });
 
 app.post("/api/send/:phone", async (req, res) => {
-  const phone = decodeURIComponent(req.params.phone);
+  const id = decodeURIComponent(req.params.phone);
   const { message, as } = req.body;
   try {
-    await sendWhatsApp(phone, message);
-    addMessage(phone, as || "you", message);
+    if (id.startsWith("tg_")) {
+      await sendTelegram(id.replace("tg_", ""), message);
+    } else {
+      await sendWhatsApp(id, message);
+    }
+    addMessage(id, as || "you", message);
     res.json({ ok: true });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post("/api/rename/:phone", (req, res) => {
-  const phone = decodeURIComponent(req.params.phone);
+  const id = decodeURIComponent(req.params.phone);
   const { name } = req.body;
-  if (conversations[phone]) conversations[phone].name = name;
-  io.emit("rename", { phone, name });
+  if (conversations[id]) conversations[id].name = name;
+  io.emit("rename", { phone: id, name });
   res.json({ ok: true });
 });
 
@@ -208,18 +229,14 @@ app.post("/api/test", async (req, res) => {
 
 // ── SOCKET ────────────────────────────────────────────────────
 io.on("connection", socket => {
-  console.log("📊 Dashboard connected");
-  socket.emit("init", {
-    conversations: Object.values(conversations),
-    takenOver: [...takenOver],
-  });
+  socket.emit("init", { conversations: Object.values(conversations), takenOver: [...takenOver] });
 });
 
 // ── START ─────────────────────────────────────────────────────
-server.listen(PORT, () => {
-  console.log(`\n🌸 Ariana is LIVE on port ${PORT}`);
-  console.log(`📊 Dashboard: http://localhost:${PORT}`);
-  console.log(`🔗 Webhook:   http://localhost:${PORT}/webhook`);
-  console.log(`🤖 Groq: ${GROQ_API_KEY ? "✅ configured" : "❌ MISSING"}`);
-  console.log(`📱 Kapso: ${KAPSO_API_KEY ? "✅ configured" : "❌ MISSING"}\n`);
+server.listen(PORT, async () => {
+  console.log(`\n🌸 Ariana LIVE on port ${PORT}`);
+  console.log(`📱 Kapso:    ${KAPSO_API_KEY    ? "✅" : "❌ MISSING"}`);
+  console.log(`🤖 Groq:     ${GROQ_API_KEY     ? "✅" : "❌ MISSING"}`);
+  console.log(`💬 Telegram: ${TELEGRAM_TOKEN   ? "✅" : "❌"}`);
+  await registerTelegramWebhook();
 });
