@@ -20,7 +20,7 @@ const KAPSO_API_KEY  = process.env.KAPSO_API_KEY;
 const KAPSO_NUMBER   = process.env.KAPSO_NUMBER || "+12186496099";
 const GROQ_API_KEY   = process.env.GROQ_API_KEY;
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN || "8936370155:AAFVp8IJiua9zGtUYjeehVKcNvS1Ux6Fxl8";
-const RENDER_URL     = process.env.RENDER_URL || ""; // https://ariana-bot-xxxx.onrender.com
+const RENDER_URL     = (process.env.RENDER_URL || "").replace(/\/$/, ""); // strip trailing slash
 const PORT           = process.env.PORT || 3000;
 const VAPID_PUBLIC   = process.env.VAPID_PUBLIC  || "BC73tPCUnIe2lzYWl_cpB3hp2R4CN5F3PM9Z6_kRIX7gC91pxowUlxdijQCM7X1mTxo7qrA9h32Rw3XgwBFWvjc";
 const VAPID_PRIVATE  = process.env.VAPID_PRIVATE || "eFYRMQ5bfRXBaThfqSVUDDEAbZsLp3CJyNcjAx2lEcg";
@@ -96,33 +96,56 @@ async function sendPush(id, name, text) {
 
 // ── WHATSAPP ─────────────────────────────────────────────────
 async function sendWhatsApp(to, message) {
-  await axios.post(
-    "https://api.kapso.ai/v1/messages",
-    { from: KAPSO_NUMBER, to, type: "text", text: { body: message } },
-    { headers: { Authorization: `Bearer ${KAPSO_API_KEY}`, "Content-Type": "application/json" } }
+  // Kapso auth is X-API-Key, base URL is api.kapso.ai/meta/whatsapp
+  const res = await axios.post(
+    `https://api.kapso.ai/meta/whatsapp/v1/messages`,
+    { to, type: "text", text: { body: message } },
+    { headers: { "X-API-Key": KAPSO_API_KEY, "Content-Type": "application/json",
+                 "X-Phone-Number": KAPSO_NUMBER } }
   );
-  console.log(`✅ WhatsApp → ${to}`);
+  console.log(`✅ WhatsApp → ${to}`, res.status);
 }
 
 app.post("/webhook", async (req, res) => {
   res.status(200).json({ ok: true });
   try {
-    console.log("📦 WA raw payload:", JSON.stringify(req.body, null, 2));
-    const data = req.body?.data || req.body;
-    const from = data?.from || data?.sender || data?.contact?.phone;
-    const text = data?.text?.body || data?.message?.text || data?.body || data?.content;
+    // Debug: log every Kapso delivery so we can see exact field names
+    console.log("📦 WA raw:", JSON.stringify(req.body, null, 2));
+
+    const body = req.body || {};
+
+    // Kapso platform webhook shape: { event, message: { from, type, text: { body } } }
+    // Fallback to flat shape for legacy/other formats
+    const msg  = body.message || body.data || body;
+
+    const from = msg?.from
+               || msg?.sender
+               || msg?.contact?.phone
+               || msg?.waId
+               || null;
+
+    const text = msg?.text?.body
+               || msg?.body
+               || msg?.content
+               || null;
+
     if (!from || !text) {
-      console.warn("⚠️  WA webhook: missing from or text — check raw payload above");
+      console.warn("⚠️  WA: missing from/text — see raw payload above");
       return;
     }
+
     console.log(`📱 WA ${from}: "${text}"`);
     addMessage(from, "user", text);
     await sendPush(from, getConvo(from).name, text);
     if (takenOver.has(from)) return;
+
     const reply = await getReply(from, text);
     addMessage(from, "ariana", reply);
     await sendWhatsApp(from, reply);
-  } catch (e) { console.error("❌ WA webhook:", e.message); }
+  } catch (e) {
+    console.error("❌ WA webhook:", e.message);
+    if (e.response) console.error("❌ Kapso response:", JSON.stringify(e.response.data));
+  }
 });
 
 app.get("/webhook", (req, res) => {
@@ -237,17 +260,30 @@ io.on("connection", socket => {
 });
 
 // ── KEEP-ALIVE ────────────────────────────────────────────────
+app.get("/ping", (_req, res) => res.send("pong 🌸"));
+
 function startKeepAlive() {
   if (!RENDER_URL) return console.log("⚠️  RENDER_URL not set — keep-alive disabled");
   setInterval(() => {
     axios.get(`${RENDER_URL}/ping`)
-      .then(() => console.log(`🏓 keep-alive ping OK ${new Date().toISOString()}`))
+      .then(() => console.log(`🏓 keep-alive OK ${new Date().toISOString()}`))
       .catch(e  => console.warn("⚠️  keep-alive failed:", e.message));
-  }, 14 * 60 * 1000); // every 14 min
+  }, 14 * 60 * 1000);
   console.log("⏱️  Keep-alive started (14 min interval)");
 }
 
+// ── KEEP-ALIVE ────────────────────────────────────────────────
 app.get("/ping", (_req, res) => res.send("pong 🌸"));
+
+function startKeepAlive() {
+  if (!RENDER_URL) return console.log("⚠️  RENDER_URL not set — keep-alive disabled");
+  setInterval(() => {
+    axios.get(`${RENDER_URL}/ping`)
+      .then(() => console.log(`🏓 keep-alive OK ${new Date().toISOString()}`))
+      .catch(e  => console.warn("⚠️  keep-alive failed:", e.message));
+  }, 14 * 60 * 1000);
+  console.log("⏱️  Keep-alive started (14 min interval)");
+}
 
 // ── START ─────────────────────────────────────────────────────
 server.listen(PORT, async () => {
