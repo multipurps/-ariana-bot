@@ -201,6 +201,27 @@ async function startAriana() {
   sockGlobal = sock;
   sock.ev.on('creds.update', saveCreds);
 
+  // Auto-request pairing code on startup if not registered
+  if (!sock.authState.creds.registered) {
+    const phone = process.env.PHONE_NUMBER;
+    if (phone) {
+      try {
+        const code = await sock.requestPairingCode(phone);
+        console.log('');
+        console.log('==============================');
+        console.log('  PAIRING CODE: ' + code);
+        console.log('  WhatsApp > Linked Devices > Link a Device > Link with phone number');
+        console.log('  Enter code within 60 seconds');
+        console.log('==============================');
+        console.log('');
+      } catch (e) {
+        console.error('Auto-pairing failed:', e.message);
+      }
+    } else {
+      console.log('Set PHONE_NUMBER env var to auto-pair on startup');
+    }
+  }
+
   sock.ev.on('connection.update', (update) => {
     const { connection, lastDisconnect, qr } = update;
     if (qr) { currentQR = qr; isConnected = false; }
