@@ -95,13 +95,18 @@ async function sendPush(id, name, text) {
 }
 
 // ── WHATSAPP ─────────────────────────────────────────────────
-async function sendWhatsApp(to, message) {
-  // Kapso auth is X-API-Key, base URL is api.kapso.ai/meta/whatsapp
+async function sendWhatsApp(to, message, phoneNumberId) {
+  const id = phoneNumberId || process.env.KAPSO_PHONE_NUMBER_ID;
   const res = await axios.post(
-    `https://api.kapso.ai/meta/whatsapp/v1/messages`,
-    { to, type: "text", text: { body: message } },
-    { headers: { "X-API-Key": KAPSO_API_KEY, "Content-Type": "application/json",
-                 "X-Phone-Number": KAPSO_NUMBER } }
+    `https://api.kapso.ai/meta/whatsapp/v24.0/${id}/messages`,
+    {
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to,
+      type: "text",
+      text: { body: message }
+    },
+    { headers: { "X-API-Key": KAPSO_API_KEY, "Content-Type": "application/json" } }
   );
   console.log(`✅ WhatsApp → ${to}`, res.status);
 }
@@ -141,7 +146,7 @@ app.post("/webhook", async (req, res) => {
 
     const reply = await getReply(from, text);
     addMessage(from, "ariana", reply);
-    await sendWhatsApp(from, reply);
+    await sendWhatsApp(from, reply, body.phone_number_id);
   } catch (e) {
     console.error("❌ WA webhook:", e.message);
     if (e.response) console.error("❌ Kapso response:", JSON.stringify(e.response.data));
