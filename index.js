@@ -307,24 +307,48 @@ function startKeepAlive() {
   console.log("⏱️  Keep-alive started (14 min interval)");
 }
 
-// ── QR CODE PAGE ──────────────────────────────────────────────
-app.get("/qr", async (req, res) => {
+// ── QR CODE PAGE (auto-refresh, one-device friendly) ─────────
+app.get("/qr-data", async (req, res) => {
   try {
+    try {
+      await axios.post(`${EVO_URL}/instance/create`,
+        { instanceName: EVO_INSTANCE, qrcode: true, integration: "WHATSAPP-BAILEYS" },
+        { headers: { apikey: EVO_KEY, "Content-Type": "application/json" } }
+      );
+    } catch(e) { /* already exists */ }
+    await new Promise(r => setTimeout(r, 2000));
     const r = await axios.get(`${EVO_URL}/instance/connect/${EVO_INSTANCE}`, {
       headers: { apikey: EVO_KEY }
     });
     const b64 = r.data?.base64 || r.data?.qrcode?.base64;
-    if (b64) {
-      const src = b64.startsWith("data:") ? b64 : `data:image/png;base64,${b64}`;
-      res.send(`<html><body style="background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;font-family:sans-serif;color:white">
-        <p style="margin-bottom:20px;font-size:18px">Scan with WhatsApp 🌸</p>
-        <img src="${src}" style="width:280px;height:280px;border-radius:12px"/>
-        <p style="margin-top:16px;font-size:13px;opacity:0.5">Refresh page if expired</p>
-      </body></html>`);
-    } else {
-      res.send(`<pre style="color:white;background:#111;padding:20px">${JSON.stringify(r.data, null, 2)}</pre>`);
-    }
-  } catch(e) { res.send("Error: " + e.message); }
+    res.json({ qr: b64 || null });
+  } catch(e) { res.json({ error: e.message }); }
+});
+
+app.get("/qr", (req, res) => {
+  res.send(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ariana QR</title>
+  <style>body{background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;font-family:sans-serif;color:white}
+  img{width:280px;height:280px;border-radius:12px}#status{font-size:13px;opacity:.6;margin-top:12px}
+  #timer{font-size:28px;font-weight:bold;color:#4ade80;margin-top:8px}h2{margin-bottom:4px}p{font-size:13px;opacity:.5;margin:4px 0 16px;text-align:center;padding:0 20px}</style>
+  </head><body>
+  <h2>Scan with WhatsApp</h2>
+  <p>WhatsApp -> 3 dots -> Linked Devices -> Link a Device -> scan</p>
+  <img id="qrimg" src="" alt="Loading..."/>
+  <div id="timer">50</div>
+  <div id="status">Loading...</div>
+  <script>
+  let cd=50,tm;
+  async function load(){
+    document.getElementById('status').textContent='Fetching QR...';
+    try{const r=await fetch('/qr-data');const d=await r.json();
+    if(d.qr){const s=d.qr.startsWith('data:')?d.qr:'data:image/png;base64,'+d.qr;
+    document.getElementById('qrimg').src=s;document.getElementById('status').textContent='Ready - scan now!';cd=50;}
+    else{document.getElementById('status').textContent='Retrying...';}}
+    catch(e){document.getElementById('status').textContent='Error: '+e.message;}}
+  function tick(){clearInterval(tm);tm=setInterval(()=>{cd--;document.getElementById('timer').textContent=cd+'s';
+  if(cd<=0){document.getElementById('timer').textContent='refreshing...';load();}},1000);}
+  load();tick();
+  </script></body></html>`);
 });
 
 // ── START ─────────────────────────────────────────────────────
