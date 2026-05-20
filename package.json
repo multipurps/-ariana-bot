@@ -9,6 +9,7 @@
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.0",
     "@hapi/boom": "^10.0.1",
+    "@supabase/supabase-js": "^2.43.0",
     "axios": "^1.7.2",
     "express": "^4.19.2",
     "groq-sdk": "^0.5.0",

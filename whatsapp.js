@@ -1,10 +1,17 @@
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
 const { Boom } = require('@hapi/boom');
 const Groq = require('groq-sdk');
 const http = require('http');
 const qrcode = require('qrcode');
 const pino = require('pino');
+const { createClient } = require('@supabase/supabase-js');
+const { useSupabaseAuthState } = require('./supabase-auth');
 const { buildSystemPrompt, getReplyDelay } = require('./brain/engine');
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+);
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY || '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';
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || 'sk_d8cdecde8064554b78717f3b401bcb77ae558122308e6280';
@@ -173,7 +180,7 @@ function shouldSendVoice() {
 // WHATSAPP
 // ============================================
 async function startAriana() {
-  const { state, saveCreds } = await useMultiFileAuthState('auth_info');
+  const { state, saveCreds } = await useSupabaseAuthState(supabase);
   const { version } = await fetchLatestBaileysVersion();
 
   const sock = makeWASocket({
