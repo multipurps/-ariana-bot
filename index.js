@@ -307,6 +307,26 @@ function startKeepAlive() {
   console.log("⏱️  Keep-alive started (14 min interval)");
 }
 
+// ── QR CODE PAGE ──────────────────────────────────────────────
+app.get("/qr", async (req, res) => {
+  try {
+    const r = await axios.get(`${EVO_URL}/instance/connect/${EVO_INSTANCE}`, {
+      headers: { apikey: EVO_KEY }
+    });
+    const b64 = r.data?.base64 || r.data?.qrcode?.base64;
+    if (b64) {
+      const src = b64.startsWith("data:") ? b64 : `data:image/png;base64,${b64}`;
+      res.send(`<html><body style="background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;font-family:sans-serif;color:white">
+        <p style="margin-bottom:20px;font-size:18px">Scan with WhatsApp 🌸</p>
+        <img src="${src}" style="width:280px;height:280px;border-radius:12px"/>
+        <p style="margin-top:16px;font-size:13px;opacity:0.5">Refresh page if expired</p>
+      </body></html>`);
+    } else {
+      res.send(`<pre style="color:white;background:#111;padding:20px">${JSON.stringify(r.data, null, 2)}</pre>`);
+    }
+  } catch(e) { res.send("Error: " + e.message); }
+});
+
 // ── START ─────────────────────────────────────────────────────
 server.listen(PORT, async () => {
   console.log(`\n🌸 Ariana LIVE on port ${PORT}`);
