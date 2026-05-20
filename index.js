@@ -316,14 +316,22 @@ app.get("/qr-data", async (req, res) => {
         { headers: { apikey: EVO_KEY, "Content-Type": "application/json" } }
       );
     } catch(e) { /* already exists */ }
-    await new Promise(r => setTimeout(r, 2000));
-    const r = await axios.get(`${EVO_URL}/instance/connect/${EVO_INSTANCE}`, {
-      headers: { apikey: EVO_KEY }
-    });
-    const b64 = r.data?.base64 || r.data?.qrcode?.base64;
-    res.json({ qr: b64 || null });
+
+    // Retry up to 5 times waiting for QR
+    for (let i = 0; i < 5; i++) {
+      await new Promise(r => setTimeout(r, 3000));
+      try {
+        const r = await axios.get(`${EVO_URL}/instance/connect/${EVO_INSTANCE}`, {
+          headers: { apikey: EVO_KEY }
+        });
+        const b64 = r.data?.base64 || r.data?.qrcode?.base64;
+        if (b64) return res.json({ qr: b64 });
+      } catch(e) { /* retry */ }
+    }
+    res.json({ error: "QR not ready yet, page will retry automatically" });
   } catch(e) { res.json({ error: e.message }); }
 });
+
 
 app.get("/qr", (req, res) => {
   res.send(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ariana QR</title>
