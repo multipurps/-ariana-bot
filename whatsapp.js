@@ -5,8 +5,11 @@ const http = require('http');
 const qrcode = require('qrcode');
 const pino = require('pino');
 const { createClient } = require('@supabase/supabase-js');
+const { HttpsProxyAgent } = require('https-proxy-agent');
 const { useSupabaseAuthState } = require('./supabase-auth');
 const { buildSystemPrompt, getReplyDelay } = require('./brain/engine');
+
+const proxyAgent = new HttpsProxyAgent('http://kwolujui:jco3lxjq9tqo@23.95.150.145:6114');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -196,6 +199,8 @@ async function startAriana() {
     printQRInTerminal: false,
     logger: pino({ level: 'silent' }),
     browser: ['Chrome (Linux)', '', ''],
+    agent: proxyAgent,
+    fetchAgent: proxyAgent,
   });
 
   sockGlobal = sock;
