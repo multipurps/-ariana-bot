@@ -359,6 +359,45 @@ app.get("/qr", (req, res) => {
   </script></body></html>`);
 });
 
+
+// ── PAIRING CODE (no QR needed) ───────────────────────────────
+async function requestPairingCode() {
+  const phone = process.env.PHONE_NUMBER;
+  if (!phone) return console.log("⚠️  Set PHONE_NUMBER env var to use pairing code");
+
+  try {
+    // Create instance if not exists
+    try {
+      await axios.post(`${EVO_URL}/instance/create`,
+        { instanceName: EVO_INSTANCE, qrcode: false, integration: "WHATSAPP-BAILEYS" },
+        { headers: { apikey: EVO_KEY, "Content-Type": "application/json" } }
+      );
+      console.log("✅ Instance created");
+    } catch(e) { console.log("Instance already exists, continuing..."); }
+
+    // Wait for Baileys WebSocket to come alive
+    await new Promise(r => setTimeout(r, 5000));
+
+    // Request pairing code
+    const r = await axios.post(
+      `${EVO_URL}/instance/pairingCode/${EVO_INSTANCE}`,
+      { phoneNumber: phone.replace(/[^0-9]/g, "") },
+      { headers: { apikey: EVO_KEY, "Content-Type": "application/json" } }
+    );
+
+    const code = r.data?.pairingCode || r.data?.code || JSON.stringify(r.data);
+    console.log("\n==============================");
+    console.log(`  PAIRING CODE: ${code}`);
+    console.log("==============================");
+    console.log("→ Open WhatsApp → 3 dots → Linked Devices → Link with phone number → enter code above\n");
+
+  } catch(e) {
+    console.error("❌ Pairing code error:", e.response?.data || e.message);
+    // Retry once after 5 more seconds
+    setTimeout(requestPairingCode, 5000);
+  }
+}
+
 // ── START ─────────────────────────────────────────────────────
 server.listen(PORT, async () => {
   console.log(`\n🌸 Ariana LIVE on port ${PORT}`);
@@ -366,6 +405,7 @@ server.listen(PORT, async () => {
   console.log(`🤖 Groq:     ${GROQ_API_KEY ? "✅" : "❌ MISSING"}`);
   console.log(`💬 Telegram: ${TELEGRAM_TOKEN ? "✅" : "❌"}`);
   await registerEvoWebhook();
+  await requestPairingCode();
   await registerTelegramWebhook();
   startKeepAlive();
 });
