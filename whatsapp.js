@@ -195,8 +195,7 @@ async function startAriana() {
     auth: state,
     printQRInTerminal: false,
     logger: pino({ level: 'silent' }),
-    browser: ['Ariana Reyes', 'Chrome', '1.0.0'],
-    usePairingCode: true
+    browser: ['Chrome (Linux)', '', ''],
   });
 
   sockGlobal = sock;
