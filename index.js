@@ -16,19 +16,19 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
 // ── CONFIG ────────────────────────────────────────────────────
-const KAPSO_API_KEY  = process.env.KAPSO_API_KEY;
-const KAPSO_NUMBER   = process.env.KAPSO_NUMBER || "+12186496099";
+const EVO_URL        = (process.env.EVO_URL || "https://evolution-api-latest-mzbk.onrender.com").replace(/\/$/, "");
+const EVO_KEY        = process.env.EVO_KEY  || "ariana123secretkey";
+const EVO_INSTANCE   = process.env.EVO_INSTANCE || "ariana";
 const GROQ_API_KEY   = process.env.GROQ_API_KEY;
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN || "8936370155:AAFVp8IJiua9zGtUYjeehVKcNvS1Ux6Fxl8";
-const RENDER_URL     = (process.env.RENDER_URL || "").replace(/\/$/, ""); // strip trailing slash
+const RENDER_URL     = (process.env.RENDER_URL || "").replace(/\/$/, "");
 const PORT           = process.env.PORT || 3000;
 const VAPID_PUBLIC   = process.env.VAPID_PUBLIC  || "BC73tPCUnIe2lzYWl_cpB3hp2R4CN5F3PM9Z6_kRIX7gC91pxowUlxdijQCM7X1mTxo7qrA9h32Rw3XgwBFWvjc";
 const VAPID_PRIVATE  = process.env.VAPID_PRIVATE || "eFYRMQ5bfRXBaThfqSVUDDEAbZsLp3CJyNcjAx2lEcg";
 const VAPID_EMAIL    = process.env.VAPID_EMAIL   || "mailto:ayodeleart1@gmail.com";
 
 if (webpush) { try { webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC, VAPID_PRIVATE); } catch { webpush = null; } }
-if (!GROQ_API_KEY)  console.warn("⚠️  GROQ_API_KEY missing");
-if (!KAPSO_API_KEY) console.warn("⚠️  KAPSO_API_KEY missing");
+if (!GROQ_API_KEY) console.warn("⚠️  GROQ_API_KEY missing");
 
 const groq = new Groq({ apiKey: GROQ_API_KEY || "missing" });
 
@@ -94,64 +94,102 @@ async function sendPush(id, name, text) {
   dead.forEach(s => pushSubs.delete(s));
 }
 
-// ── WHATSAPP ─────────────────────────────────────────────────
+// ── WHATSAPP via Evolution API ────────────────────────────────
 async function sendWhatsApp(to, message) {
-  // Kapso auth is X-API-Key, base URL is api.kapso.ai/meta/whatsapp
+  // to = plain number e.g. "12494874637" (no + or @s.whatsapp.net)
+  const number = to.replace(/[^0-9]/g, ""); // strip any non-digits
   const res = await axios.post(
-    `https://api.kapso.ai/meta/whatsapp/v1/messages`,
-    { to, type: "text", text: { body: message } },
-    { headers: { "X-API-Key": KAPSO_API_KEY, "Content-Type": "application/json",
-                 "X-Phone-Number": KAPSO_NUMBER } }
+    `${EVO_URL}/message/sendText/${EVO_INSTANCE}`,
+    { number, text: message },
+    { headers: { apikey: EVO_KEY, "Content-Type": "application/json" } }
   );
-  console.log(`✅ WhatsApp → ${to}`, res.status);
+  console.log(`✅ WhatsApp (Evo) → ${number}`, res.status);
 }
 
+// ── EVOLUTION API WEBHOOK ─────────────────────────────────────
 app.post("/webhook", async (req, res) => {
-  res.status(200).json({ ok: true });
+  res.status(200).json({ ok: true }); // always ack fast
+
   try {
-    // Debug: log every Kapso delivery so we can see exact field names
-    console.log("📦 WA raw:", JSON.stringify(req.body, null, 2));
-
     const body = req.body || {};
+    console.log("📦 Evo raw:", JSON.stringify(body).slice(0, 300));
 
-    // Kapso platform webhook shape: { event, message: { from, type, text: { body } } }
-    // Fallback to flat shape for legacy/other formats
-    const msg  = body.message || body.data || body;
+    // Evolution API v2 webhook shape
+    const event = body.event || body.type || "";
+    if (!event.toLowerCase().includes("messages")) return;
 
-    const from = msg?.from
-               || msg?.sender
-               || msg?.contact?.phone
-               || msg?.waId
-               || null;
+    const data = body.data || {};
+    const key  = data.key || {};
 
-    const text = msg?.text?.body
-               || msg?.body
-               || msg?.content
-               || null;
+    // Skip messages sent by the bot itself
+    if (key.fromMe) return;
 
-    if (!from || !text) {
-      console.warn("⚠️  WA: missing from/text — see raw payload above");
-      return;
+    // Skip group messages
+    const remoteJid = key.remoteJid || "";
+    if (remoteJid.includes("@g.us")) return;
+
+    // Extract sender number (strip @s.whatsapp.net)
+    const from = remoteJid.replace("@s.whatsapp.net", "").replace(/[^0-9]/g, "");
+    if (!from) return;
+
+    // Extract text
+    const text =
+      data.message?.conversation ||
+      data.message?.extendedTextMessage?.text ||
+      data.message?.ephemeralMessage?.message?.conversation ||
+      null;
+
+    if (!text) return; // skip non-text (voice, images, etc.)
+
+    const name = data.pushName || from;
+    const convo = getConvo(from);
+    if (convo.name === from && name !== from) {
+      convo.name = name;
+      io.emit("rename", { phone: from, name });
     }
 
-    console.log(`📱 WA ${from}: "${text}"`);
+    console.log(`📱 WA ${name} (${from}): "${text}"`);
     addMessage(from, "user", text);
-    await sendPush(from, getConvo(from).name, text);
+    await sendPush(from, convo.name, text);
+
     if (takenOver.has(from)) return;
 
     const reply = await getReply(from, text);
     addMessage(from, "ariana", reply);
     await sendWhatsApp(from, reply);
   } catch (e) {
-    console.error("❌ WA webhook:", e.message);
-    if (e.response) console.error("❌ Kapso response:", JSON.stringify(e.response.data));
+    console.error("❌ Webhook error:", e.message);
+    if (e.response) console.error("❌ Evo response:", JSON.stringify(e.response.data));
   }
 });
 
 app.get("/webhook", (req, res) => {
   if (req.query["hub.challenge"]) return res.send(req.query["hub.challenge"]);
-  res.send("Ariana WhatsApp ✅");
+  res.send("Ariana Evolution API ✅");
 });
+
+// ── REGISTER EVOLUTION WEBHOOK ────────────────────────────────
+async function registerEvoWebhook() {
+  if (!RENDER_URL) return console.log("⚠️  Set RENDER_URL to register Evolution webhook");
+  try {
+    await axios.post(
+      `${EVO_URL}/webhook/set/${EVO_INSTANCE}`,
+      {
+        webhook: {
+          enabled: true,
+          url: `${RENDER_URL}/webhook`,
+          webhookByEvents: false,
+          webhookBase64: false,
+          events: ["MESSAGES_UPSERT"],
+        },
+      },
+      { headers: { apikey: EVO_KEY, "Content-Type": "application/json" } }
+    );
+    console.log(`✅ Evolution webhook registered → ${RENDER_URL}/webhook`);
+  } catch (e) {
+    console.error("⚠️  Evolution webhook setup failed:", e.message);
+  }
+}
 
 // ── TELEGRAM ─────────────────────────────────────────────────
 const TGAPI = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
@@ -162,10 +200,7 @@ async function sendTelegram(chatId, text) {
 }
 
 async function registerTelegramWebhook() {
-  if (!RENDER_URL) {
-    console.log("⚠️  Set RENDER_URL env var to activate Telegram webhook");
-    return;
-  }
+  if (!RENDER_URL) return console.log("⚠️  Set RENDER_URL to activate Telegram webhook");
   try {
     const res = await axios.post(`${TGAPI}/setWebhook`, { url: `${RENDER_URL}/telegram` });
     console.log(res.data.ok ? `✅ Telegram webhook → ${RENDER_URL}/telegram` : `⚠️ Telegram: ${res.data.description}`);
@@ -272,25 +307,13 @@ function startKeepAlive() {
   console.log("⏱️  Keep-alive started (14 min interval)");
 }
 
-// ── KEEP-ALIVE ────────────────────────────────────────────────
-app.get("/ping", (_req, res) => res.send("pong 🌸"));
-
-function startKeepAlive() {
-  if (!RENDER_URL) return console.log("⚠️  RENDER_URL not set — keep-alive disabled");
-  setInterval(() => {
-    axios.get(`${RENDER_URL}/ping`)
-      .then(() => console.log(`🏓 keep-alive OK ${new Date().toISOString()}`))
-      .catch(e  => console.warn("⚠️  keep-alive failed:", e.message));
-  }, 14 * 60 * 1000);
-  console.log("⏱️  Keep-alive started (14 min interval)");
-}
-
 // ── START ─────────────────────────────────────────────────────
 server.listen(PORT, async () => {
   console.log(`\n🌸 Ariana LIVE on port ${PORT}`);
-  console.log(`📱 Kapso:    ${KAPSO_API_KEY    ? "✅" : "❌ MISSING"}`);
-  console.log(`🤖 Groq:     ${GROQ_API_KEY     ? "✅" : "❌ MISSING"}`);
-  console.log(`💬 Telegram: ${TELEGRAM_TOKEN   ? "✅" : "❌"}`);
+  console.log(`📡 Evolution API: ${EVO_URL}`);
+  console.log(`🤖 Groq:     ${GROQ_API_KEY ? "✅" : "❌ MISSING"}`);
+  console.log(`💬 Telegram: ${TELEGRAM_TOKEN ? "✅" : "❌"}`);
+  await registerEvoWebhook();
   await registerTelegramWebhook();
   startKeepAlive();
 });
