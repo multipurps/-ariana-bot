@@ -91,6 +91,13 @@ http.createServer(async (req, res) => {
     return;
   }
 
+  // Ping endpoint — keep-alive
+  if (req.url === '/ping') {
+    res.writeHead(200);
+    res.end('ok');
+    return;
+  }
+
   // Home page
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(`
@@ -241,4 +248,27 @@ async function startAriana() {
   });
 }
 
-startAriana();
+startAriana().catch(err => {
+  console.error('startAriana failed:', err);
+  setTimeout(startAriana, 5000);
+});
+
+// ============================================
+// KEEP ALIVE — prevents Render free tier sleep
+// ============================================
+const RENDER_URL = process.env.RENDER_EXTERNAL_URL || '';
+if (RENDER_URL) {
+  setInterval(() => {
+    http.get(RENDER_URL + '/ping').on('error', () => {});
+  }, 14 * 60 * 1000);
+}
+
+// ============================================
+// GLOBAL ERROR HANDLERS — prevents crashes
+// ============================================
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err);
+});
