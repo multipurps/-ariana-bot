@@ -2,20 +2,16 @@
   "name": "ariana-bot",
   "version": "3.0.0",
   "description": "Ariana Reyes — WhatsApp AI Girlfriend",
-  "main": "whatsapp.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node whatsapp.js"
+    "start": "node index.js"
   },
   "dependencies": {
-    "@whiskeysockets/baileys": "^6.7.0",
-    "@hapi/boom": "^10.0.1",
-    "@supabase/supabase-js": "^2.43.0",
     "axios": "^1.7.2",
     "express": "^4.19.2",
     "groq-sdk": "^0.5.0",
-    "https-proxy-agent": "^7.0.0",
-    "pino": "^8.21.0",
-    "qrcode": "^1.5.3"
+    "socket.io": "^4.7.5",
+    "web-push": "^3.6.7"
   },
   "engines": {
     "node": ">=18.0.0"
