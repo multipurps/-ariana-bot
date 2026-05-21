@@ -20,11 +20,15 @@ const KAPSO_API_KEY  = process.env.KAPSO_API_KEY;
 const KAPSO_NUMBER   = process.env.KAPSO_NUMBER || "+12186496099";
 const GROQ_API_KEY   = process.env.GROQ_API_KEY;
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN || "8936370155:AAFVp8IJiua9zGtUYjeehVKcNvS1Ux6Fxl8";
-const RENDER_URL     = (process.env.RENDER_URL || "").replace(/\/$/, ""); // strip trailing slash
+const RENDER_URL     = (process.env.RENDER_URL || "").replace(/\/$/, "");
 const PORT           = process.env.PORT || 3000;
 const VAPID_PUBLIC   = process.env.VAPID_PUBLIC  || "BC73tPCUnIe2lzYWl_cpB3hp2R4CN5F3PM9Z6_kRIX7gC91pxowUlxdijQCM7X1mTxo7qrA9h32Rw3XgwBFWvjc";
 const VAPID_PRIVATE  = process.env.VAPID_PRIVATE || "eFYRMQ5bfRXBaThfqSVUDDEAbZsLp3CJyNcjAx2lEcg";
 const VAPID_EMAIL    = process.env.VAPID_EMAIL   || "mailto:ayodeleart1@gmail.com";
+
+// ── SIGNAL CONFIG ─────────────────────────────────────────────
+const SIGNAL_CLI_URL  = process.env.SIGNAL_CLI_URL || "https://signal-cli-rest-api-51ji.onrender.com";
+const SIGNAL_NUMBER   = process.env.SIGNAL_NUMBER  || "+19832058251";
 
 if (webpush) { try { webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC, VAPID_PRIVATE); } catch { webpush = null; } }
 if (!GROQ_API_KEY)  console.warn("⚠️  GROQ_API_KEY missing");
@@ -54,7 +58,7 @@ function getConvo(id) {
     conversations[id] = {
       id, phone: id, name: id, messages: [],
       takenOver: false, lastSeen: new Date().toISOString(),
-      platform: id.startsWith("tg_") ? "telegram" : "whatsapp",
+      platform: id.startsWith("tg_") ? "telegram" : id.startsWith("sg_") ? "signal" : "whatsapp",
     };
   }
   return conversations[id];
@@ -114,36 +118,16 @@ async function sendWhatsApp(to, message, phoneNumberId) {
 app.post("/webhook", async (req, res) => {
   res.status(200).json({ ok: true });
   try {
-    // Debug: log every Kapso delivery so we can see exact field names
     console.log("📦 WA raw:", JSON.stringify(req.body, null, 2));
-
     const body = req.body || {};
-
-    // Kapso platform webhook shape: { event, message: { from, type, text: { body } } }
-    // Fallback to flat shape for legacy/other formats
     const msg  = body.message || body.data || body;
-
-    const from = msg?.from
-               || msg?.sender
-               || msg?.contact?.phone
-               || msg?.waId
-               || null;
-
-    const text = msg?.text?.body
-               || msg?.body
-               || msg?.content
-               || null;
-
-    if (!from || !text) {
-      console.warn("⚠️  WA: missing from/text — see raw payload above");
-      return;
-    }
-
+    const from = msg?.from || msg?.sender || msg?.contact?.phone || msg?.waId || null;
+    const text = msg?.text?.body || msg?.body || msg?.content || null;
+    if (!from || !text) { console.warn("⚠️  WA: missing from/text"); return; }
     console.log(`📱 WA ${from}: "${text}"`);
     addMessage(from, "user", text);
     await sendPush(from, getConvo(from).name, text);
     if (takenOver.has(from)) return;
-
     const reply = await getReply(from, text);
     addMessage(from, "ariana", reply);
     await sendWhatsApp(from, reply, body.phone_number_id);
@@ -167,10 +151,7 @@ async function sendTelegram(chatId, text) {
 }
 
 async function registerTelegramWebhook() {
-  if (!RENDER_URL) {
-    console.log("⚠️  Set RENDER_URL env var to activate Telegram webhook");
-    return;
-  }
+  if (!RENDER_URL) { console.log("⚠️  Set RENDER_URL env var to activate Telegram webhook"); return; }
   try {
     const res = await axios.post(`${TGAPI}/setWebhook`, { url: `${RENDER_URL}/telegram` });
     console.log(res.data.ok ? `✅ Telegram webhook → ${RENDER_URL}/telegram` : `⚠️ Telegram: ${res.data.description}`);
@@ -186,25 +167,122 @@ app.post("/telegram", async (req, res) => {
     const text   = msg.text;
     const name   = msg.from?.first_name || msg.from?.username || `User${chatId}`;
     if (!chatId || !text) return;
-
-    if (text === "/start") {
-      await sendTelegram(chatId, `Hey! I'm Ariana 🌸 What's up?`);
-      return;
-    }
-
+    if (text === "/start") { await sendTelegram(chatId, `Hey! I'm Ariana 🌸 What's up?`); return; }
     const id = `tg_${chatId}`;
     const convo = getConvo(id);
     if (convo.name === id) { convo.name = name; io.emit("rename", { phone: id, name }); }
-
     console.log(`💬 TG ${name}: "${text}"`);
     addMessage(id, "user", text);
     await sendPush(id, name, text);
-
     if (takenOver.has(id)) return;
     const reply = await getReply(id, text);
     addMessage(id, "ariana", reply);
     await sendTelegram(chatId, reply);
   } catch (e) { console.error("❌ Telegram:", e.message); }
+});
+
+// ── SIGNAL ────────────────────────────────────────────────────
+async function sendSignal(to, message) {
+  await axios.post(`${SIGNAL_CLI_URL}/v2/send`, {
+    message,
+    number: SIGNAL_NUMBER,
+    recipients: [to]
+  });
+  console.log(`✅ Signal → ${to}`);
+}
+
+// Signal webhook — signal-cli-rest-api POSTs received messages here
+app.post("/signal", async (req, res) => {
+  res.status(200).json({ ok: true });
+  try {
+    console.log("📦 Signal raw:", JSON.stringify(req.body, null, 2));
+    const envelope = req.body?.envelope;
+    if (!envelope) return;
+
+    const from    = envelope.source || envelope.sourceNumber;
+    const dataMsg = envelope.dataMessage;
+    const text    = dataMsg?.message;
+
+    if (!from || !text) return;
+
+    const id   = `sg_${from}`;
+    const name = envelope.sourceName || from;
+    const convo = getConvo(id);
+    if (convo.name === id) { convo.name = name; io.emit("rename", { phone: id, name }); }
+
+    console.log(`📶 Signal ${name}: "${text}"`);
+    addMessage(id, "user", text);
+    await sendPush(id, name, text);
+
+    if (takenOver.has(id)) return;
+
+    const reply = await getReply(id, text);
+    addMessage(id, "ariana", reply);
+    await sendSignal(from, reply);
+  } catch (e) { console.error("❌ Signal webhook:", e.message); }
+});
+
+// Signal registration helper — open in browser to register number
+app.get("/signal-register", async (req, res) => {
+  const number = req.query.number || SIGNAL_NUMBER;
+  try {
+    const r = await axios.post(`${SIGNAL_CLI_URL}/v1/register/${number}`);
+    res.send(`
+      <html><body style="background:#111;color:white;font-family:sans-serif;padding:30px;text-align:center">
+      <h2 style="color:#3a86ff">✅ SMS sent to ${number}</h2>
+      <p>Check your VoIP number for the verification code</p>
+      <p>Then open:<br><code style="color:#06d6a0">https://ariana-bot-npz5.onrender.com/signal-verify?code=XXXXXX</code></p>
+      <pre>${JSON.stringify(r.data, null, 2)}</pre>
+      </body></html>
+    `);
+  } catch (e) {
+    res.send(`
+      <html><body style="background:#111;color:white;font-family:sans-serif;padding:30px;text-align:center">
+      <h2 style="color:#ff6b6b">❌ Error</h2>
+      <pre>${e.message}</pre>
+      <pre>${JSON.stringify(e.response?.data, null, 2)}</pre>
+      </body></html>
+    `);
+  }
+});
+
+// Signal verification — open in browser after receiving SMS code
+app.get("/signal-verify", async (req, res) => {
+  const number = req.query.number || SIGNAL_NUMBER;
+  const code   = req.query.code;
+  if (!code) return res.send(`<html><body style="background:#111;color:white;padding:30px"><p>Add ?code=XXXXXX to the URL</p></body></html>`);
+  try {
+    const r = await axios.post(`${SIGNAL_CLI_URL}/v1/register/${number}/code/${code}`);
+    res.send(`
+      <html><body style="background:#111;color:white;font-family:sans-serif;padding:30px;text-align:center">
+      <h2 style="color:#06d6a0">🎉 Signal Registered!</h2>
+      <p>Ariana's Signal number is now active</p>
+      <p>Now set up the webhook in signal-cli to point to:<br>
+      <code style="color:#3a86ff">${RENDER_URL}/signal</code></p>
+      <pre>${JSON.stringify(r.data, null, 2)}</pre>
+      </body></html>
+    `);
+  } catch (e) {
+    res.send(`
+      <html><body style="background:#111;color:white;font-family:sans-serif;padding:30px;text-align:center">
+      <h2 style="color:#ff6b6b">❌ Error</h2>
+      <pre>${e.message}</pre>
+      <pre>${JSON.stringify(e.response?.data, null, 2)}</pre>
+      </body></html>
+    `);
+  }
+});
+
+// Signal webhook setup — call this after registration to wire up incoming messages
+app.get("/signal-setup-webhook", async (req, res) => {
+  try {
+    const r = await axios.post(`${SIGNAL_CLI_URL}/v1/configuration/${SIGNAL_NUMBER}/webhook`, {
+      url: `${RENDER_URL}/signal`
+    });
+    res.send(`<html><body style="background:#111;color:white;padding:30px;font-family:sans-serif"><h2 style="color:#06d6a0">✅ Signal webhook set!</h2><pre>${JSON.stringify(r.data,null,2)}</pre></body></html>`);
+  } catch (e) {
+    res.send(`<html><body style="background:#111;color:white;padding:30px;font-family:sans-serif"><h2 style="color:#ff6b6b">❌ ${e.message}</h2><pre>${JSON.stringify(e.response?.data,null,2)}</pre></body></html>`);
+  }
 });
 
 // ── DASHBOARD API ─────────────────────────────────────────────
@@ -232,6 +310,8 @@ app.post("/api/send/:phone", async (req, res) => {
   try {
     if (id.startsWith("tg_")) {
       await sendTelegram(id.replace("tg_", ""), message);
+    } else if (id.startsWith("sg_")) {
+      await sendSignal(id.replace("sg_", ""), message);
     } else {
       await sendWhatsApp(id, message);
     }
@@ -273,19 +353,8 @@ function startKeepAlive() {
     axios.get(`${RENDER_URL}/ping`)
       .then(() => console.log(`🏓 keep-alive OK ${new Date().toISOString()}`))
       .catch(e  => console.warn("⚠️  keep-alive failed:", e.message));
-  }, 14 * 60 * 1000);
-  console.log("⏱️  Keep-alive started (14 min interval)");
-}
-
-// ── KEEP-ALIVE ────────────────────────────────────────────────
-app.get("/ping", (_req, res) => res.send("pong 🌸"));
-
-function startKeepAlive() {
-  if (!RENDER_URL) return console.log("⚠️  RENDER_URL not set — keep-alive disabled");
-  setInterval(() => {
-    axios.get(`${RENDER_URL}/ping`)
-      .then(() => console.log(`🏓 keep-alive OK ${new Date().toISOString()}`))
-      .catch(e  => console.warn("⚠️  keep-alive failed:", e.message));
+    // Also keep signal-cli alive
+    axios.get(`${SIGNAL_CLI_URL}/v1/health`).catch(() => {});
   }, 14 * 60 * 1000);
   console.log("⏱️  Keep-alive started (14 min interval)");
 }
@@ -296,6 +365,7 @@ server.listen(PORT, async () => {
   console.log(`📱 Kapso:    ${KAPSO_API_KEY    ? "✅" : "❌ MISSING"}`);
   console.log(`🤖 Groq:     ${GROQ_API_KEY     ? "✅" : "❌ MISSING"}`);
   console.log(`💬 Telegram: ${TELEGRAM_TOKEN   ? "✅" : "❌"}`);
+  console.log(`📶 Signal:   ${SIGNAL_NUMBER    ? "✅ " + SIGNAL_NUMBER : "❌ MISSING"}`);
   await registerTelegramWebhook();
   startKeepAlive();
 });
