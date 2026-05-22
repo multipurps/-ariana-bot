@@ -41,6 +41,41 @@ if (webpush && VAPID_PUBLIC && VAPID_PRIVATE) {
 const groq  = new Groq({ apiKey: GROQ_API_KEY  || "missing" });
 const groq2 = GROQ_API_KEY_2 ? new Groq({ apiKey: GROQ_API_KEY_2 }) : null;
 
+// ── SUPABASE PERSISTENCE ──────────────────────────────────────
+let supabase = null;
+try {
+  const { createClient } = require("@supabase/supabase-js");
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
+    supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+    console.log("✅ Supabase persistence ready");
+  }
+} catch { console.log("⚠️  @supabase/supabase-js not installed — chats won't persist"); }
+
+// Debounced save — batches rapid messages into one write per convo
+const _saveTimers = {};
+async function saveConvo(id) {
+  clearTimeout(_saveTimers[id]);
+  _saveTimers[id] = setTimeout(async () => {
+    if (!supabase || !conversations[id]) return;
+    try {
+      await supabase.from("ariana_conversations").upsert(
+        { phone: id, data: conversations[id], updated_at: new Date().toISOString() },
+        { onConflict: "phone" }
+      );
+    } catch (e) { console.error("Supabase save error:", e.message); }
+  }, 800);
+}
+
+async function loadConversations() {
+  if (!supabase) return;
+  try {
+    const { data, error } = await supabase.from("ariana_conversations").select("phone, data");
+    if (error) throw error;
+    (data || []).forEach(row => { conversations[row.phone] = row.data; });
+    console.log(`✅ Loaded ${(data||[]).length} conversations from Supabase`);
+  } catch (e) { console.error("Supabase load error:", e.message); }
+}
+
 // ── STATE ─────────────────────────────────────────────────────
 const conversations = {};
 const takenOver     = new Set();
@@ -135,6 +170,7 @@ function addMessage(id, role, text) {
   convo.messages.push(msg);
   convo.lastSeen = msg.time;
   io.emit("new_message", { phone: id, msg, convo });
+  saveConvo(id);
   return msg;
 }
 
@@ -674,6 +710,7 @@ app.post("/api/takeover/:phone", (req, res) => {
   if (active) { takenOver.add(id); if (conversations[id]) conversations[id].takenOver = true; }
   else { takenOver.delete(id); if (conversations[id]) conversations[id].takenOver = false; }
   io.emit("takeover_update", { phone: id, active });
+  saveConvo(id);
   res.json({ ok: true });
 });
 
@@ -724,6 +761,7 @@ app.post("/api/rename/:phone", (req, res) => {
   const { name } = req.body;
   if (conversations[id]) conversations[id].name = name;
   io.emit("rename", { phone: id, name });
+  saveConvo(id);
   res.json({ ok: true });
 });
 
@@ -753,6 +791,7 @@ function startKeepAlive() {
 
 // ── START ─────────────────────────────────────────────────────
 server.listen(PORT, async () => {
+  await loadConversations();
   console.log(`\n🌸 Ariana LIVE on port ${PORT}`);
   console.log(`📱 WhatsApp: ${KAPSO_API_KEY          ? "✅" : "❌"}`);
   console.log(`🤖 Groq:     ${GROQ_API_KEY           ? "✅" : "❌"}`);
