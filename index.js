@@ -14,7 +14,7 @@ const app    = express();
 const server = http.createServer(app);
 const io     = new Server(server);
 app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true })); // needed for Twilio SMS
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
 
 // ── CONFIG ────────────────────────────────────────────────────
@@ -22,7 +22,6 @@ const KAPSO_API_KEY   = process.env.KAPSO_API_KEY;
 const KAPSO_PHONE_ID  = process.env.KAPSO_PHONE_NUMBER_ID;
 const GROQ_API_KEY    = process.env.GROQ_API_KEY;
 const GROQ_API_KEY_2  = process.env.GROQ_API_KEY_2;
-const TELEGRAM_TOKEN  = process.env.TELEGRAM_TOKEN;
 const RENDER_URL      = (process.env.RENDER_URL || "").replace(/\/$/, "");
 const PORT            = process.env.PORT || 3000;
 const OWNER_PHONE     = process.env.OWNER_PHONE || "";
@@ -31,7 +30,11 @@ const SIGNAL_NUMBER   = process.env.SIGNAL_NUMBER  || "+19832058251";
 const VAPID_PUBLIC    = process.env.VAPID_PUBLIC   || "";
 const VAPID_PRIVATE   = process.env.VAPID_PRIVATE  || "";
 const VAPID_EMAIL     = process.env.VAPID_EMAIL    || "mailto:ayodeleart1@gmail.com";
-const TGAPI           = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
+
+// Telegram GramJS config
+const TG_API_ID   = parseInt(process.env.TELEGRAM_API_ID  || "0");
+const TG_API_HASH =           process.env.TELEGRAM_API_HASH || "";
+const TG_SESSION  =           process.env.TELEGRAM_SESSION  || "";
 
 if (webpush && VAPID_PUBLIC && VAPID_PRIVATE) {
   try { webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC, VAPID_PRIVATE); }
@@ -51,7 +54,6 @@ try {
   }
 } catch { console.log("⚠️  @supabase/supabase-js not installed — chats won't persist"); }
 
-// Debounced save — batches rapid messages into one write per convo
 const _saveTimers = {};
 async function saveConvo(id) {
   clearTimeout(_saveTimers[id]);
@@ -95,7 +97,6 @@ for (const f of brainFiles) {
   catch { brain[f] = {}; }
 }
 
-// media library — brain/media_library.json
 let mediaLib = { ariana_photos: [], triggers: {
   selfie: ["send me a pic","send pic","photo","selfie","let me see you","show me you","ur pic","your pic"],
   food:   ["food","what you eating","hungry","eat","meal","restaurant"],
@@ -155,11 +156,19 @@ function getConvo(id) {
       id, phone: id, name: id, messages: [],
       takenOver: false, lastSeen: new Date().toISOString(),
       isNew: true,
-      platform: id.startsWith("tg_") ? "telegram"
-              : id.startsWith("sg_") ? "signal"
+      // Platform is derived from ID prefix — stored in convo so dashboard reads it correctly on any device
+      platform: id.startsWith("tg_")  ? "telegram"
+              : id.startsWith("sg_")  ? "signal"
               : id.startsWith("sms_") ? "sms"
               : "whatsapp",
     };
+  }
+  // Backfill platform on any old convos that were loaded without it
+  if (!conversations[id].platform) {
+    conversations[id].platform = id.startsWith("tg_")  ? "telegram"
+                                : id.startsWith("sg_")  ? "signal"
+                                : id.startsWith("sms_") ? "sms"
+                                : "whatsapp";
   }
   return conversations[id];
 }
@@ -181,7 +190,7 @@ function humanDelay(message) {
   if      (len < 15) { min = 8000;  max = 20000; }
   else if (len < 60) { min = 15000; max = 40000; }
   else               { min = 30000; max = 70000; }
-  if (Math.random() < 0.2) max += 30000; // distracted
+  if (Math.random() < 0.2) max += 30000;
   const delay = Math.floor(Math.random() * (max - min + 1)) + min;
   return new Promise(r => setTimeout(r, delay));
 }
@@ -240,7 +249,7 @@ function detectVoiceRequest(msg) {
   return /voice( note| message)?|audio( message)?|talk to me|say it|speak|let me hear/i.test(msg);
 }
 
-function randomVoice() { return Math.random() < 0.15; } // 15% random voice
+function randomVoice() { return Math.random() < 0.15; }
 
 async function uploadToCloudinary(buffer) {
   if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_UPLOAD_PRESET) return null;
@@ -332,8 +341,6 @@ function pickModel(msg) {
 // ── MAIN REPLY ENGINE ─────────────────────────────────────────
 async function getReply(id, userMsg, systemOverride) {
   const convo = getConvo(id);
-
-  // Owner mode
   const rawPhone = id.replace(/^(tg_|sg_|sms_)/, "");
   if (!systemOverride && OWNER_PHONE && rawPhone === OWNER_PHONE) {
     systemOverride = OWNER_PROMPT;
@@ -345,11 +352,8 @@ async function getReply(id, userMsg, systemOverride) {
     content: m.text
   }));
 
-  // Web search if needed
   let webContext = null;
-  if (needsWebSearch(userMsg)) {
-    webContext = await searchWeb(userMsg);
-  }
+  if (needsWebSearch(userMsg)) webContext = await searchWeb(userMsg);
 
   const preferred = pickModel(userMsg);
   const chain = [preferred, "groq", "groq2", "deepseek", "mistral", "together"]
@@ -427,17 +431,97 @@ async function sendWhatsAppVoiceNote(to, audioUrl, phoneNumberId) {
   );
 }
 
-// ── TELEGRAM SENDERS ──────────────────────────────────────────
+// ── TELEGRAM SENDERS (GramJS) ─────────────────────────────────
+let tgClient = null;
+
 async function sendTelegram(chatId, text) {
-  await axios.post(`${TGAPI}/sendMessage`, { chat_id: chatId, text });
+  if (!tgClient) throw new Error("Telegram not connected");
+  await tgClient.sendMessage(chatId, { message: text });
 }
 
 async function sendTelegramPhoto(chatId, imageUrl, caption) {
-  await axios.post(`${TGAPI}/sendPhoto`, { chat_id: chatId, photo: imageUrl, caption: caption || "" });
+  if (!tgClient) throw new Error("Telegram not connected");
+  // Download image to buffer then send — avoids URL permission issues
+  const resp = await axios.get(imageUrl, { responseType: "arraybuffer" });
+  const buf  = Buffer.from(resp.data);
+  await tgClient.sendFile(chatId, {
+    file: buf, caption: caption || "", forceDocument: false,
+    attributes: [{ className: "DocumentAttributeFilename", fileName: "photo.jpg" }]
+  });
 }
 
 async function sendTelegramVoice(chatId, audioUrl) {
-  await axios.post(`${TGAPI}/sendVoice`, { chat_id: chatId, voice: audioUrl });
+  if (!tgClient) throw new Error("Telegram not connected");
+  const resp = await axios.get(audioUrl, { responseType: "arraybuffer" });
+  const buf  = Buffer.from(resp.data);
+  await tgClient.sendFile(chatId, { file: buf, voiceNote: true });
+}
+
+// ── TELEGRAM INIT (GramJS) ────────────────────────────────────
+async function initTelegram() {
+  if (!TG_API_ID || !TG_API_HASH || !TG_SESSION) {
+    console.log("⚠️  Telegram: TELEGRAM_API_ID / TELEGRAM_API_HASH / TELEGRAM_SESSION not set");
+    console.log("    → Run gen-session.js locally to generate your session string");
+    return;
+  }
+
+  try {
+    const { TelegramClient } = require("telegram");
+    const { StringSession }  = require("telegram/sessions");
+    const { NewMessage }     = require("telegram/events");
+
+    tgClient = new TelegramClient(
+      new StringSession(TG_SESSION), TG_API_ID, TG_API_HASH,
+      { connectionRetries: 5, retryDelay: 2000, useWSS: true }
+    );
+
+    await tgClient.connect();
+
+    const me = await tgClient.getMe();
+    console.log(`✅ Telegram (GramJS) connected as @${me.username || me.firstName}`);
+
+    // Listen for all incoming messages
+    tgClient.addEventHandler(async (event) => {
+      try {
+        const msg = event.message;
+        if (!msg || msg.out) return; // skip messages we sent ourselves
+
+        const sender = await msg.getSender();
+        if (!sender || sender.bot) return; // skip bots
+
+        const chatId = sender.id?.toString();
+        const text   = msg.text;
+        if (!chatId || !text) return;
+
+        const name = [sender.firstName, sender.lastName].filter(Boolean).join(" ").trim()
+                     || sender.username
+                     || `User${chatId}`;
+
+        console.log(`💬 TG ${name} (${chatId}): "${text}"`);
+
+        await handleMessage({
+          id: `tg_${chatId}`,
+          platform: "telegram",
+          from: chatId,
+          text,
+          chatId,
+          phoneNumberId: null,
+          name
+        });
+
+      } catch (e) { console.error("❌ TG message handler:", e.message); }
+    }, new NewMessage({ incoming: true }));
+
+    // Reconnect on disconnect
+    tgClient.addEventHandler(() => {
+      console.log("⚠️  Telegram disconnected — reconnecting...");
+      setTimeout(() => tgClient.connect().catch(console.error), 5000);
+    }, new (require("telegram/events").Raw)({ types: ["UpdateConnectionState"] }));
+
+  } catch (e) {
+    console.error("❌ Telegram init failed:", e.message);
+    tgClient = null;
+  }
 }
 
 // ── SIGNAL SENDER ─────────────────────────────────────────────
@@ -466,37 +550,23 @@ async function sendMMS(to, message, mediaUrl) {
   );
 }
 
-// ── UNIFIED SEND (handles any platform) ──────────────────────
+// ── UNIFIED SEND ──────────────────────────────────────────────
 async function sendReply(id, platform, reply, voiceUrl, imageUrl, chatId, from, phoneNumberId) {
   if (voiceUrl) {
-    // Voice note mode
-    if (platform === "whatsapp") {
-      await sendWhatsAppVoiceNote(from, voiceUrl, phoneNumberId);
-    } else if (platform === "telegram") {
-      await sendTelegramVoice(chatId, voiceUrl);
-    } else if (platform === "signal") {
-      // Signal can't do voice notes — send text instead
-      await sendSignal(from, reply);
-    } else if (platform === "sms") {
-      // SMS can't do voice — send text
-      await sendSMS(from, reply);
-    }
+    if (platform === "whatsapp")      await sendWhatsAppVoiceNote(from, voiceUrl, phoneNumberId);
+    else if (platform === "telegram") await sendTelegramVoice(chatId, voiceUrl);
+    else if (platform === "signal")   await sendSignal(from, reply);
+    else if (platform === "sms")      await sendSMS(from, reply);
   } else if (imageUrl) {
-    // Image mode
-    if (platform === "whatsapp") {
-      await sendWhatsAppImage(from, imageUrl, "", phoneNumberId);
-    } else if (platform === "telegram") {
-      await sendTelegramPhoto(chatId, imageUrl);
-    } else if (platform === "signal" || platform === "sms") {
-      // Send image URL as text for signal/sms
-      await (platform === "signal" ? sendSignal(from, imageUrl) : sendMMS(from, "", imageUrl));
-    }
+    if (platform === "whatsapp")      await sendWhatsAppImage(from, imageUrl, "", phoneNumberId);
+    else if (platform === "telegram") await sendTelegramPhoto(chatId, imageUrl);
+    else if (platform === "signal")   await sendSignal(from, imageUrl);
+    else if (platform === "sms")      await sendMMS(from, "", imageUrl);
   } else {
-    // Text mode
-    if (platform === "whatsapp") await sendWhatsApp(from, reply, phoneNumberId);
+    if (platform === "whatsapp")      await sendWhatsApp(from, reply, phoneNumberId);
     else if (platform === "telegram") await sendTelegram(chatId, reply);
-    else if (platform === "signal") await sendSignal(from, reply);
-    else if (platform === "sms") await sendSMS(from, reply);
+    else if (platform === "signal")   await sendSignal(from, reply);
+    else if (platform === "sms")      await sendSMS(from, reply);
   }
 }
 
@@ -523,58 +593,61 @@ async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, 
 
   if (takenOver.has(id)) return;
 
-  // Check for media request first
-  const mediaType = detectMediaRequest(text);
+  const mediaType  = detectMediaRequest(text);
   const wantsVoice = detectVoiceRequest(text);
 
-  // Start typing indicator for WhatsApp
   let typingInterval;
   if (platform === "whatsapp") {
     await sendWhatsAppTyping(from, phoneNumberId);
     typingInterval = setInterval(() => sendWhatsAppTyping(from, phoneNumberId), 24000);
   }
 
-  // Telegram typing
+  // Telegram typing action
   let tgTypingInterval;
-  if (platform === "telegram" && chatId) {
-    axios.post(`${TGAPI}/sendChatAction`, { chat_id: chatId, action: "typing" }).catch(() => {});
-    tgTypingInterval = setInterval(() => {
-      axios.post(`${TGAPI}/sendChatAction`, { chat_id: chatId, action: "typing" }).catch(() => {});
-    }, 4000);
+  if (platform === "telegram" && chatId && tgClient) {
+    try {
+      await tgClient.invoke(new (require("telegram/tl/functions/messages").SetTypingRequest)({
+        peer: chatId, action: new (require("telegram/tl/types").SendMessageTypingAction)()
+      }));
+      tgTypingInterval = setInterval(async () => {
+        try {
+          await tgClient.invoke(new (require("telegram/tl/functions/messages").SetTypingRequest)({
+            peer: chatId, action: new (require("telegram/tl/types").SendMessageTypingAction)()
+          }));
+        } catch {}
+      }, 4000);
+    } catch {}
   }
 
   try {
-    // Generate reply and delay simultaneously
     const replyPromise = isFirst ? handleNewTexter(id, text) : getReply(id, text);
     const [reply] = await Promise.all([replyPromise, humanDelay(text)]);
 
-    let voiceUrl  = null;
-    let imageUrl  = null;
+    let voiceUrl = null;
+    let imageUrl = null;
 
     if (mediaType) {
-      // They want an image
       imageUrl = await getMediaUrl(mediaType);
       const textReply = reply || "here";
       addMessage(id, "ariana", `[image: ${mediaType}]`);
-      if (typingInterval) clearInterval(typingInterval);
+      if (typingInterval)   clearInterval(typingInterval);
       if (tgTypingInterval) clearInterval(tgTypingInterval);
       await sendReply(id, platform, textReply, null, imageUrl, chatId, from, phoneNumberId);
       return;
     }
 
     if (wantsVoice || randomVoice()) {
-      // They want a voice note or random voice
       voiceUrl = await generateVoiceNote(reply);
     }
 
     addMessage(id, "ariana", voiceUrl ? "[voice note]" : reply);
-    if (typingInterval) clearInterval(typingInterval);
+    if (typingInterval)   clearInterval(typingInterval);
     if (tgTypingInterval) clearInterval(tgTypingInterval);
     await sendReply(id, platform, reply, voiceUrl, null, chatId, from, phoneNumberId);
 
   } catch (e) {
     console.error("handleMessage error:", e.message);
-    if (typingInterval) clearInterval(typingInterval);
+    if (typingInterval)   clearInterval(typingInterval);
     if (tgTypingInterval) clearInterval(tgTypingInterval);
   }
 }
@@ -590,10 +663,7 @@ app.post("/webhook", async (req, res) => {
     const msgId = msg?.id || msg?.message_id || null;
     if (!from || !text) return;
     console.log(`📱 WA ${from}: "${text}"`);
-
-    // Mark as read immediately — shows blue ticks fast
     if (msgId) markWhatsAppRead(msgId, body.phone_number_id).catch(() => {});
-
     await handleMessage({
       id: from, platform: "whatsapp", from, text,
       chatId: null, phoneNumberId: body.phone_number_id, name: null
@@ -604,30 +674,6 @@ app.post("/webhook", async (req, res) => {
 app.get("/webhook", (req, res) => {
   if (req.query["hub.challenge"]) return res.send(req.query["hub.challenge"]);
   res.send("Ariana WhatsApp ✅");
-});
-
-// ── TELEGRAM WEBHOOK ──────────────────────────────────────────
-async function registerTelegramWebhook() {
-  if (!RENDER_URL || !TELEGRAM_TOKEN) return;
-  try {
-    const res = await axios.post(`${TGAPI}/setWebhook`, { url: `${RENDER_URL}/telegram` });
-    console.log(res.data.ok ? `✅ Telegram → ${RENDER_URL}/telegram` : `⚠️ ${res.data.description}`);
-  } catch (e) { console.log("⚠️ Telegram webhook failed:", e.message); }
-}
-
-app.post("/telegram", async (req, res) => {
-  res.status(200).json({ ok: true });
-  try {
-    const msg    = req.body?.message || req.body?.edited_message;
-    if (!msg) return;
-    const chatId = msg.chat?.id;
-    const text   = msg.text;
-    const name   = msg.from?.first_name || msg.from?.username || `User${chatId}`;
-    if (!chatId || !text) return;
-    if (text === "/start") { await sendTelegram(chatId, "hey, who are you"); return; }
-    console.log(`💬 TG ${name}: "${text}"`);
-    await handleMessage({ id: `tg_${chatId}`, platform: "telegram", from: chatId, text, chatId, phoneNumberId: null, name });
-  } catch (e) { console.error("❌ Telegram:", e.message); }
 });
 
 // ── SIGNAL WEBHOOK ────────────────────────────────────────────
@@ -650,7 +696,7 @@ app.get("/signal-register", async (req, res) => {
   const captcha = req.query.captcha || null;
   try {
     const body = captcha ? { captcha } : {};
-    const r = await axios.post(`${SIGNAL_CLI_URL}/v1/register/${number}`, body);
+    await axios.post(`${SIGNAL_CLI_URL}/v1/register/${number}`, body);
     res.send(`<html><body style="background:#111;color:white;padding:30px"><h2 style="color:#3a86ff">✅ SMS sent to ${number}</h2><p>Now go to /signal-verify?number=${number}&code=YOUR_CODE</p></body></html>`);
   } catch (e) {
     res.send(`<html><body style="background:#111;color:white;padding:30px"><h2 style="color:#ff6b6b">❌ ${e.message}</h2><p>If captcha required, add ?captcha=YOUR_CAPTCHA_TOKEN to URL</p><p>Get captcha: <a href="https://signalcaptchas.org/registration/generate.html" style="color:#3a86ff">here</a></p></body></html>`);
@@ -680,13 +726,12 @@ app.get("/signal-setup-webhook", async (req, res) => {
 
 // ── SMS / MMS WEBHOOK (Twilio) ────────────────────────────────
 app.post("/sms", async (req, res) => {
-  // Respond immediately with empty TwiML so Twilio doesn't retry
   res.set("Content-Type", "text/xml");
   res.send("<Response></Response>");
   try {
     const from     = req.body.From;
     const text     = req.body.Body;
-    const mediaUrl = req.body.MediaUrl0 || null; // if they sent an image
+    const mediaUrl = req.body.MediaUrl0 || null;
     if (!from || !text) return;
     console.log(`📟 SMS ${from}: "${text}"`);
     if (mediaUrl) addMessage(`sms_${from}`, "user", `[image: ${mediaUrl}]`);
@@ -717,9 +762,8 @@ app.post("/api/takeover/:phone", (req, res) => {
 app.post("/api/send/:phone", async (req, res) => {
   const id = decodeURIComponent(req.params.phone);
   const { message, as } = req.body;
-  const convo = getConvo(id);
   try {
-    if (id.startsWith("tg_"))  await sendTelegram(id.replace("tg_", ""), message);
+    if (id.startsWith("tg_"))       await sendTelegram(id.replace("tg_", ""), message);
     else if (id.startsWith("sg_"))  await sendSignal(id.replace("sg_", ""), message);
     else if (id.startsWith("sms_")) await sendSMS(id.replace("sms_", ""), message);
     else await sendWhatsApp(id, message);
@@ -731,7 +775,6 @@ app.post("/api/send/:phone", async (req, res) => {
 app.post("/api/send-image/:phone", async (req, res) => {
   const id = decodeURIComponent(req.params.phone);
   const { imageUrl, caption } = req.body;
-  const convo = getConvo(id);
   try {
     if (id.startsWith("tg_"))       await sendTelegramPhoto(id.replace("tg_",""), imageUrl, caption);
     else if (id.startsWith("sg_"))  await sendSignal(id.replace("sg_",""), imageUrl);
@@ -772,6 +815,161 @@ app.post("/api/test", async (req, res) => {
   res.json({ ok: true });
 });
 
+// ── TELEGRAM AUTH (TEMPORARY — DELETE AFTER GETTING SESSION) ──
+// Usage: visit /telegram-auth, enter phone, enter code, copy session string,
+// add as TELEGRAM_SESSION env var on Render, then delete this route.
+const _tgAuthSessions = new Map(); // token → { client, phoneCodeHash, phone }
+
+app.get("/telegram-auth", (_req, res) => {
+  res.send(`<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>Telegram Auth</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0d0d0d;color:#eee;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+  .card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:32px;width:100%;max-width:440px}
+  h2{color:#7c5cfc;margin-bottom:6px;font-size:1.3rem}
+  p.sub{color:#888;font-size:.85rem;margin-bottom:24px;line-height:1.5}
+  label{display:block;font-size:.8rem;color:#aaa;margin-bottom:5px;margin-top:16px}
+  input{width:100%;padding:11px 14px;background:#111;border:1px solid #333;border-radius:8px;color:#fff;font-size:1rem;outline:none}
+  input:focus{border-color:#7c5cfc}
+  button{margin-top:20px;width:100%;padding:12px;background:#7c5cfc;border:none;border-radius:8px;color:#fff;font-size:1rem;font-weight:600;cursor:pointer}
+  button:hover{background:#6a4de0}
+  #result{margin-top:20px;padding:14px;background:#111;border:1px solid #333;border-radius:8px;word-break:break-all;font-size:.82rem;line-height:1.6;display:none}
+  #result.success{border-color:#06d6a0;color:#06d6a0}
+  #result.error{border-color:#ff6b6b;color:#ff6b6b}
+  .step{display:none}.step.active{display:block}
+  #spinner{display:none;margin-top:12px;color:#888;font-size:.85rem;text-align:center}
+</style></head><body><div class="card">
+<h2>🔐 Telegram Session Generator</h2>
+<p class="sub">Temporary tool — generates your <code>TELEGRAM_SESSION</code> string.<br>Delete this route after use.</p>
+
+<div id="step1" class="step active">
+  <label>Phone number (international format)</label>
+  <input id="phone" type="tel" placeholder="+1234567890" />
+  <button onclick="sendCode()">Send Code</button>
+</div>
+
+<div id="step2" class="step">
+  <label>Verification code from Telegram</label>
+  <input id="code" type="text" placeholder="12345" maxlength="10" />
+  <button onclick="verifyCode()">Verify Code</button>
+</div>
+
+<div id="step3" class="step">
+  <label>Two-factor password (2FA)</label>
+  <input id="password" type="password" placeholder="Your 2FA password" />
+  <button onclick="submitPassword()">Submit Password</button>
+</div>
+
+<div id="spinner">⏳ Working…</div>
+<div id="result"></div>
+</div>
+
+<script>
+let _token = null;
+function show(id){['step1','step2','step3'].forEach(s=>document.getElementById(s).classList.remove('active'));document.getElementById(id).classList.add('active')}
+function setResult(msg,ok){const el=document.getElementById('result');el.style.display='block';el.className='result '+(ok?'success':'error');el.textContent=msg;}
+function spin(on){document.getElementById('spinner').style.display=on?'block':'none'}
+
+async function sendCode(){
+  const phone=document.getElementById('phone').value.trim();
+  if(!phone)return alert('Enter your phone number');
+  spin(true);
+  try{
+    const r=await fetch('/telegram-auth/send-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone})});
+    const d=await r.json();
+    if(!d.ok)throw new Error(d.error||'Failed');
+    _token=d.token;
+    show('step2');
+    setResult('Code sent to Telegram — check your app or SMS.', true);
+  }catch(e){setResult('❌ '+e.message,false);}
+  spin(false);
+}
+
+async function verifyCode(){
+  const code=document.getElementById('code').value.trim();
+  if(!code)return alert('Enter the verification code');
+  spin(true);
+  try{
+    const r=await fetch('/telegram-auth/verify-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:_token,code})});
+    const d=await r.json();
+    if(d.needs2fa){show('step3');setResult('2FA required — enter your password below.',true);spin(false);return;}
+    if(!d.ok)throw new Error(d.error||'Failed');
+    setResult('✅ Session string (add as TELEGRAM_SESSION on Render):\\n\\n'+d.session, true);
+    show('step1');
+  }catch(e){setResult('❌ '+e.message,false);}
+  spin(false);
+}
+
+async function submitPassword(){
+  const pw=document.getElementById('password').value;
+  if(!pw)return alert('Enter your 2FA password');
+  spin(true);
+  try{
+    const r=await fetch('/telegram-auth/submit-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:_token,password:pw})});
+    const d=await r.json();
+    if(!d.ok)throw new Error(d.error||'Failed');
+    setResult('✅ Session string (add as TELEGRAM_SESSION on Render):\\n\\n'+d.session, true);
+    show('step1');
+  }catch(e){setResult('❌ '+e.message,false);}
+  spin(false);
+}
+</script></body></html>`);
+});
+
+app.post("/telegram-auth/send-code", async (req, res) => {
+  const { phone } = req.body;
+  if (!phone) return res.json({ ok: false, error: "phone required" });
+  if (!TG_API_ID || !TG_API_HASH) return res.json({ ok: false, error: "TELEGRAM_API_ID / TELEGRAM_API_HASH env vars not set" });
+  try {
+    const { TelegramClient } = require("telegram");
+    const { StringSession }  = require("telegram/sessions");
+    const client = new TelegramClient(new StringSession(""), TG_API_ID, TG_API_HASH, { connectionRetries: 3 });
+    await client.connect();
+    const { phoneCodeHash } = await client.sendCode({ apiId: TG_API_ID, apiHash: TG_API_HASH }, phone);
+    const token = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    _tgAuthSessions.set(token, { client, phoneCodeHash, phone });
+    // Auto-cleanup after 10 minutes
+    setTimeout(() => { const s = _tgAuthSessions.get(token); if (s) { s.client.disconnect().catch(()=>{}); _tgAuthSessions.delete(token); } }, 10 * 60 * 1000);
+    res.json({ ok: true, token });
+  } catch (e) { res.json({ ok: false, error: e.message }); }
+});
+
+app.post("/telegram-auth/verify-code", async (req, res) => {
+  const { token, code } = req.body;
+  const sess = _tgAuthSessions.get(token);
+  if (!sess) return res.json({ ok: false, error: "Session expired — start over" });
+  try {
+    const { Api } = require("telegram");
+    await sess.client.invoke(new Api.auth.SignIn({ phoneNumber: sess.phone, phoneCodeHash: sess.phoneCodeHash, phoneCode: code.trim() }));
+    const session = sess.client.session.save();
+    await sess.client.disconnect().catch(() => {});
+    _tgAuthSessions.delete(token);
+    res.json({ ok: true, session });
+  } catch (e) {
+    if (e.errorMessage === "SESSION_PASSWORD_NEEDED") return res.json({ ok: true, needs2fa: true });
+    res.json({ ok: false, error: e.message });
+  }
+});
+
+app.post("/telegram-auth/submit-password", async (req, res) => {
+  const { token, password } = req.body;
+  const sess = _tgAuthSessions.get(token);
+  if (!sess) return res.json({ ok: false, error: "Session expired — start over" });
+  try {
+    await sess.client.signInWithPassword({ apiId: TG_API_ID, apiHash: TG_API_HASH }, { password, onError: e => { throw e; } });
+    const session = sess.client.session.save();
+    await sess.client.disconnect().catch(() => {});
+    _tgAuthSessions.delete(token);
+    res.json({ ok: true, session });
+  } catch (e) { res.json({ ok: false, error: e.message }); }
+});
+
+// ── TELEGRAM STATUS CHECK ─────────────────────────────────────
+app.get("/api/telegram-status", (req, res) => {
+  res.json({ connected: !!tgClient, hasSession: !!TG_SESSION });
+});
+
 // ── SOCKET ────────────────────────────────────────────────────
 io.on("connection", socket => {
   socket.emit("init", { conversations: Object.values(conversations), takenOver: [...takenOver] });
@@ -793,20 +991,20 @@ function startKeepAlive() {
 server.listen(PORT, async () => {
   await loadConversations();
   console.log(`\n🌸 Ariana LIVE on port ${PORT}`);
-  console.log(`📱 WhatsApp: ${KAPSO_API_KEY          ? "✅" : "❌"}`);
-  console.log(`🤖 Groq:     ${GROQ_API_KEY           ? "✅" : "❌"}`);
-  console.log(`🔁 Groq #2:  ${GROQ_API_KEY_2         ? "✅" : "—"}`);
-  console.log(`✨ Gemini:   ${process.env.GEMINI_API_KEY   ? "✅" : "❌"}`);
-  console.log(`🔮 DeepSeek: ${process.env.DEEPSEEK_API_KEY ? "✅" : "—"}`);
-  console.log(`🌬️  Mistral:  ${process.env.MISTRAL_API_KEY  ? "✅" : "—"}`);
-  console.log(`🤝 Together: ${process.env.TOGETHER_API_KEY  ? "✅" : "—"}`);
-  console.log(`🎙️  ElevenLabs:${process.env.ELEVENLABS_API_KEY ? "✅" : "❌ voice notes disabled"}`);
-  console.log(`☁️  Cloudinary:${process.env.CLOUDINARY_CLOUD_NAME ? "✅" : "❌ voice notes disabled"}`);
-  console.log(`📸 Unsplash: ${process.env.UNSPLASH_ACCESS_KEY ? "✅" : "—"}`);
-  console.log(`🔍 Serper:   ${process.env.SERPER_API_KEY      ? "✅" : "—"}`);
-  console.log(`📟 Twilio:   ${process.env.TWILIO_ACCOUNT_SID  ? "✅" : "— SMS disabled"}`);
-  console.log(`💬 Telegram: ${TELEGRAM_TOKEN                  ? "✅" : "❌"}`);
-  console.log(`📶 Signal:   ${SIGNAL_NUMBER                   ? "✅ " + SIGNAL_NUMBER : "❌"}`);
-  await registerTelegramWebhook();
+  console.log(`📱 WhatsApp:    ${KAPSO_API_KEY                   ? "✅" : "❌"}`);
+  console.log(`🤖 Groq:        ${GROQ_API_KEY                    ? "✅" : "❌"}`);
+  console.log(`🔁 Groq #2:     ${GROQ_API_KEY_2                  ? "✅" : "—"}`);
+  console.log(`✨ Gemini:      ${process.env.GEMINI_API_KEY       ? "✅" : "❌"}`);
+  console.log(`🔮 DeepSeek:    ${process.env.DEEPSEEK_API_KEY    ? "✅" : "—"}`);
+  console.log(`🌬️  Mistral:     ${process.env.MISTRAL_API_KEY     ? "✅" : "—"}`);
+  console.log(`🤝 Together:    ${process.env.TOGETHER_API_KEY    ? "✅" : "—"}`);
+  console.log(`🎙️  ElevenLabs:  ${process.env.ELEVENLABS_API_KEY  ? "✅" : "❌ voice notes disabled"}`);
+  console.log(`☁️  Cloudinary:  ${process.env.CLOUDINARY_CLOUD_NAME ? "✅" : "❌ voice notes disabled"}`);
+  console.log(`📸 Unsplash:    ${process.env.UNSPLASH_ACCESS_KEY ? "✅" : "—"}`);
+  console.log(`🔍 Serper:      ${process.env.SERPER_API_KEY      ? "✅" : "—"}`);
+  console.log(`📟 Twilio:      ${process.env.TWILIO_ACCOUNT_SID  ? "✅" : "— SMS disabled"}`);
+  console.log(`💬 Telegram:    ${TG_SESSION                      ? "✅ session found" : "❌ run gen-session.js"}`);
+  console.log(`📶 Signal:      ${SIGNAL_NUMBER                   ? "✅ " + SIGNAL_NUMBER : "❌"}`);
+  await initTelegram();
   startKeepAlive();
 });
