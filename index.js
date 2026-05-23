@@ -567,11 +567,10 @@ async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, 
       voiceUrl = await generateVoiceNote(reply);
     }
 
-    const finalReply = reply || "hey";
-    addMessage(id, "ariana", voiceUrl ? "[voice note]" : finalReply);
+    addMessage(id, "ariana", voiceUrl ? "[voice note]" : reply);
     if (typingInterval) clearInterval(typingInterval);
     if (tgTypingInterval) clearInterval(tgTypingInterval);
-    await sendReply(id, platform, finalReply, voiceUrl, null, chatId, from, phoneNumberId);
+    await sendReply(id, platform, reply, voiceUrl, null, chatId, from, phoneNumberId);
 
   } catch (e) {
     console.error("handleMessage error:", e.message);
@@ -791,10 +790,9 @@ function startKeepAlive() {
 }
 
 // ── START ─────────────────────────────────────────────────────
-async function start() {
-  await loadConversations(); // load BEFORE accepting connections
-  server.listen(PORT, async () => {
-    console.log(`\n🌸 Ariana LIVE on port ${PORT}`);
+server.listen(PORT, async () => {
+  await loadConversations();
+  console.log(`\n🌸 Ariana LIVE on port ${PORT}`);
   console.log(`📱 WhatsApp: ${KAPSO_API_KEY          ? "✅" : "❌"}`);
   console.log(`🤖 Groq:     ${GROQ_API_KEY           ? "✅" : "❌"}`);
   console.log(`🔁 Groq #2:  ${GROQ_API_KEY_2         ? "✅" : "—"}`);
@@ -809,8 +807,6 @@ async function start() {
   console.log(`📟 Twilio:   ${process.env.TWILIO_ACCOUNT_SID  ? "✅" : "— SMS disabled"}`);
   console.log(`💬 Telegram: ${TELEGRAM_TOKEN                  ? "✅" : "❌"}`);
   console.log(`📶 Signal:   ${SIGNAL_NUMBER                   ? "✅ " + SIGNAL_NUMBER : "❌"}`);
-    await registerTelegramWebhook();
-    startKeepAlive();
-  });
-}
-start();
+  await registerTelegramWebhook();
+  startKeepAlive();
+});
