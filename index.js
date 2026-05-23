@@ -78,6 +78,31 @@ async function loadConversations() {
   } catch (e) { console.error("Supabase load error:", e.message); }
 }
 
+async function savePushSub(sub) {
+  if (!supabase) return;
+  try {
+    const key = sub.endpoint.slice(-40);
+    await supabase.from("ariana_push_subs").upsert({ key, sub }, { onConflict: "key" });
+  } catch {}
+}
+
+async function deletePushSub(sub) {
+  if (!supabase) return;
+  try {
+    const key = sub.endpoint.slice(-40);
+    await supabase.from("ariana_push_subs").delete().eq("key", key);
+  } catch {}
+}
+
+async function loadPushSubs() {
+  if (!supabase) return;
+  try {
+    const { data } = await supabase.from("ariana_push_subs").select("sub");
+    (data || []).forEach(row => { if (row.sub) pushSubs.add(row.sub); });
+    console.log(`✅ Loaded ${(data||[]).length} push subscriptions`);
+  } catch (e) { console.error("Push subs load error:", e.message); }
+}
+
 // ── STATE ─────────────────────────────────────────────────────
 const conversations = {};
 const takenOver     = new Set();
@@ -497,6 +522,18 @@ async function initTelegram() {
                      || sender.username
                      || `User${chatId}`;
 
+        // Store last seen + username so dashboard can display it
+        const convoId = `tg_${chatId}`;
+        const convo = getConvo(convoId);
+        convo.tgUsername = sender.username || null;
+        convo.tgLastSeen = new Date().toISOString();
+        if (sender.status) {
+          // wasOnline gives actual last seen if available
+          convo.tgLastSeenRaw = sender.status?.wasOnline
+            ? new Date(sender.status.wasOnline * 1000).toISOString()
+            : null;
+        }
+
         console.log(`💬 TG ${name} (${chatId}): "${text}"`);
 
         await handleMessage({
@@ -579,7 +616,7 @@ async function sendPush(id, name, text) {
   const dead = [];
   for (const sub of pushSubs) {
     try { await webpush.sendNotification(sub, payload); }
-    catch (e) { if (e.statusCode === 410) dead.push(sub); }
+    catch (e) { if (e.statusCode === 410) { dead.push(sub); deletePushSub(sub); } }
   }
   dead.forEach(s => pushSubs.delete(s));
 }
@@ -744,7 +781,9 @@ app.post("/sms", async (req, res) => {
 // ── DASHBOARD API ─────────────────────────────────────────────
 app.post("/api/push-subscribe", (req, res) => {
   if (!webpush) return res.json({ ok: false });
-  pushSubs.add(req.body); res.json({ ok: true });
+  pushSubs.add(req.body);
+  savePushSub(req.body);
+  res.json({ ok: true });
 });
 
 app.get("/api/convos", (req, res) => {
@@ -842,6 +881,7 @@ function startKeepAlive() {
 // ── START ─────────────────────────────────────────────────────
 server.listen(PORT, async () => {
   await loadConversations();
+  await loadPushSubs();
   console.log(`\n🌸 Ariana LIVE on port ${PORT}`);
   console.log(`📱 WhatsApp:    ${KAPSO_API_KEY                   ? "✅" : "❌"}`);
   console.log(`🤖 Groq:        ${GROQ_API_KEY                    ? "✅" : "❌"}`);
