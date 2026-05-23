@@ -813,7 +813,11 @@ socket.on("new_message",({phone,msg,convo})=>{
   convos[phone]=convo;
   if(!convos[phone]._unread) convos[phone]._unread=0;
   if(phone===currentPhone){appendMsg(msg);scrollBottom();}
-  else{convos[phone]._unread++;showToast((convos[phone].name||phone)+": "+msg.text.slice(0,40));}
+  else{
+    convos[phone]._unread++;
+    const preview=(msg.text||"").slice(0,40);
+    showToast((convos[phone].name||phone)+(preview?": "+preview:""));
+  }
   renderList();
 });
 socket.on("takeover_update",({phone,active})=>{
