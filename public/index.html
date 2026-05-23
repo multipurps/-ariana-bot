@@ -154,12 +154,10 @@ input,textarea{font-family:inherit;color:inherit}
 .daction{width:100%;padding:12px;border-radius:12px;font-size:14px;font-weight:600;text-align:center;cursor:pointer;margin-bottom:8px;border:1px solid}
 .daction.danger{background:rgba(239,68,68,.1);color:var(--danger);border-color:rgba(239,68,68,.2)}
 .daction.primary{background:rgba(37,211,102,.1);color:var(--wa);border-color:rgba(37,211,102,.2)}
-.plat-row{display:flex;gap:8px;margin-top:10px}
-.plat-opt{flex:1;padding:8px;border-radius:10px;border:1px solid var(--b1);display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--t2);cursor:pointer;transition:all .2s}
-.plat-opt svg{width:18px;height:18px}
-.plat-opt.active.wa{border-color:rgba(37,211,102,.4);background:rgba(37,211,102,.1);color:var(--wa)}
-.plat-opt.active.tg{border-color:rgba(42,171,238,.4);background:rgba(42,171,238,.1);color:var(--tg)}
-.plat-opt.active.sms{border-color:rgba(52,199,89,.4);background:rgba(52,199,89,.1);color:var(--sms)}
+.plat-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:600;margin-top:6px}
+.plat-badge.wa{background:rgba(37,211,102,.15);color:var(--wa);border:1px solid rgba(37,211,102,.3)}
+.plat-badge.tg{background:rgba(42,171,238,.15);color:var(--tg);border:1px solid rgba(42,171,238,.3)}
+.plat-badge.sms{background:rgba(52,199,89,.15);color:var(--sms);border:1px solid rgba(52,199,89,.3)}
 #toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(30,30,30,.95);border:1px solid var(--b2);color:#fff;border-radius:10px;padding:10px 18px;font-size:13px;opacity:0;transition:all .25s;z-index:200;white-space:nowrap;pointer-events:none;max-width:88vw;overflow:hidden;text-overflow:ellipsis}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 @media(max-width:700px){#left{position:absolute;inset:0;z-index:20;width:100%;min-width:unset}#left.hidden{transform:translateX(-100%)}#right{width:100%}#chat-back{display:flex!important}#contact-drawer{width:100%;right:-100%}#messages{padding:12px 4%}}
@@ -229,19 +227,16 @@ input,textarea{font-family:inherit;color:inherit}
     <div class="drawer-av" onclick="triggerAvatarUpload()"><div id="drawer-av-inner">👤</div><div class="av-overlay">📷</div></div>
     <div class="drawer-dname" id="drawer-name">—</div>
     <div class="drawer-phone" id="drawer-phone">—</div>
+    <div style="text-align:center" id="drawer-plat-badge"></div>
   </div>
   <div class="drawer-body">
-    <div class="dsec"><h4>Platform</h4><div class="plat-row">
-      <div class="plat-opt wa" onclick="setContactPlatform('wa')"><svg viewBox="0 0 24 24" fill="var(--wa)"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>WhatsApp</div>
-      <div class="plat-opt tg" onclick="setContactPlatform('tg')"><svg viewBox="0 0 24 24" fill="var(--tg)"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-.943-.62-.332-1.062.207-1.676.142-.148 2.607-2.39 2.653-2.594.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>Telegram</div>
-      <div class="plat-opt sms" onclick="setContactPlatform('sms')"><svg viewBox="0 0 24 24" fill="var(--sms)"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>SMS</div>
-    </div></div>
-    <div class="dsec"><h4>Controls</h4><div class="drow"><span class="dlabel">Takeover (you reply)</span><label class="toggle"><input type="checkbox" id="drawer-takeover" onchange="toggleTakeoverFromDrawer()"><span class="tslider"></span></label></div></div>
     <div class="dsec"><h4>Info</h4>
+      <div class="drow"><span class="dlabel">Platform</span><span class="dval" id="d-plat">—</span></div>
       <div class="drow"><span class="dlabel">Messages</span><span class="dval" id="d-msgs">0</span></div>
       <div class="drow"><span class="dlabel">First contact</span><span class="dval" id="d-first">—</span></div>
       <div class="drow"><span class="dlabel">Last message</span><span class="dval" id="d-last">—</span></div>
     </div>
+    <div class="dsec"><h4>Controls</h4><div class="drow"><span class="dlabel">Takeover (you reply)</span><label class="toggle"><input type="checkbox" id="drawer-takeover" onchange="toggleTakeoverFromDrawer()"><span class="tslider"></span></label></div></div>
     <button class="daction primary" onclick="renamePrompt()">Rename Contact</button>
     <button class="daction danger" onclick="closeDrawer()">Close</button>
   </div>
@@ -256,11 +251,34 @@ const EMOJIS={smileys:['😀','😂','🥰','😍','🤩','😎','🥺','😭','
 const VAPID="BC73tPCUnIe2lzYWl_cpB3hp2R4CN5F3PM9Z6_kRIX7gC91pxowUlxdijQCM7X1mTxo7qrA9h32Rw3XgwBFWvjc";
 const socket=io();
 let convos={},takenOverSet=new Set(),currentPhone=null,sendAs="ariana",activePlatTab="all",emojiOpen=false;
-let avatars={},platforms={},wallpaper="w0";
+let avatars={},wallpaper="w0";
 try{avatars=JSON.parse(localStorage.getItem("_av")||"{}")}catch{}
-try{platforms=JSON.parse(localStorage.getItem("_pl")||"{}")}catch{}
 try{wallpaper=localStorage.getItem("_wp")||"w0"}catch{}
 if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").then(reg=>{navigator.serviceWorker.addEventListener("message",e=>{if(e.data?.type==="OPEN_CHAT"&&e.data.phone)openChat(e.data.phone)})}).catch(()=>{})}
+
+// ── PLATFORM HELPER ───────────────────────────────────────────
+// Reads platform from the convo object (set server-side) — works on any device, not just the one that opened the chat.
+function getPlat(p){
+  const c=convos[p];
+  if(c&&c.platform){
+    if(c.platform==="telegram") return "tg";
+    if(c.platform==="sms")      return "sms";
+    if(c.platform==="signal")   return "sms"; // signal reuses SMS tab visually
+    return "wa";
+  }
+  // Fallback: infer from ID prefix for any convo that predates this fix
+  if(p.startsWith("tg_"))  return "tg";
+  if(p.startsWith("sms_")) return "sms";
+  if(p.startsWith("sg_"))  return "sms";
+  return "wa";
+}
+
+function platLabel(p){
+  if(p==="tg")  return "Telegram";
+  if(p==="sms") return "SMS";
+  return "WhatsApp";
+}
+
 socket.on("init",data=>{
   try{
     const list=Array.isArray(data.conversations)?data.conversations:Object.values(data.conversations||{});
@@ -289,9 +307,6 @@ socket.on("rename",data=>{
   try{const{phone,name}=data;if(convos[phone])convos[phone].name=name;renderList();if(phone===currentPhone){document.getElementById("chat-name").textContent=name;updateDrawer()}}catch(err){console.error("rename",err)}
 });
 function setPlatTab(el){document.querySelectorAll(".ptab").forEach(t=>t.classList.remove("active"));el.classList.add("active");activePlatTab=el.dataset.tab;renderList()}
-function getPlat(p){return platforms[p]||"wa"}
-function setContactPlatform(p){if(!currentPhone)return;platforms[currentPhone]=p;try{localStorage.setItem("_pl",JSON.stringify(platforms))}catch{}updatePlatformUI();renderList();showToast("Platform: "+p.toUpperCase())}
-function updatePlatformUI(){const p=getPlat(currentPhone);document.querySelectorAll(".plat-opt").forEach(el=>el.classList.toggle("active",el.classList.contains(p)))}
 function pdot(p){if(p==="wa")return`<svg viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`;if(p==="tg")return`<svg viewBox="0 0 24 24" fill="#2AABEE"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-.943-.62-.332-1.062.207-1.676.142-.148 2.607-2.39 2.653-2.594.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>`;return`<svg viewBox="0 0 24 24" fill="#34C759"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>`}
 function renderList(){
   const q=(document.getElementById("search-input").value||"").toLowerCase();
@@ -345,7 +360,25 @@ async function toggleTakeoverFromDrawer(){if(!currentPhone)return;const active=d
 function updateTakeoverUI(){if(!currentPhone)return;const on=takenOverSet.has(currentPhone);document.getElementById("takeover-notice").classList.toggle("show",on);const dt=document.getElementById("drawer-takeover");if(dt)dt.checked=on;setSendAs(on?"you":"ariana")}
 function openDrawer(){if(!currentPhone)return;document.getElementById("contact-drawer").classList.add("open");updateDrawer()}
 function closeDrawer(){document.getElementById("contact-drawer").classList.remove("open")}
-function updateDrawer(){const c=convos[currentPhone];if(!c)return;document.getElementById("drawer-name").textContent=c.name||currentPhone;document.getElementById("drawer-phone").textContent=currentPhone;const msgs=Array.isArray(c.messages)?c.messages:[];document.getElementById("d-msgs").textContent=msgs.length;document.getElementById("d-first").textContent=msgs[0]?fmtDate(msgs[0].time):"—";document.getElementById("d-last").textContent=msgs[msgs.length-1]?fmtDate(msgs[msgs.length-1].time):"—";const dt=document.getElementById("drawer-takeover");if(dt)dt.checked=takenOverSet.has(currentPhone);const ai=document.getElementById("drawer-av-inner");if(avatars[currentPhone])ai.innerHTML=`<img src="${avatars[currentPhone]}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;else ai.textContent=(c.name||currentPhone||"?")[0].toUpperCase();updatePlatformUI()}
+function updateDrawer(){
+  const c=convos[currentPhone];if(!c)return;
+  document.getElementById("drawer-name").textContent=c.name||currentPhone;
+  document.getElementById("drawer-phone").textContent=currentPhone;
+  const msgs=Array.isArray(c.messages)?c.messages:[];
+  document.getElementById("d-msgs").textContent=msgs.length;
+  document.getElementById("d-first").textContent=msgs[0]?fmtDate(msgs[0].time):"—";
+  document.getElementById("d-last").textContent=msgs[msgs.length-1]?fmtDate(msgs[msgs.length-1].time):"—";
+  const dt=document.getElementById("drawer-takeover");
+  if(dt)dt.checked=takenOverSet.has(currentPhone);
+  const ai=document.getElementById("drawer-av-inner");
+  if(avatars[currentPhone])ai.innerHTML=`<img src="${avatars[currentPhone]}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  else ai.textContent=(c.name||currentPhone||"?")[0].toUpperCase();
+  // Show platform — read from server convo, no localStorage
+  const p=getPlat(currentPhone);
+  document.getElementById("d-plat").textContent=platLabel(p);
+  const badge=document.getElementById("drawer-plat-badge");
+  badge.innerHTML=`<span class="plat-badge ${p}">${pdot(p)} ${platLabel(p)}</span>`;
+}
 function setAvatar(phone){const el=document.getElementById("chat-avatar");const c=convos[phone]||{};if(avatars[phone])el.innerHTML=`<img src="${avatars[phone]}" alt="">`;else el.textContent=(c.name||phone||"?")[0].toUpperCase()}
 function triggerAvatarUpload(){document.getElementById("avatar-file").click()}
 function handleAvatarUpload(e){const f=e.target.files[0];if(!f||!currentPhone)return;const r=new FileReader();r.onload=ev=>{avatars[currentPhone]=ev.target.result;try{localStorage.setItem("_av",JSON.stringify(avatars))}catch{}setAvatar(currentPhone);updateDrawer();renderList();showToast("Photo updated")};r.readAsDataURL(f);e.target.value=""}
