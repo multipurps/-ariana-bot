@@ -512,11 +512,13 @@ async function initTelegram() {
       } catch (e) { console.error("❌ TG message handler:", e.message); }
     }, new NewMessage({ incoming: true }));
 
-    // Reconnect on disconnect
-    tgClient.addEventHandler(() => {
-      console.log("⚠️  Telegram disconnected — reconnecting...");
-      setTimeout(() => tgClient.connect().catch(console.error), 5000);
-    }, new (require("telegram/events").Raw)({ types: ["UpdateConnectionState"] }));
+    // Reconnect on disconnect — poll every 30s (avoids gramjs Raw instanceof bug)
+    setInterval(async () => {
+      if (tgClient && !tgClient.connected) {
+        console.log("⚠️  Telegram disconnected — reconnecting...");
+        tgClient.connect().catch(console.error);
+      }
+    }, 30_000);
 
   } catch (e) {
     console.error("❌ Telegram init failed:", e.message);
