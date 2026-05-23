@@ -1,15 +1,15 @@
 {
   "name": "Ariana Monitor",
   "short_name": "Ariana",
-  "description": "Live WhatsApp monitor for Ariana Reyes",
+  "description": "Live monitor for Ariana",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b141a",
-  "theme_color": "#00a884",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "orientation": "portrait-primary",
   "icons": [
-    { "src": "/icons/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any maskable" },
-    { "src": "/icons/icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ],
   "categories": ["social", "productivity"]
 }
