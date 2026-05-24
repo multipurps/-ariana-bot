@@ -836,8 +836,6 @@ app.get("/api/telegram-status", (req, res) => {
 });
 
 // ── BRAIN API ─────────────────────────────────────────────────
-const fs   = require('fs');
-const path = require('path');
 const BRAIN_DIR = path.join(__dirname, 'brain');
 let brainCache = {};
 
