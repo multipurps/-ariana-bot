@@ -68,7 +68,7 @@ input,textarea{font-family:inherit;color:inherit}
 #sidebar.open{transform:translateX(0)}
 
 /* sidebar header */
-.sb-header{padding:20px 18px 16px;padding-top:calc(20px + env(safe-area-inset-top));border-bottom:1px solid var(--b1);flex-shrink:0}
+.sb-header{padding:16px 18px 14px;padding-top:calc(14px + env(safe-area-inset-top));padding-left:62px;border-bottom:1px solid var(--b1);flex-shrink:0}
 .sb-logo{display:flex;align-items:center;gap:10px}
 .sb-logo-icon{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,rgba(167,139,250,.2),rgba(37,211,102,.15));border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
 .sb-logo-icon img{width:100%;height:100%;object-fit:cover;border-radius:9px}
@@ -86,6 +86,7 @@ input,textarea{font-family:inherit;color:inherit}
 .sb-item.active.sms-item{background:rgba(52,199,89,.1);color:var(--sms);border:1px solid rgba(52,199,89,.15)}
 .sb-item.active.brain-item{background:rgba(167,139,250,.1);color:var(--accent);border:1px solid rgba(167,139,250,.15)}
 .sb-item.active.media-item{background:rgba(245,158,11,.1);color:var(--amber);border:1px solid rgba(245,158,11,.15)}
+.sb-item.active.gen-item{background:rgba(168,85,247,.1);color:#c084fc;border:1px solid rgba(168,85,247,.15)}
 .sb-icon{width:20px;height:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .sb-icon svg{width:18px;height:18px}
 .sb-label{font-size:14px;font-weight:500;flex:1}
@@ -317,6 +318,74 @@ input,textarea{font-family:inherit;color:inherit}
 #drop-overlay{position:fixed;inset:0;background:rgba(245,158,11,.08);border:3px dashed rgba(245,158,11,.5);z-index:200;display:none;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:var(--amber);backdrop-filter:blur(4px);pointer-events:none}
 #drop-overlay.show{display:flex}
 
+/* ═════════════════════════════════
+   GENERATE VIEW
+═════════════════════════════════ */
+#view-generate{flex-direction:column}
+#gen-topbar{display:flex;align-items:center;gap:12px;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top) + 58px);border-bottom:1px solid var(--b1);flex-shrink:0;background:rgba(0,0,0,.6)}
+#gen-topbar-title{font-size:16px;font-weight:700;flex:1}
+#gen-type-toggle{display:flex;background:var(--s2);border-radius:10px;padding:3px;gap:2px;border:1px solid var(--b1);flex-shrink:0}
+.gen-type-btn{padding:6px 16px;border-radius:8px;font-size:13px;font-weight:600;color:var(--t2);transition:all .18s;cursor:pointer;border:none}
+.gen-type-btn.active{background:rgba(168,85,247,.25);color:#c084fc}
+#gen-body{flex:1;display:flex;overflow:hidden}
+#gen-controls{width:300px;min-width:300px;display:flex;flex-direction:column;overflow-y:auto;background:rgba(8,8,12,.98);border-right:1px solid var(--b1);padding:16px;gap:0}
+#gen-controls::-webkit-scrollbar{width:0}
+.gen-section{margin-bottom:18px}
+.gen-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--t3);margin-bottom:8px}
+.gen-provider-pills{display:flex;gap:6px;flex-wrap:wrap}
+.gen-provider-pill{padding:7px 14px;border-radius:10px;font-size:13px;font-weight:600;color:var(--t2);background:var(--s1);border:1px solid var(--b1);cursor:pointer;transition:all .15s;white-space:nowrap}
+.gen-provider-pill.active{color:#c084fc;background:rgba(168,85,247,.12);border-color:rgba(168,85,247,.3)}
+.gen-provider-pill.disabled{opacity:.35;pointer-events:none}
+#gen-prompt{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--b1);border-radius:12px;padding:12px 14px;font-size:14px;color:#fff;resize:none;outline:none;line-height:1.5;height:96px;font-family:inherit}
+#gen-prompt::placeholder{color:var(--t3)}
+#gen-prompt:focus{border-color:rgba(168,85,247,.4)}
+.gen-quick-chips{display:flex;gap:6px;flex-wrap:wrap}
+.gen-chip{padding:5px 12px;border-radius:16px;font-size:12px;font-weight:600;color:var(--t2);background:var(--s1);border:1px solid var(--b1);cursor:pointer;transition:all .15s;white-space:nowrap}
+.gen-chip:hover{color:#fff;border-color:rgba(255,255,255,.2)}
+.gen-chip.active{color:#c084fc;background:rgba(168,85,247,.1);border-color:rgba(168,85,247,.3)}
+.gen-select{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--b1);border-radius:10px;padding:9px 12px;font-size:13px;color:#fff;outline:none;font-family:inherit;appearance:none;-webkit-appearance:none;cursor:pointer;margin-bottom:8px}
+.gen-select:focus{border-color:rgba(168,85,247,.4)}
+.gen-select option{background:#0e0e12;color:#fff}
+.gen-key-input{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--b1);border-radius:10px;padding:9px 12px;font-size:13px;color:#fff;outline:none;font-family:inherit}
+.gen-key-input::placeholder{color:var(--t3)}
+.gen-key-input:focus{border-color:rgba(168,85,247,.4)}
+.gen-key-hint{font-size:11px;color:var(--t3);margin-top:5px}
+#gen-btn{width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;font-size:14px;font-weight:700;border:none;cursor:pointer;transition:opacity .2s,transform .1s;letter-spacing:.2px;margin-top:4px}
+#gen-btn:active{transform:scale(.97)}
+#gen-btn:disabled{opacity:.4;cursor:not-allowed}
+#gen-results-panel{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#gen-results-scroll{flex:1;overflow-y:auto;padding:16px}
+#gen-results-scroll::-webkit-scrollbar{width:5px}
+#gen-results-scroll::-webkit-scrollbar-track{background:transparent}
+#gen-results-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px}
+#gen-empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:60px 40px;color:var(--t2);text-align:center;height:100%}
+#gen-empty-state svg{width:52px;height:52px;color:rgba(255,255,255,.07)}
+#gen-empty-state h3{font-size:16px;font-weight:400;color:rgba(255,255,255,.4)}
+#gen-empty-state p{font-size:13px;line-height:1.7;max-width:260px;color:var(--t3)}
+#gen-loading-state{display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:60px;min-height:200px}
+#gen-loading-state p{font-size:14px;color:var(--t2)}
+.gen-spinner{width:40px;height:40px;border:3px solid rgba(168,85,247,.2);border-top-color:#a855f7;border-radius:50%;animation:gen-spin .8s linear infinite}
+@keyframes gen-spin{to{transform:rotate(360deg)}}
+#gen-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
+.gen-card{border-radius:14px;overflow:hidden;background:rgba(255,255,255,.04);border:1px solid var(--b1);position:relative;transition:border-color .15s,transform .15s}
+.gen-card:hover{border-color:rgba(168,85,247,.4);transform:translateY(-2px)}
+.gen-card-img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block}
+.gen-card-vid{width:100%;aspect-ratio:9/16;object-fit:cover;display:block}
+.gen-card-overlay{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.88));padding:14px 10px 10px;display:flex;gap:6px;opacity:0;transition:opacity .2s}
+.gen-card:hover .gen-card-overlay{opacity:1}
+.gen-card-act{flex:1;padding:8px 6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:none;transition:background .15s;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center}
+.gen-card-act.save{background:rgba(168,85,247,.9);color:#fff}
+.gen-card-act.save:hover{background:rgba(168,85,247,1)}
+.gen-card-act.dl{background:rgba(255,255,255,.15);color:#fff}
+.gen-card-act.dl:hover{background:rgba(255,255,255,.25)}
+.gen-type-label{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.72);border-radius:5px;padding:2px 7px;font-size:10px;color:#fff;font-weight:600}
+.gen-prov-label{position:absolute;top:8px;right:8px;background:rgba(168,85,247,.75);border-radius:5px;padding:2px 7px;font-size:10px;color:#fff;font-weight:600}
+@media(max-width:700px){
+  #gen-body{flex-direction:column}
+  #gen-controls{width:100%;min-width:unset;border-right:none;border-bottom:1px solid var(--b1);max-height:52vh}
+  #gen-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+}
+
 /* ── MODALS ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:600;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .modal-overlay.hidden{display:none}
@@ -418,6 +487,10 @@ input,textarea{font-family:inherit;color:inherit}
     <div class="sb-item media-item" data-view="media" onclick="navTo(this)">
       <div class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
       <div class="sb-label">Media Library</div>
+    </div>
+    <div class="sb-item gen-item" data-view="generate" onclick="navTo(this)">
+      <div class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+      <div class="sb-label">Generate</div>
     </div>
   </div>
 
@@ -557,6 +630,102 @@ input,textarea{font-family:inherit;color:inherit}
         </div>
         <div id="media-grid"></div>
       </div>
+    </div><!-- end view-media -->
+
+    <!-- ══════════ GENERATE ══════════ -->
+    <div id="view-generate" class="view">
+      <div id="gen-topbar">
+        <div style="width:40px;flex-shrink:0"></div>
+        <span id="gen-topbar-title">Generate</span>
+        <div id="gen-type-toggle">
+          <button class="gen-type-btn active" onclick="setGenType('image',this)">Image</button>
+          <button class="gen-type-btn" onclick="setGenType('video',this)">Video</button>
+        </div>
+      </div>
+      <div id="gen-body">
+
+        <!-- Left: Controls -->
+        <div id="gen-controls">
+          <div class="gen-section">
+            <div class="gen-section-label">Provider</div>
+            <div class="gen-provider-pills" id="gen-provider-pills">
+              <div class="gen-provider-pill active" data-provider="fal" onclick="setGenProvider('fal',this)">Fal.ai</div>
+              <div class="gen-provider-pill" data-provider="replicate" onclick="setGenProvider('replicate',this)">Replicate</div>
+              <div class="gen-provider-pill" data-provider="runway" onclick="setGenProvider('runway',this)">Runway ML</div>
+            </div>
+          </div>
+          <div class="gen-section">
+            <div class="gen-section-label">Prompt</div>
+            <textarea id="gen-prompt" placeholder="Describe the scene — outfit, setting, expression, lighting..."></textarea>
+          </div>
+          <div class="gen-section">
+            <div class="gen-section-label">Quick Start</div>
+            <div class="gen-quick-chips">
+              <div class="gen-chip" onclick="pickChip(this,'morning selfie, bedroom, soft natural light')">Morning selfie</div>
+              <div class="gen-chip" onclick="pickChip(this,'going out, night scene, confident')">Night out</div>
+              <div class="gen-chip" onclick="pickChip(this,'beach day, golden hour, relaxed')">Beach</div>
+              <div class="gen-chip" onclick="pickChip(this,'casual home, cozy and relaxed')">Casual</div>
+              <div class="gen-chip" onclick="pickChip(this,'gym selfie, mirror, activewear')">Gym</div>
+              <div class="gen-chip" onclick="pickChip(this,'rooftop, city skyline at night, dressed up')">Rooftop</div>
+            </div>
+          </div>
+          <div class="gen-section">
+            <div class="gen-section-label">Style</div>
+            <select class="gen-select" id="gen-outfit" onchange="buildStylePrompt()">
+              <option value="">Outfit — any</option>
+              <option value="casual streetwear outfit">Casual streetwear</option>
+              <option value="sundress">Sundress</option>
+              <option value="gym wear, sports bra and leggings">Gym wear</option>
+              <option value="swimwear, beach">Swimwear</option>
+              <option value="elegant evening dress">Evening dress</option>
+              <option value="business casual, blazer">Business casual</option>
+              <option value="cozy oversized hoodie">Cozy hoodie</option>
+            </select>
+            <select class="gen-select" id="gen-setting" onchange="buildStylePrompt()">
+              <option value="">Setting — anywhere</option>
+              <option value="modern apartment interior">Apartment</option>
+              <option value="luxury hotel rooftop pool">Hotel pool</option>
+              <option value="rooftop with city skyline">Rooftop</option>
+              <option value="nightclub, neon lights">Nightclub</option>
+              <option value="tropical beach">Beach</option>
+              <option value="upscale restaurant">Restaurant</option>
+              <option value="car selfie, dashboard">In car</option>
+              <option value="bathroom mirror selfie">Bathroom mirror</option>
+            </select>
+            <select class="gen-select" id="gen-expression" onchange="buildStylePrompt()">
+              <option value="">Expression — natural</option>
+              <option value="warm genuine smile">Smiling</option>
+              <option value="serious, direct gaze">Serious</option>
+              <option value="playful smirk">Playful smirk</option>
+              <option value="laughing, candid moment">Laughing</option>
+              <option value="calm, peaceful expression">Calm</option>
+            </select>
+          </div>
+          <div class="gen-section">
+            <div class="gen-section-label" id="gen-key-label">Fal.ai API Key</div>
+            <input class="gen-key-input" id="gen-key-input" type="password" placeholder="Paste your API key..." oninput="genSaveKey()">
+            <div class="gen-key-hint" id="gen-key-hint">Stored locally in your browser only.</div>
+          </div>
+          <button id="gen-btn" onclick="runGenerate()">Generate</button>
+        </div>
+
+        <!-- Right: Results -->
+        <div id="gen-results-panel">
+          <div id="gen-results-scroll">
+            <div id="gen-empty-state">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <h3>Nothing generated yet</h3>
+              <p>Choose a provider, add your API key, write a prompt and hit Generate.</p>
+            </div>
+            <div id="gen-loading-state">
+              <div class="gen-spinner"></div>
+              <p id="gen-loading-txt">Generating...</p>
+            </div>
+            <div id="gen-grid"></div>
+          </div>
+        </div>
+
+      </div>
     </div>
 
   </div><!-- #views -->
@@ -632,6 +801,8 @@ let activePlatFilter="all",currentView="chats";
 let avatars={},wallpaper="w0";
 let brainData={},activeBrainFile=null,brainDirtySet=new Set(),brainLoaded=false;
 let mediaItems=[],activeTagFilter="all",tagModalId=null,tagModalTags=[];
+let genProvider="fal",genType="image",genResults=[];
+let genKeys={};try{genKeys=JSON.parse(localStorage.getItem("_genKeys")||"{}")}catch{}
 
 try{avatars=JSON.parse(localStorage.getItem("_av")||"{}")}catch{}
 try{wallpaper=localStorage.getItem("_wp")||"w0"}catch{}
@@ -679,6 +850,7 @@ function navTo(el){
   closeSidebar();
   if(view==="brain")initBrainView();
   if(view==="media")initMediaView();
+  if(view==="generate")initGenerateView();
 }
 
 // ══════════════════════════════════════════════
@@ -1019,7 +1191,193 @@ function fmtTime(iso){if(!iso)return"";try{const d=new Date(iso),now=new Date();
 function fmtTimeFull(iso){if(!iso)return"";try{return new Date(iso).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}catch{return""}}
 function fmtDate(iso){if(!iso)return"—";try{const d=new Date(iso),now=new Date();if(d.toDateString()===now.toDateString())return"Today";if(new Date(now-864e5).toDateString()===d.toDateString())return"Yesterday";return d.toLocaleDateString([],{month:"short",day:"numeric",year:"numeric"})}catch{return"—"}}
 let _tt;function showToast(msg){const el=document.getElementById("toast");el.textContent=String(msg||"");el.classList.add("show");clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove("show"),3000)}
-let _tx=0,_ty=0;
+
+// ══════════════════════════════════════════════
+// GENERATE
+// ══════════════════════════════════════════════
+const GEN_PROVIDER_META={
+  fal:  {label:"Fal.ai",   hint:"Get your key at fal.ai/dashboard"},
+  replicate:{label:"Replicate",hint:"Get your token at replicate.com/account/api-tokens"},
+  runway:{label:"Runway ML",hint:"Get your key at app.runwayml.com/settings/api-tokens"}
+};
+
+function initGenerateView(){
+  genLoadKey();
+  renderGenGrid();
+}
+
+function setGenProvider(p,el){
+  genProvider=p;
+  document.querySelectorAll(".gen-provider-pill").forEach(x=>x.classList.remove("active"));
+  el.classList.add("active");
+  // Runway only for video — enforce
+  if(p!=="runway"&&genType==="video"){
+    setGenType("image",document.querySelector(".gen-type-btn"));
+  }
+  updateGenProviderUI();
+}
+
+function setGenType(t,el){
+  genType=t;
+  document.querySelectorAll(".gen-type-btn").forEach(x=>x.classList.remove("active"));
+  el.classList.add("active");
+  // Video only works with Runway
+  if(t==="video"){
+    const runwayPill=document.querySelector('[data-provider="runway"]');
+    if(runwayPill)setGenProvider("runway",runwayPill);
+  }
+  // Disable non-runway pills when video selected
+  document.querySelectorAll(".gen-provider-pill").forEach(pill=>{
+    pill.classList.toggle("disabled",t==="video"&&pill.dataset.provider!=="runway");
+  });
+}
+
+function updateGenProviderUI(){
+  const meta=GEN_PROVIDER_META[genProvider]||{};
+  document.getElementById("gen-key-label").textContent=(meta.label||genProvider)+" API Key";
+  document.getElementById("gen-key-hint").textContent=meta.hint||"";
+  genLoadKey();
+}
+
+function genSaveKey(){
+  const val=document.getElementById("gen-key-input").value;
+  genKeys[genProvider]=val;
+  try{localStorage.setItem("_genKeys",JSON.stringify(genKeys))}catch{}
+}
+
+function genLoadKey(){
+  document.getElementById("gen-key-input").value=genKeys[genProvider]||"";
+}
+
+function pickChip(el,text){
+  document.querySelectorAll(".gen-chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  document.getElementById("gen-prompt").value=text;
+  // Clear style selects so they don't conflict
+  ["gen-outfit","gen-setting","gen-expression"].forEach(id=>{
+    const sel=document.getElementById(id);if(sel)sel.value="";
+  });
+}
+
+function buildStylePrompt(){
+  const outfit=document.getElementById("gen-outfit").value;
+  const setting=document.getElementById("gen-setting").value;
+  const expr=document.getElementById("gen-expression").value;
+  const parts=[outfit,setting,expr].filter(Boolean);
+  if(!parts.length)return;
+  document.getElementById("gen-prompt").value=parts.join(", ");
+  document.querySelectorAll(".gen-chip").forEach(c=>c.classList.remove("active"));
+}
+
+async function runGenerate(){
+  const prompt=(document.getElementById("gen-prompt").value||"").trim();
+  const apiKey=(document.getElementById("gen-key-input").value||"").trim();
+  if(!prompt){showToast("Enter a prompt first");return}
+  if(!apiKey){showToast("Enter your API key first");return}
+  genSaveKey();
+  const btn=document.getElementById("gen-btn");
+  btn.disabled=true;btn.textContent="Generating...";
+  genShowLoading(true,"Sending to "+GEN_PROVIDER_META[genProvider].label+"...");
+  try{
+    const endpoint=genType==="video"?"/api/generate/video":"/api/generate/image";
+    const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({provider:genProvider,apiKey,prompt,type:genType})});
+    const j=await r.json();
+    if(!j.ok)throw new Error(j.error||"Generation failed");
+    if(j.pollId){
+      await genPoll(j.pollId,apiKey,prompt);
+    } else {
+      const urls=j.urls||[j.url];
+      urls.forEach(url=>genResults.unshift({url,type:genType,prompt,provider:genProvider,ts:Date.now()}));
+      genShowLoading(false);renderGenGrid();
+    }
+  }catch(e){
+    genShowLoading(false);
+    showToast("Failed: "+e.message);
+  }finally{
+    btn.disabled=false;btn.textContent="Generate";
+  }
+}
+
+async function genPoll(pollId,apiKey,prompt,attempts=0){
+  if(attempts>60){genShowLoading(false);showToast("Timed out — check your provider dashboard");return}
+  genShowLoading(true,`Processing... (${attempts*2}s elapsed)`);
+  await new Promise(r=>setTimeout(r,2000));
+  try{
+    const r=await fetch(`/api/generate/poll/${genProvider}/${encodeURIComponent(pollId)}?apiKey=${encodeURIComponent(apiKey)}`);
+    const j=await r.json();
+    if(j.status==="done"){
+      const urls=j.urls||[j.url];
+      urls.forEach(url=>genResults.unshift({url,type:genType,prompt,provider:genProvider,ts:Date.now()}));
+      genShowLoading(false);renderGenGrid();
+    } else if(j.status==="failed"){
+      genShowLoading(false);showToast("Provider error: "+(j.error||"unknown"));
+    } else {
+      await genPoll(pollId,apiKey,prompt,attempts+1);
+    }
+  }catch(e){genShowLoading(false);showToast("Poll error: "+e.message)}
+}
+
+function genShowLoading(show,txt){
+  const ls=document.getElementById("gen-loading-state");
+  const es=document.getElementById("gen-empty-state");
+  const gr=document.getElementById("gen-grid");
+  ls.style.display=show?"flex":"none";
+  if(txt)document.getElementById("gen-loading-txt").textContent=txt;
+  if(!show){
+    if(genResults.length){es.style.display="none";gr.style.display="grid"}
+    else{es.style.display="flex";gr.style.display="none"}
+  } else {
+    es.style.display="none";
+  }
+}
+
+function renderGenGrid(){
+  const es=document.getElementById("gen-empty-state");
+  const gr=document.getElementById("gen-grid");
+  if(!genResults.length){es.style.display="flex";gr.style.display="none";return}
+  es.style.display="none";gr.style.display="grid";
+  gr.innerHTML=genResults.map((r,i)=>{
+    const isVid=r.type==="video";
+    const media=isVid
+      ?`<video class="gen-card-vid" src="${esc(r.url)}" controls playsinline muted loop></video>`
+      :`<img class="gen-card-img" src="${esc(r.url)}" alt="Generated" loading="lazy">`;
+    const provLabel=(GEN_PROVIDER_META[r.provider]||{}).label||r.provider||"";
+    return`<div class="gen-card">
+      ${media}
+      ${isVid?'<div class="gen-type-label">Video</div>':""}
+      <div class="gen-prov-label">${esc(provLabel)}</div>
+      <div class="gen-card-overlay">
+        <button class="gen-card-act save" onclick="genSaveToLibrary(${i})">Save to Library</button>
+        <a class="gen-card-act dl" href="${esc(r.url)}" download target="_blank" rel="noopener">Download</a>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+async function genSaveToLibrary(index){
+  const r=genResults[index];if(!r)return;
+  showToast("Saving to library...");
+  try{
+    const res=await fetch(r.url);
+    const blob=await res.blob();
+    const ext=r.type==="video"?"mp4":"jpg";
+    const filename=`generated_${Date.now()}.${ext}`;
+    const reader=new FileReader();
+    reader.onload=async ev=>{
+      try{
+        const up=await fetch("/api/media/upload",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+          filename,mediaType:r.type==="video"?"video":"image",data:ev.target.result,
+          tags:["ai-generated",r.provider||"fal",r.type==="video"?"video":"photo"]
+        })});
+        const j=await up.json();if(!j.ok)throw new Error(j.error);
+        mediaItems.unshift(j.item);mediaLoaded=true;
+        showToast("Saved to Media Library");
+      }catch(e){showToast("Save failed: "+e.message)}
+    };
+    reader.readAsDataURL(blob);
+  }catch(e){showToast("Could not fetch image: "+e.message)}
+}
+
 document.addEventListener("touchstart",e=>{_tx=e.touches[0].clientX;_ty=e.touches[0].clientY},{passive:true});
 document.addEventListener("touchend",e=>{const dx=e.changedTouches[0].clientX-_tx;const dy=Math.abs(e.changedTouches[0].clientY-_ty);if(_tx<35&&dx>65&&dy<80&&window.innerWidth<=700){if(document.getElementById("sidebar").classList.contains("open"))closeSidebar();else if(currentPhone)closeChat()}},{passive:true});
 </script>
