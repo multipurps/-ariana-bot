@@ -54,19 +54,30 @@ try {
   }
 } catch { console.log("⚠️  @supabase/supabase-js not installed — chats won't persist"); }
 
-const _saveTimers = {};
 async function saveConvo(id) {
-  clearTimeout(_saveTimers[id]);
-  _saveTimers[id] = setTimeout(async () => {
-    if (!supabase || !conversations[id]) return;
-    try {
-      await supabase.from("ariana_conversations").upsert(
-        { phone: id, data: conversations[id], updated_at: new Date().toISOString() },
-        { onConflict: "phone" }
-      );
-    } catch (e) { console.error("Supabase save error:", e.message); }
-  }, 800);
+  if (!supabase || !conversations[id]) return;
+  try {
+    await supabase.from("ariana_conversations").upsert(
+      { phone: id, data: conversations[id], updated_at: new Date().toISOString() },
+      { onConflict: "phone" }
+    );
+  } catch (e) { console.error("Supabase save error:", e.message); }
 }
+
+// Flush all unsaved convos before process dies
+async function flushAll() {
+  if (!supabase) return;
+  const ids = Object.keys(conversations);
+  await Promise.allSettled(ids.map(id =>
+    supabase.from("ariana_conversations").upsert(
+      { phone: id, data: conversations[id], updated_at: new Date().toISOString() },
+      { onConflict: "phone" }
+    )
+  ));
+  console.log(`💾 Flushed ${ids.length} conversations`);
+}
+process.on('SIGTERM', async () => { await flushAll(); process.exit(0); });
+process.on('SIGINT',  async () => { await flushAll(); process.exit(0); });
 
 async function loadConversations() {
   if (!supabase) return;
@@ -76,31 +87,6 @@ async function loadConversations() {
     (data || []).forEach(row => { conversations[row.phone] = row.data; });
     console.log(`✅ Loaded ${(data||[]).length} conversations from Supabase`);
   } catch (e) { console.error("Supabase load error:", e.message); }
-}
-
-async function savePushSub(sub) {
-  if (!supabase) return;
-  try {
-    const key = sub.endpoint.slice(-40);
-    await supabase.from("ariana_push_subs").upsert({ key, sub }, { onConflict: "key" });
-  } catch {}
-}
-
-async function deletePushSub(sub) {
-  if (!supabase) return;
-  try {
-    const key = sub.endpoint.slice(-40);
-    await supabase.from("ariana_push_subs").delete().eq("key", key);
-  } catch {}
-}
-
-async function loadPushSubs() {
-  if (!supabase) return;
-  try {
-    const { data } = await supabase.from("ariana_push_subs").select("sub");
-    (data || []).forEach(row => { if (row.sub) pushSubs.add(row.sub); });
-    console.log(`✅ Loaded ${(data||[]).length} push subscriptions`);
-  } catch (e) { console.error("Push subs load error:", e.message); }
 }
 
 // ── STATE ─────────────────────────────────────────────────────
@@ -522,18 +508,6 @@ async function initTelegram() {
                      || sender.username
                      || `User${chatId}`;
 
-        // Store last seen + username so dashboard can display it
-        const convoId = `tg_${chatId}`;
-        const convo = getConvo(convoId);
-        convo.tgUsername = sender.username || null;
-        convo.tgLastSeen = new Date().toISOString();
-        if (sender.status) {
-          // wasOnline gives actual last seen if available
-          convo.tgLastSeenRaw = sender.status?.wasOnline
-            ? new Date(sender.status.wasOnline * 1000).toISOString()
-            : null;
-        }
-
         console.log(`💬 TG ${name} (${chatId}): "${text}"`);
 
         await handleMessage({
@@ -616,7 +590,7 @@ async function sendPush(id, name, text) {
   const dead = [];
   for (const sub of pushSubs) {
     try { await webpush.sendNotification(sub, payload); }
-    catch (e) { if (e.statusCode === 410) { dead.push(sub); deletePushSub(sub); } }
+    catch (e) { if (e.statusCode === 410 || e.statusCode === 404) { dead.push(sub); deletePushSub(sub); } }
   }
   dead.forEach(s => pushSubs.delete(s));
 }
@@ -861,6 +835,137 @@ app.get("/api/telegram-status", (req, res) => {
   res.json({ connected: !!tgClient, hasSession: !!TG_SESSION });
 });
 
+// ── BRAIN API ─────────────────────────────────────────────────
+const fs   = require('fs');
+const path = require('path');
+const BRAIN_DIR = path.join(__dirname, 'brain');
+let brainCache = {};
+
+async function loadBrain() {
+  // Step 1: load from local JSON files
+  try {
+    fs.readdirSync(BRAIN_DIR).filter(f => f.endsWith('.json')).forEach(f => {
+      const key = f.replace('.json','');
+      try { brainCache[key] = JSON.parse(fs.readFileSync(path.join(BRAIN_DIR,f),'utf8')); } catch {}
+    });
+  } catch {}
+  // Step 2: overlay with Supabase edits (dashboard changes override repo files)
+  if (!supabase) return;
+  try {
+    const { data } = await supabase.from('ariana_brain').select('key,data');
+    (data||[]).forEach(r => { brainCache[r.key] = r.data; });
+    console.log(`🧠 Brain loaded — ${Object.keys(brainCache).length} files`);
+  } catch (e) { console.error('Brain load error:', e.message); }
+}
+
+app.get('/api/brain', (_req, res) => res.json(brainCache));
+
+app.post('/api/brain/:key', async (req, res) => {
+  const { key } = req.params;
+  const { data } = req.body;
+  if (!data) return res.status(400).json({ ok:false, error:'No data' });
+  brainCache[key] = data;
+  if (supabase) {
+    try {
+      await supabase.from('ariana_brain').upsert(
+        { key, data, updated_at: new Date().toISOString() },
+        { onConflict:'key' }
+      );
+    } catch (e) { return res.status(500).json({ ok:false, error:e.message }); }
+  }
+  res.json({ ok:true });
+});
+
+// ── MEDIA API ─────────────────────────────────────────────────
+async function ensureMediaBucket() {
+  if (!supabase) return;
+  try {
+    const { data:buckets } = await supabase.storage.listBuckets();
+    if (!(buckets||[]).find(b => b.name==='ariana-media')) {
+      await supabase.storage.createBucket('ariana-media', { public:true });
+      console.log('✅ Created ariana-media bucket');
+    }
+  } catch (e) { console.error('Bucket error:', e.message); }
+}
+
+app.get('/api/media', async (_req, res) => {
+  if (!supabase) return res.json([]);
+  try {
+    const { data } = await supabase.from('ariana_media').select('*').order('created_at',{ascending:false});
+    res.json(data||[]);
+  } catch { res.json([]); }
+});
+
+app.post('/api/media/upload', async (req, res) => {
+  if (!supabase) return res.status(500).json({ ok:false, error:'Supabase not configured' });
+  const { filename, mediaType, data:b64, tags } = req.body;
+  if (!filename||!b64) return res.status(400).json({ ok:false, error:'filename and data required' });
+  try {
+    const base64 = b64.replace(/^data:[^;]+;base64,/,'');
+    const buffer = Buffer.from(base64,'base64');
+    const ext    = (filename.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');
+    const uid    = `${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+    const storagePath = `${uid}.${ext}`;
+    const contentType = mediaType==='video' ? `video/${ext}` : `image/${ext}`;
+
+    const { error:upErr } = await supabase.storage
+      .from('ariana-media')
+      .upload(storagePath, buffer, { contentType, upsert:false });
+    if (upErr) throw new Error(upErr.message);
+
+    const { data:{ publicUrl } } = supabase.storage.from('ariana-media').getPublicUrl(storagePath);
+
+    const { data:row, error:dbErr } = await supabase.from('ariana_media').insert({
+      id:uid, filename, media_type:mediaType, url:publicUrl, storage_path:storagePath, tags:tags||[]
+    }).select().single();
+    if (dbErr) throw new Error(dbErr.message);
+
+    res.json({ ok:true, item:row });
+  } catch (e) { res.status(500).json({ ok:false, error:e.message }); }
+});
+
+app.patch('/api/media/:id/tags', async (req, res) => {
+  if (!supabase) return res.status(500).json({ ok:false, error:'Supabase not configured' });
+  try {
+    await supabase.from('ariana_media').update({ tags:req.body.tags }).eq('id',req.params.id);
+    res.json({ ok:true });
+  } catch (e) { res.status(500).json({ ok:false, error:e.message }); }
+});
+
+app.delete('/api/media/:id', async (req, res) => {
+  if (!supabase) return res.status(500).json({ ok:false, error:'Supabase not configured' });
+  try {
+    const { data:item } = await supabase.from('ariana_media').select('storage_path').eq('id',req.params.id).single();
+    if (item?.storage_path) await supabase.storage.from('ariana-media').remove([item.storage_path]);
+    await supabase.from('ariana_media').delete().eq('id',req.params.id);
+    res.json({ ok:true });
+  } catch (e) { res.status(500).json({ ok:false, error:e.message }); }
+});
+
+// ── PUSH SUBS PERSISTENCE ─────────────────────────────────────
+async function savePushSub(sub) {
+  if (!supabase) return;
+  try {
+    const key = sub.endpoint.slice(-40).replace(/[^a-zA-Z0-9]/g,'');
+    await supabase.from('ariana_push_subs').upsert({ key, sub },{ onConflict:'key' });
+  } catch {}
+}
+async function deletePushSub(sub) {
+  if (!supabase) return;
+  try {
+    const key = sub.endpoint.slice(-40).replace(/[^a-zA-Z0-9]/g,'');
+    await supabase.from('ariana_push_subs').delete().eq('key',key);
+  } catch {}
+}
+async function loadPushSubs() {
+  if (!supabase) return;
+  try {
+    const { data } = await supabase.from('ariana_push_subs').select('sub');
+    (data||[]).forEach(r => { if(r.sub) pushSubs.add(r.sub); });
+    console.log(`🔔 Loaded ${(data||[]).length} push subscriptions`);
+  } catch {}
+}
+
 // ── SOCKET ────────────────────────────────────────────────────
 io.on("connection", socket => {
   socket.emit("init", { conversations: Object.values(conversations), takenOver: [...takenOver] });
@@ -881,7 +986,9 @@ function startKeepAlive() {
 // ── START ─────────────────────────────────────────────────────
 server.listen(PORT, async () => {
   await loadConversations();
+  await loadBrain();
   await loadPushSubs();
+  await ensureMediaBucket();
   console.log(`\n🌸 Ariana LIVE on port ${PORT}`);
   console.log(`📱 WhatsApp:    ${KAPSO_API_KEY                   ? "✅" : "❌"}`);
   console.log(`🤖 Groq:        ${GROQ_API_KEY                    ? "✅" : "❌"}`);
