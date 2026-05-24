@@ -38,17 +38,21 @@ input,textarea{font-family:inherit;color:inherit}
   backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
   display:flex;align-items:center;justify-content:center;
   box-shadow:0 4px 24px rgba(0,0,0,0.5);
-  transition:background .18s,border-color .18s,transform .1s;
+  transition:background .28s,border-color .28s,box-shadow .28s,backdrop-filter .28s,transform .1s;
   cursor:pointer;
 }
 #sidebar-toggle:active{transform:scale(.91)}
-#sidebar-toggle:hover{background:rgba(30,30,38,0.98);border-color:rgba(255,255,255,0.18)}
-.toggle-icon{display:flex;flex-direction:column;align-items:center;gap:3.5px}
-.toggle-icon span{display:block;width:3px;border-radius:2px;background:#fff;transition:all .25s cubic-bezier(.4,0,.2,1)}
-.toggle-icon span:nth-child(1){height:14px}
-.toggle-icon span:nth-child(2){height:6px;opacity:.5}
-#sidebar-toggle.open .toggle-icon span:nth-child(1){height:6px;opacity:.5}
-#sidebar-toggle.open .toggle-icon span:nth-child(2){height:14px;opacity:1}
+#sidebar-toggle:hover:not(.open){background:rgba(30,30,38,0.98);border-color:rgba(255,255,255,0.18)}
+/* When sidebar is open: button dissolves into sidebar header — static, never moves */
+#sidebar-toggle.open{
+  background:transparent;
+  border-color:transparent;
+  box-shadow:none;
+  backdrop-filter:none;-webkit-backdrop-filter:none;
+}
+.toggle-icon{display:flex;align-items:center;justify-content:center;width:20px;height:20px}
+.toggle-icon svg{width:20px;height:20px;display:block;transition:opacity .2s}
+#sidebar-toggle.open .toggle-icon svg{opacity:0.85}
 
 /* ── SIDEBAR OVERLAY ── */
 #sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:400;opacity:0;pointer-events:none;transition:opacity .3s;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
@@ -386,6 +390,134 @@ input,textarea{font-family:inherit;color:inherit}
   #gen-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
 }
 
+/* ═══════════════════════════════════
+   LIVE TALK VIEW (Thing 6)
+═══════════════════════════════════ */
+#view-talk{flex-direction:column;position:relative;overflow:hidden}
+#talk-topbar{display:flex;align-items:center;gap:12px;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top));border-bottom:1px solid var(--b1);flex-shrink:0;background:rgba(8,8,12,0.98)}
+#talk-topbar-spacer{width:40px;flex-shrink:0}
+#talk-topbar-title{flex:1;font-size:16px;font-weight:600;text-align:center}
+#talk-cam-toggle{background:rgba(255,255,255,.07);border:1px solid var(--b1);color:var(--t2);border-radius:9px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px}
+#talk-cam-toggle.active{background:rgba(167,139,250,.15);border-color:rgba(167,139,250,.3);color:var(--accent)}
+#talk-cam-toggle svg{width:14px;height:14px}
+#talk-body{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+/* Camera preview */
+#talk-camera-wrap{position:absolute;top:12px;right:12px;width:100px;height:140px;border-radius:12px;overflow:hidden;border:2px solid rgba(167,139,250,.4);z-index:10;display:none;background:#000}
+#talk-camera-wrap.show{display:block}
+#talk-video{width:100%;height:100%;object-fit:cover}
+#talk-canvas{display:none}
+/* Conversation */
+#talk-convo{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+#talk-convo::-webkit-scrollbar{width:0}
+.talk-msg{max-width:72%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.5;animation:msgIn .2s ease}
+.talk-msg.user{align-self:flex-end;background:rgba(167,139,250,.2);border:1px solid rgba(167,139,250,.25);border-bottom-right-radius:4px}
+.talk-msg.ariana{align-self:flex-start;background:rgba(255,255,255,.06);border:1px solid var(--b1);border-bottom-left-radius:4px}
+.talk-msg.ariana .talk-play{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:5px 10px;background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.25);border-radius:8px;font-size:11px;color:var(--accent);cursor:pointer;transition:background .15s}
+.talk-msg.ariana .talk-play:hover{background:rgba(167,139,250,.25)}
+.talk-msg.ariana .talk-play svg{width:12px;height:12px}
+.talk-typing{align-self:flex-start;display:flex;gap:4px;padding:12px 14px;background:rgba(255,255,255,.06);border:1px solid var(--b1);border-radius:16px;border-bottom-left-radius:4px}
+.talk-typing span{width:6px;height:6px;border-radius:50%;background:var(--t3);animation:typingDot 1.2s ease infinite}
+.talk-typing span:nth-child(2){animation-delay:.2s}
+.talk-typing span:nth-child(3){animation-delay:.4s}
+@keyframes typingDot{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
+/* Mic area */
+#talk-input-area{padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom));flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:10px;border-top:1px solid var(--b1)}
+#talk-status{font-size:12px;color:var(--t3);min-height:18px;text-align:center;transition:color .2s}
+#talk-status.listening{color:var(--accent)}
+#talk-status.speaking{color:#4ade80}
+#talk-mic-btn{width:72px;height:72px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;position:relative;background:rgba(167,139,250,.15);border:2px solid rgba(167,139,250,.3)}
+#talk-mic-btn:hover{background:rgba(167,139,250,.22);transform:scale(1.03)}
+#talk-mic-btn.listening{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.5);animation:micPulse 1.5s ease infinite}
+#talk-mic-btn.speaking{background:rgba(74,222,128,.1);border-color:rgba(74,222,128,.35)}
+#talk-mic-btn svg{width:28px;height:28px;color:#fff;transition:color .2s}
+#talk-mic-btn.listening svg{color:rgb(239,68,68)}
+#talk-mic-btn.speaking svg{color:#4ade80}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4)}50%{box-shadow:0 0 0 14px rgba(239,68,68,0)}}
+#talk-mic-hint{font-size:11px;color:var(--t3);text-align:center}
+#talk-no-support{padding:40px 24px;text-align:center;color:var(--t2);font-size:14px}
+.sb-item.active.talk-item{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2)}
+
+/* ═══════════════════════════════════
+   EXTRA FEATURES VIEW (Thing 7)
+═══════════════════════════════════ */
+#view-extras{flex-direction:column}
+#extras-topbar{display:flex;align-items:center;gap:12px;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top));border-bottom:1px solid var(--b1);flex-shrink:0;background:rgba(8,8,12,0.98)}
+#extras-topbar-spacer{width:40px;flex-shrink:0}
+#extras-tabs-wrap{display:flex;gap:3px;overflow-x:auto;flex:1}
+#extras-tabs-wrap::-webkit-scrollbar{display:none}
+.extras-tab{padding:6px 13px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;color:var(--t2);transition:all .15s;white-space:nowrap;border:1px solid transparent}
+.extras-tab.active{background:rgba(255,255,255,.1);color:#fff;border-color:var(--b2)}
+#extras-body{flex:1;overflow-y:auto;padding:16px}
+#extras-body::-webkit-scrollbar{width:0}
+.extras-panel{display:none;flex-direction:column;gap:14px}
+.extras-panel.active{display:flex}
+/* Shared sub-component styles */
+.ex-card{background:rgba(255,255,255,.04);border:1px solid var(--b1);border-radius:14px;padding:14px 16px}
+.ex-card-title{font-size:13px;font-weight:700;margin-bottom:10px;color:#fff}
+.ex-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.ex-label{font-size:13px;color:var(--t2);flex:1}
+.ex-input{background:rgba(255,255,255,.07);border:1px solid var(--b1);border-radius:9px;padding:9px 12px;font-size:13px;color:#fff;width:100%;outline:none;transition:border .15s}
+.ex-input:focus{border-color:rgba(255,255,255,.25)}
+.ex-select{background:rgba(255,255,255,.07);border:1px solid var(--b1);border-radius:9px;padding:9px 12px;font-size:13px;color:#fff;width:100%;outline:none;cursor:pointer}
+.ex-select option{background:#1a1a24}
+.ex-btn{padding:9px 16px;border-radius:9px;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:all .15s}
+.ex-btn.primary{background:var(--accent);color:#fff}
+.ex-btn.primary:hover{opacity:.88}
+.ex-btn.danger{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.25)}
+.ex-btn.danger:hover{background:rgba(239,68,68,.25)}
+.ex-btn.secondary{background:rgba(255,255,255,.08);color:var(--t2);border:1px solid var(--b1)}
+.ex-btn.secondary:hover{background:rgba(255,255,255,.13);color:#fff}
+/* Scheduler */
+.sched-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid var(--b1);border-radius:10px}
+.sched-info{flex:1;font-size:12px}
+.sched-contact{font-size:13px;font-weight:600;color:#fff;margin-bottom:2px}
+.sched-time{color:var(--t3)}
+.sched-msg-preview{color:var(--t2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+/* Persona */
+.persona-contact-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid var(--b1);border-radius:10px}
+.persona-contact-row .pc-name{flex:1;font-size:13px;font-weight:600;color:#fff}
+.persona-badge{padding:3px 9px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase}
+.persona-badge.sweet{background:rgba(236,72,153,.15);color:#f472b6;border:1px solid rgba(236,72,153,.25)}
+.persona-badge.cold{background:rgba(99,102,241,.15);color:#818cf8;border:1px solid rgba(99,102,241,.25)}
+.persona-badge.flirty{background:rgba(245,158,11,.15);color:#fbbf24;border:1px solid rgba(245,158,11,.25)}
+.persona-badge.distant{background:rgba(107,114,128,.15);color:#9ca3af;border:1px solid rgba(107,114,128,.25)}
+.persona-badge.default{background:rgba(167,139,250,.15);color:var(--accent);border:1px solid rgba(167,139,250,.25)}
+/* Mood */
+.mood-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mood-btn{padding:12px 8px;border-radius:10px;border:1px solid var(--b1);background:rgba(255,255,255,.04);cursor:pointer;transition:all .15s;text-align:center;font-size:12px;font-weight:600;color:var(--t2)}
+.mood-btn:hover{background:rgba(255,255,255,.08);color:#fff}
+.mood-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(167,139,250,.1)}
+.mood-emoji{font-size:22px;margin-bottom:4px}
+/* Analytics */
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.stat-card{background:rgba(255,255,255,.04);border:1px solid var(--b1);border-radius:12px;padding:14px;text-align:center}
+.stat-num{font-size:28px;font-weight:700;color:#fff}
+.stat-label{font-size:11px;color:var(--t3);margin-top:3px}
+.stat-bar-wrap{margin-top:6px}
+.stat-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px}
+.stat-bar-name{width:80px;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;flex-shrink:0}
+.stat-bar-fill-wrap{flex:1;height:6px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden}
+.stat-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),#818cf8);transition:width .6s ease}
+.stat-bar-count{width:30px;color:var(--t3);font-size:11px;text-align:right;flex-shrink:0}
+/* Broadcast */
+.bc-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.2);border-radius:20px;font-size:12px;color:var(--accent);cursor:pointer;transition:all .15s}
+.bc-chip:hover{background:rgba(167,139,250,.22)}
+.bc-chip-remove{color:rgba(167,139,250,.6);font-size:14px;line-height:1}
+.bc-contacts-list{display:flex;flex-wrap:wrap;gap:6px;min-height:36px;padding:8px;background:rgba(255,255,255,.04);border:1px solid var(--b1);border-radius:10px}
+/* Auto-reply rules */
+.rule-row{display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid var(--b1);border-radius:10px}
+.rule-if{font-size:11px;color:var(--t3);flex-shrink:0}
+.rule-trigger{font-size:12px;font-weight:600;color:#fff;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rule-then{font-size:11px;color:var(--t3);flex-shrink:0}
+.rule-reply{font-size:12px;color:var(--t2);flex:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rule-del{background:none;border:none;color:var(--t3);cursor:pointer;padding:4px;border-radius:5px;transition:color .15s;flex-shrink:0}
+.rule-del:hover{color:#f87171}
+.sb-item.active.extras-item{background:rgba(245,158,11,.1);color:var(--amber);border:1px solid rgba(245,158,11,.2)}
+@media(max-width:700px){
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .mood-grid{grid-template-columns:repeat(3,1fr)}
+}
+
 /* ── MODALS ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:600;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .modal-overlay.hidden{display:none}
@@ -430,7 +562,16 @@ input,textarea{font-family:inherit;color:inherit}
 
 <!-- SIDEBAR TOGGLE BUTTON -->
 <button id="sidebar-toggle" onclick="toggleSidebar()" aria-label="Menu">
-  <div class="toggle-icon"><span></span><span></span></div>
+  <div class="toggle-icon">
+    <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Outer rounded rect (the window frame) -->
+      <rect x="1.5" y="2.5" width="17" height="15" rx="2.5" stroke="white" stroke-width="1.5" fill="none"/>
+      <!-- Left sidebar panel fill -->
+      <rect x="1.5" y="2.5" width="6" height="15" rx="2.5" fill="white" fill-opacity="0.9"/>
+      <!-- Vertical divider line -->
+      <line x1="7.5" y1="2.5" x2="7.5" y2="17.5" stroke="white" stroke-width="1.5" opacity="0.15"/>
+    </svg>
+  </div>
 </button>
 
 <!-- SIDEBAR OVERLAY -->
@@ -491,6 +632,14 @@ input,textarea{font-family:inherit;color:inherit}
     <div class="sb-item gen-item" data-view="generate" onclick="navTo(this)">
       <div class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
       <div class="sb-label">Generate</div>
+    </div>
+    <div class="sb-item talk-item" data-view="talk" onclick="navTo(this)">
+      <div class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
+      <div class="sb-label">Live Talk</div>
+    </div>
+    <div class="sb-item extras-item" data-view="extras" onclick="navTo(this)">
+      <div class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14M12 2v2M12 20v2M2 12h2M20 12h2"/></svg></div>
+      <div class="sb-label">Extras</div>
     </div>
   </div>
 
@@ -728,6 +877,125 @@ input,textarea{font-family:inherit;color:inherit}
       </div>
     </div>
 
+    <!-- LIVE TALK VIEW (Thing 6) -->
+    <div id="view-talk" class="view">
+      <div id="talk-topbar">
+        <div id="talk-topbar-spacer"></div>
+        <span id="talk-topbar-title">Live Talk</span>
+        <button id="talk-cam-toggle" onclick="toggleTalkCamera()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+          Camera
+        </button>
+      </div>
+      <div id="talk-body">
+        <div id="talk-camera-wrap">
+          <video id="talk-video" autoplay muted playsinline></video>
+          <canvas id="talk-canvas" width="320" height="240"></canvas>
+        </div>
+        <div id="talk-convo"></div>
+      </div>
+      <div id="talk-input-area">
+        <div id="talk-status">Tap the mic to speak</div>
+        <button id="talk-mic-btn" onclick="toggleTalkMic()">
+          <svg id="talk-mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </button>
+        <div id="talk-mic-hint">Tap mic to speak to Ariana</div>
+      </div>
+    </div>
+
+    <!-- EXTRAS VIEW (Thing 7) -->
+    <div id="view-extras" class="view">
+      <div id="extras-topbar">
+        <div id="extras-topbar-spacer"></div>
+        <div id="extras-tabs-wrap">
+          <div class="extras-tab active" data-tab="mood" onclick="extrasTab(this)">Mood</div>
+          <div class="extras-tab" data-tab="scheduler" onclick="extrasTab(this)">Scheduler</div>
+          <div class="extras-tab" data-tab="persona" onclick="extrasTab(this)">Persona</div>
+          <div class="extras-tab" data-tab="broadcast" onclick="extrasTab(this)">Broadcast</div>
+          <div class="extras-tab" data-tab="rules" onclick="extrasTab(this)">Auto-Reply</div>
+          <div class="extras-tab" data-tab="analytics" onclick="extrasTab(this)">Analytics</div>
+        </div>
+      </div>
+      <div id="extras-body">
+        <div class="extras-panel active" id="extras-panel-mood">
+          <div class="ex-card">
+            <div class="ex-card-title">Ariana's Current Mood</div>
+            <div class="mood-grid" id="mood-grid">
+              <div class="mood-btn" data-mood="happy" onclick="setMood(this)"><div class="mood-emoji">😊</div>Happy</div>
+              <div class="mood-btn" data-mood="flirty" onclick="setMood(this)"><div class="mood-emoji">😏</div>Flirty</div>
+              <div class="mood-btn" data-mood="cold" onclick="setMood(this)"><div class="mood-emoji">🥶</div>Cold</div>
+              <div class="mood-btn" data-mood="sad" onclick="setMood(this)"><div class="mood-emoji">🥺</div>Sad</div>
+              <div class="mood-btn" data-mood="angry" onclick="setMood(this)"><div class="mood-emoji">😤</div>Angry</div>
+              <div class="mood-btn" data-mood="playful" onclick="setMood(this)"><div class="mood-emoji">🎉</div>Playful</div>
+              <div class="mood-btn" data-mood="tired" onclick="setMood(this)"><div class="mood-emoji">😴</div>Tired</div>
+              <div class="mood-btn" data-mood="romantic" onclick="setMood(this)"><div class="mood-emoji">❤️</div>Romantic</div>
+              <div class="mood-btn" data-mood="mysterious" onclick="setMood(this)"><div class="mood-emoji">🌙</div>Mysterious</div>
+            </div>
+          </div>
+          <div class="ex-card" id="mood-status-card" style="display:none">
+            <div class="ex-card-title">Active Override</div>
+            <div id="mood-status-text" style="font-size:13px;color:var(--t2)"></div>
+            <div style="margin-top:10px"><button class="ex-btn danger" onclick="clearMood()">Clear Mood Override</button></div>
+          </div>
+        </div>
+        <div class="extras-panel" id="extras-panel-scheduler">
+          <div class="ex-card">
+            <div class="ex-card-title">Schedule a Message</div>
+            <select class="ex-select" id="sched-contact-sel" style="margin-bottom:8px"></select>
+            <input class="ex-input" type="datetime-local" id="sched-time" style="margin-bottom:8px">
+            <textarea class="ex-input" id="sched-msg" rows="3" placeholder="What should Ariana say?" style="resize:none;margin-bottom:10px"></textarea>
+            <button class="ex-btn primary" onclick="addSchedule()">Schedule</button>
+          </div>
+          <div class="ex-card">
+            <div class="ex-card-title">Upcoming</div>
+            <div id="sched-list" style="display:flex;flex-direction:column;gap:8px"></div>
+            <div id="sched-empty" style="font-size:13px;color:var(--t3);text-align:center;padding:16px">No scheduled messages yet</div>
+          </div>
+        </div>
+        <div class="extras-panel" id="extras-panel-persona">
+          <div class="ex-card">
+            <div class="ex-card-title">Persona Per Contact</div>
+            <p style="font-size:12px;color:var(--t3);margin-bottom:12px">Set how Ariana behaves with each person.</p>
+            <div id="persona-list" style="display:flex;flex-direction:column;gap:8px"></div>
+          </div>
+        </div>
+        <div class="extras-panel" id="extras-panel-broadcast">
+          <div class="ex-card">
+            <div class="ex-card-title">Broadcast Message</div>
+            <p style="font-size:12px;color:var(--t3);margin-bottom:10px">Send one message to multiple contacts as Ariana.</p>
+            <div class="bc-contacts-list" id="bc-selected"></div>
+            <select class="ex-select" id="bc-contact-picker" onchange="bcAddContact(this)" style="margin-top:8px;margin-bottom:10px"><option value="">+ Add contact...</option></select>
+            <textarea class="ex-input" id="bc-msg" rows="3" placeholder="Message to broadcast..." style="resize:none;margin-bottom:10px"></textarea>
+            <button class="ex-btn primary" onclick="runBroadcast()">Send to All</button>
+          </div>
+          <div class="ex-card" id="bc-result-card" style="display:none">
+            <div class="ex-card-title">Result</div>
+            <div id="bc-result" style="font-size:13px;color:var(--t2)"></div>
+          </div>
+        </div>
+        <div class="extras-panel" id="extras-panel-rules">
+          <div class="ex-card">
+            <div class="ex-card-title">Add Auto-Reply Rule</div>
+            <input class="ex-input" id="rule-trigger-input" placeholder="If message contains... e.g. are you real" style="margin-bottom:8px">
+            <textarea class="ex-input" id="rule-reply-input" rows="2" placeholder="Always reply with..." style="resize:none;margin-bottom:10px"></textarea>
+            <button class="ex-btn primary" onclick="addRule()">Add Rule</button>
+          </div>
+          <div class="ex-card">
+            <div class="ex-card-title">Active Rules</div>
+            <div id="rules-list" style="display:flex;flex-direction:column;gap:8px"></div>
+            <div id="rules-empty" style="font-size:13px;color:var(--t3);text-align:center;padding:16px">No rules yet</div>
+          </div>
+        </div>
+        <div class="extras-panel" id="extras-panel-analytics">
+          <div class="stat-grid" id="analytics-stats"></div>
+          <div class="ex-card" style="margin-top:4px">
+            <div class="ex-card-title">Most Active Contacts</div>
+            <div class="stat-bar-wrap" id="analytics-toplist"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- #views -->
 </div><!-- #app -->
 
@@ -851,6 +1119,8 @@ function navTo(el){
   if(view==="brain")initBrainView();
   if(view==="media")initMediaView();
   if(view==="generate")initGenerateView();
+  if(view==="extras"){window._cachedConvos=convos;initExtras();}
+  if(view==="talk"){window._cachedConvos=convos;}
 }
 
 // ══════════════════════════════════════════════
@@ -1376,6 +1646,419 @@ async function genSaveToLibrary(index){
     };
     reader.readAsDataURL(blob);
   }catch(e){showToast("Could not fetch image: "+e.message)}
+}
+
+
+// ══════════════════════════════════════════════
+// LIVE TALK (Thing 6)
+// ══════════════════════════════════════════════
+let talkRecog = null;
+let talkListening = false;
+let talkCameraOn = false;
+let talkStream = null;
+let talkHistory = [];
+let talkAudio = null;
+
+function talkSetStatus(msg, cls='') {
+  const s = document.getElementById('talk-status');
+  s.textContent = msg;
+  s.className = cls;
+}
+
+function talkAppendMsg(role, text, audioBase64) {
+  const convo = document.getElementById('talk-convo');
+  const div = document.createElement('div');
+  div.className = 'talk-msg ' + role;
+  div.textContent = text;
+  if (role === 'ariana' && audioBase64) {
+    const playBtn = document.createElement('div');
+    playBtn.className = 'talk-play';
+    playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> Play voice';
+    const ab64 = audioBase64;
+    playBtn.onclick = () => playTalkAudio(ab64);
+    div.appendChild(playBtn);
+  }
+  convo.appendChild(div);
+  convo.scrollTop = convo.scrollHeight;
+  return div;
+}
+
+function talkShowTyping() {
+  const convo = document.getElementById('talk-convo');
+  const div = document.createElement('div');
+  div.className = 'talk-typing';
+  div.id = 'talk-typing-indicator';
+  div.innerHTML = '<span></span><span></span><span></span>';
+  convo.appendChild(div);
+  convo.scrollTop = convo.scrollHeight;
+}
+
+function talkHideTyping() {
+  const el = document.getElementById('talk-typing-indicator');
+  if (el) el.remove();
+}
+
+function playTalkAudio(base64) {
+  if (talkAudio) { talkAudio.pause(); talkAudio = null; }
+  const blob = b64ToBlob(base64, 'audio/mpeg');
+  const url = URL.createObjectURL(blob);
+  talkAudio = new Audio(url);
+  const btn = document.getElementById('talk-mic-btn');
+  btn.classList.add('speaking');
+  talkSetStatus('Ariana is speaking...', 'speaking');
+  talkAudio.onended = () => {
+    btn.classList.remove('speaking');
+    talkSetStatus('Tap the mic to speak');
+    URL.revokeObjectURL(url);
+  };
+  talkAudio.play();
+}
+
+function b64ToBlob(b64, type) {
+  const bytes = atob(b64);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+  return new Blob([arr], { type });
+}
+
+async function toggleTalkCamera() {
+  const btn = document.getElementById('talk-cam-toggle');
+  const wrap = document.getElementById('talk-camera-wrap');
+  const video = document.getElementById('talk-video');
+  if (!talkCameraOn) {
+    try {
+      talkStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+      video.srcObject = talkStream;
+      wrap.classList.add('show');
+      btn.classList.add('active');
+      talkCameraOn = true;
+    } catch(e) { showToast('Camera access denied'); }
+  } else {
+    if (talkStream) { talkStream.getTracks().forEach(t => t.stop()); talkStream = null; }
+    video.srcObject = null;
+    wrap.classList.remove('show');
+    btn.classList.remove('active');
+    talkCameraOn = false;
+  }
+}
+
+function captureCameraFrame() {
+  if (!talkCameraOn || !talkStream) return null;
+  const canvas = document.getElementById('talk-canvas');
+  const video = document.getElementById('talk-video');
+  canvas.width = 320; canvas.height = 240;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, 320, 240);
+  return canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+}
+
+function toggleTalkMic() {
+  if (talkListening) {
+    stopTalkListening();
+  } else {
+    startTalkListening();
+  }
+}
+
+function startTalkListening() {
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRec) {
+    showToast('Speech recognition not supported in this browser');
+    return;
+  }
+  if (talkAudio) { talkAudio.pause(); talkAudio = null; }
+  talkRecog = new SpeechRec();
+  talkRecog.lang = 'en-US';
+  talkRecog.interimResults = false;
+  talkRecog.maxAlternatives = 1;
+  talkRecog.onstart = () => {
+    talkListening = true;
+    document.getElementById('talk-mic-btn').classList.add('listening');
+    talkSetStatus('Listening...', 'listening');
+  };
+  talkRecog.onresult = async (e) => {
+    const transcript = e.results[0][0].transcript;
+    stopTalkListening(true);
+    await processTalkMessage(transcript);
+  };
+  talkRecog.onerror = (e) => {
+    stopTalkListening(true);
+    if (e.error !== 'aborted') talkSetStatus('Could not hear you — try again');
+  };
+  talkRecog.onend = () => { if (talkListening) stopTalkListening(true); };
+  talkRecog.start();
+}
+
+function stopTalkListening(keepState) {
+  talkListening = false;
+  document.getElementById('talk-mic-btn').classList.remove('listening');
+  if (!keepState) talkSetStatus('Tap the mic to speak');
+  if (talkRecog) { try { talkRecog.abort(); } catch(e) {} talkRecog = null; }
+}
+
+async function processTalkMessage(text) {
+  talkAppendMsg('user', text, null);
+  talkHistory.push({ role: 'user', content: text });
+  talkShowTyping();
+  talkSetStatus('Ariana is thinking...');
+  const imageBase64 = captureCameraFrame();
+  try {
+    const res = await fetch('/api/talk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, history: talkHistory.slice(-10), imageBase64 })
+    });
+    const data = await res.json();
+    talkHideTyping();
+    if (data.reply) {
+      talkHistory.push({ role: 'assistant', content: data.reply });
+      const msgEl = talkAppendMsg('ariana', data.reply, data.audioBase64 || null);
+      if (data.audioBase64) {
+        setTimeout(() => playTalkAudio(data.audioBase64), 300);
+      } else {
+        talkSetStatus('Tap the mic to speak');
+      }
+    } else {
+      talkSetStatus('Something went wrong — try again');
+    }
+  } catch(e) {
+    talkHideTyping();
+    talkSetStatus('Connection error — try again');
+  }
+}
+
+// ══════════════════════════════════════════════
+// EXTRAS (Thing 7)
+// ══════════════════════════════════════════════
+let extrasReady = false;
+let schedules = [];
+let personas = {};
+let autoRules = [];
+let activeMood = null;
+let bcSelected = [];
+
+function extrasTab(el) {
+  document.querySelectorAll('.extras-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const tab = el.dataset.tab;
+  document.querySelectorAll('.extras-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('extras-panel-' + tab).classList.add('active');
+  if (tab === 'analytics') loadAnalytics();
+  if (tab === 'scheduler' || tab === 'persona' || tab === 'broadcast') populateContactDropdowns();
+  if (tab === 'persona') renderPersonaList();
+  if (tab === 'scheduler') renderSchedules();
+  if (tab === 'rules') renderRules();
+}
+
+// ── Mood ──
+function setMood(el) {
+  const mood = el.dataset.mood;
+  activeMood = mood;
+  document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('mood-status-card').style.display = 'block';
+  document.getElementById('mood-status-text').textContent = 'Ariana is currently feeling ' + mood + '. Her responses will reflect this mood.';
+  fetch('/api/extras/mood', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mood }) });
+  showToast('Mood set to ' + mood);
+}
+function clearMood() {
+  activeMood = null;
+  document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mood-status-card').style.display = 'none';
+  fetch('/api/extras/mood', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mood: null }) });
+  showToast('Mood override cleared');
+}
+async function loadMood() {
+  try {
+    const res = await fetch('/api/extras/mood');
+    const d = await res.json();
+    if (d.mood) { activeMood = d.mood; document.querySelector(`.mood-btn[data-mood="${d.mood}"]`)?.classList.add('active'); document.getElementById('mood-status-card').style.display='block'; document.getElementById('mood-status-text').textContent='Ariana is currently feeling '+d.mood+'.'; }
+  } catch(e) {}
+}
+
+// ── Scheduler ──
+function populateContactDropdowns() {
+  const convos = window._cachedConvos || {};
+  const phones = Object.keys(convos);
+  ['sched-contact-sel','bc-contact-picker'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const isBC = id === 'bc-contact-picker';
+    sel.innerHTML = isBC ? '<option value="">+ Add contact...</option>' : '';
+    phones.forEach(p => {
+      const o = document.createElement('option');
+      o.value = p;
+      o.textContent = convos[p].name || p;
+      sel.appendChild(o);
+    });
+  });
+}
+async function addSchedule() {
+  const phone = document.getElementById('sched-contact-sel').value;
+  const time = document.getElementById('sched-time').value;
+  const msg = document.getElementById('sched-msg').value.trim();
+  if (!phone || !time || !msg) { showToast('Fill in all fields'); return; }
+  const item = { id: Date.now(), phone, time, msg };
+  schedules.push(item);
+  try { await fetch('/api/extras/schedules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ schedules }) }); } catch(e) {}
+  document.getElementById('sched-msg').value = '';
+  renderSchedules();
+  showToast('Scheduled!');
+}
+function renderSchedules() {
+  const list = document.getElementById('sched-list');
+  const empty = document.getElementById('sched-empty');
+  const convos = window._cachedConvos || {};
+  list.innerHTML = '';
+  if (!schedules.length) { empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  schedules.forEach((s, i) => {
+    const name = convos[s.phone]?.name || s.phone;
+    const dt = new Date(s.time).toLocaleString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    const row = document.createElement('div');
+    row.className = 'sched-item';
+    row.innerHTML = `<div class="sched-info"><div class="sched-contact">${name}</div><div class="sched-time">${dt}</div><div class="sched-msg-preview">${s.msg}</div></div><button class="ex-btn danger" style="padding:6px 10px;font-size:11px" onclick="delSchedule(${i})">Remove</button>`;
+    list.appendChild(row);
+  });
+}
+function delSchedule(i) { schedules.splice(i, 1); fetch('/api/extras/schedules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ schedules }) }); renderSchedules(); }
+
+// ── Persona ──
+const PERSONAS = ['default','sweet','cold','flirty','distant'];
+function renderPersonaList() {
+  const list = document.getElementById('persona-list');
+  const convos = window._cachedConvos || {};
+  list.innerHTML = '';
+  Object.keys(convos).forEach(phone => {
+    const name = convos[phone].name || phone;
+    const current = personas[phone] || 'default';
+    const row = document.createElement('div');
+    row.className = 'persona-contact-row';
+    row.innerHTML = `<div class="pc-name">${name}</div>
+      <select class="ex-select" style="width:120px;flex-shrink:0" onchange="setPersona('${phone}',this.value)">
+        ${PERSONAS.map(p => `<option value="${p}" ${p===current?'selected':''}>${p.charAt(0).toUpperCase()+p.slice(1)}</option>`).join('')}
+      </select>`;
+    list.appendChild(row);
+  });
+}
+async function setPersona(phone, persona) {
+  personas[phone] = persona;
+  try { await fetch('/api/extras/personas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ personas }) }); } catch(e) {}
+  showToast('Persona updated');
+}
+async function loadPersonas() {
+  try { const res = await fetch('/api/extras/personas'); const d = await res.json(); if (d.personas) personas = d.personas; } catch(e) {}
+}
+
+// ── Broadcast ──
+function bcAddContact(sel) {
+  const phone = sel.value;
+  if (!phone || bcSelected.includes(phone)) { sel.value = ''; return; }
+  bcSelected.push(phone);
+  sel.value = '';
+  renderBcSelected();
+}
+function bcRemoveContact(phone) {
+  bcSelected = bcSelected.filter(p => p !== phone);
+  renderBcSelected();
+}
+function renderBcSelected() {
+  const wrap = document.getElementById('bc-selected');
+  const convos = window._cachedConvos || {};
+  wrap.innerHTML = '';
+  bcSelected.forEach(p => {
+    const chip = document.createElement('div');
+    chip.className = 'bc-chip';
+    chip.innerHTML = `${convos[p]?.name || p} <span class="bc-chip-remove" onclick="bcRemoveContact('${p}')">×</span>`;
+    wrap.appendChild(chip);
+  });
+}
+async function runBroadcast() {
+  const msg = document.getElementById('bc-msg').value.trim();
+  if (!bcSelected.length) { showToast('Select at least one contact'); return; }
+  if (!msg) { showToast('Enter a message'); return; }
+  const btn = document.querySelector('#extras-panel-broadcast .ex-btn.primary');
+  btn.textContent = 'Sending...'; btn.disabled = true;
+  let ok = 0, fail = 0;
+  for (const phone of bcSelected) {
+    try {
+      const res = await fetch('/api/send/' + phone, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: msg }) });
+      const d = await res.json();
+      if (d.ok) ok++; else fail++;
+    } catch(e) { fail++; }
+  }
+  btn.textContent = 'Send to All'; btn.disabled = false;
+  document.getElementById('bc-result-card').style.display = 'block';
+  document.getElementById('bc-result').textContent = `Sent to ${ok} contact${ok!==1?'s':''}.${fail?' '+fail+' failed.':''}`;
+  showToast(`Broadcast done: ${ok} sent`);
+}
+
+// ── Auto-reply Rules ──
+async function addRule() {
+  const trigger = document.getElementById('rule-trigger-input').value.trim().toLowerCase();
+  const reply = document.getElementById('rule-reply-input').value.trim();
+  if (!trigger || !reply) { showToast('Fill both fields'); return; }
+  autoRules.push({ id: Date.now(), trigger, reply });
+  document.getElementById('rule-trigger-input').value = '';
+  document.getElementById('rule-reply-input').value = '';
+  await saveRules();
+  renderRules();
+  showToast('Rule added');
+}
+async function saveRules() {
+  try { await fetch('/api/extras/rules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rules: autoRules }) }); } catch(e) {}
+}
+function renderRules() {
+  const list = document.getElementById('rules-list');
+  const empty = document.getElementById('rules-empty');
+  list.innerHTML = '';
+  if (!autoRules.length) { empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  autoRules.forEach((r, i) => {
+    const row = document.createElement('div');
+    row.className = 'rule-row';
+    row.innerHTML = `<span class="rule-if">if</span><span class="rule-trigger">"${r.trigger}"</span><span class="rule-then">→</span><span class="rule-reply">"${r.reply}"</span><button class="rule-del" onclick="delRule(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>`;
+    list.appendChild(row);
+  });
+}
+async function delRule(i) { autoRules.splice(i, 1); await saveRules(); renderRules(); }
+async function loadRules() {
+  try { const res = await fetch('/api/extras/rules'); const d = await res.json(); if (d.rules) { autoRules = d.rules; renderRules(); } } catch(e) {}
+}
+
+// ── Analytics ──
+async function loadAnalytics() {
+  try {
+    const res = await fetch('/api/extras/analytics');
+    const d = await res.json();
+    const statsEl = document.getElementById('analytics-stats');
+    statsEl.innerHTML = `
+      <div class="stat-card"><div class="stat-num">${d.totalMessages||0}</div><div class="stat-label">Total Messages</div></div>
+      <div class="stat-card"><div class="stat-num">${d.totalContacts||0}</div><div class="stat-label">Contacts</div></div>
+      <div class="stat-card"><div class="stat-num">${d.waMessages||0}</div><div class="stat-label">WhatsApp Msgs</div></div>
+      <div class="stat-card"><div class="stat-num">${d.avgPerContact||0}</div><div class="stat-label">Avg per Contact</div></div>`;
+    const topEl = document.getElementById('analytics-toplist');
+    topEl.innerHTML = '';
+    const top = d.topContacts || [];
+    const maxCount = top[0]?.count || 1;
+    top.slice(0, 8).forEach(c => {
+      const pct = Math.round((c.count / maxCount) * 100);
+      const row = document.createElement('div');
+      row.className = 'stat-bar-row';
+      row.innerHTML = `<span class="stat-bar-name">${c.name||c.phone}</span><div class="stat-bar-fill-wrap"><div class="stat-bar-fill" style="width:${pct}%"></div></div><span class="stat-bar-count">${c.count}</span>`;
+      topEl.appendChild(row);
+    });
+  } catch(e) { document.getElementById('analytics-stats').innerHTML = '<p style="color:var(--t3);font-size:13px;padding:12px">Could not load analytics</p>'; }
+}
+
+// Load extras data when view activates
+const _origNavTo = navTo;
+
+// Initialize extras on first load
+async function initExtras() {
+  await loadMood();
+  await loadPersonas();
+  await loadRules();
 }
 
 document.addEventListener("touchstart",e=>{_tx=e.touches[0].clientX;_ty=e.touches[0].clientY},{passive:true});
