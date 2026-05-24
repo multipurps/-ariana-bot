@@ -998,6 +998,112 @@ app.delete('/api/media/:id', async (req, res) => {
   } catch (e) { res.status(500).json({ ok:false, error:e.message }); }
 });
 
+// ── AI GENERATION PROXY ───────────────────────────────────────
+
+app.post('/api/generate/image', async (req, res) => {
+  const { provider, apiKey, prompt } = req.body;
+  if (!provider || !apiKey || !prompt) {
+    return res.status(400).json({ ok:false, error:'provider, apiKey and prompt required' });
+  }
+  try {
+    if (provider === 'fal') {
+      const r = await axios.post(
+        'https://fal.run/fal-ai/flux/dev',
+        { prompt, image_size:'portrait_4_3', num_inference_steps:28, num_images:1, enable_safety_checker:true },
+        { headers:{ Authorization:`Key ${apiKey}`, 'Content-Type':'application/json' }, timeout:120000 }
+      );
+      const images = r.data?.images || [];
+      if (!images.length) throw new Error('No images returned from Fal.ai');
+      return res.json({ ok:true, urls: images.map(i => i.url) });
+    }
+
+    if (provider === 'replicate') {
+      const r = await axios.post(
+        'https://api.replicate.com/v1/models/black-forest-labs/flux-dev/predictions',
+        { input:{ prompt, aspect_ratio:'3:4', num_outputs:1, output_format:'jpg' } },
+        { headers:{ Authorization:`Token ${apiKey}`, 'Content-Type':'application/json' } }
+      );
+      const pollId = r.data?.id;
+      if (!pollId) throw new Error('No prediction ID from Replicate');
+      return res.json({ ok:true, pollId });
+    }
+
+    res.status(400).json({ ok:false, error:`Unknown provider: ${provider}` });
+  } catch (e) {
+    const msg = e.response?.data?.detail || e.response?.data?.error || e.message;
+    res.status(500).json({ ok:false, error:msg });
+  }
+});
+
+app.post('/api/generate/video', async (req, res) => {
+  const { provider, apiKey, prompt, imageUrl } = req.body;
+  if (!provider || !apiKey || !prompt) {
+    return res.status(400).json({ ok:false, error:'provider, apiKey and prompt required' });
+  }
+  try {
+    if (provider === 'runway') {
+      const body = { model:'gen4_turbo', promptText:prompt, duration:5, ratio:'768:1280' };
+      if (imageUrl) body.promptImage = imageUrl;
+      const r = await axios.post(
+        'https://api.dev.runwayml.com/v1/image_to_video',
+        body,
+        { headers:{ Authorization:`Bearer ${apiKey}`, 'Content-Type':'application/json', 'X-Runway-Version':'2024-11-06' } }
+      );
+      const pollId = r.data?.id;
+      if (!pollId) throw new Error('No task ID from Runway ML');
+      return res.json({ ok:true, pollId });
+    }
+    res.status(400).json({ ok:false, error:`Unknown video provider: ${provider}` });
+  } catch (e) {
+    const msg = e.response?.data?.message || e.response?.data?.error || e.message;
+    res.status(500).json({ ok:false, error:msg });
+  }
+});
+
+app.get('/api/generate/poll/:provider/:id', async (req, res) => {
+  const { provider, id } = req.params;
+  const apiKey = req.query.apiKey;
+  if (!apiKey) return res.status(400).json({ ok:false, error:'apiKey query param required' });
+  try {
+    if (provider === 'replicate') {
+      const r = await axios.get(
+        `https://api.replicate.com/v1/predictions/${id}`,
+        { headers:{ Authorization:`Token ${apiKey}` } }
+      );
+      const { status, output, error } = r.data;
+      if (status === 'succeeded') {
+        const urls = Array.isArray(output) ? output : [output];
+        return res.json({ ok:true, status:'done', urls });
+      }
+      if (status === 'failed' || status === 'canceled') {
+        return res.json({ ok:false, status:'failed', error: error || 'Prediction failed' });
+      }
+      return res.json({ ok:true, status:'pending' });
+    }
+
+    if (provider === 'runway') {
+      const r = await axios.get(
+        `https://api.dev.runwayml.com/v1/tasks/${id}`,
+        { headers:{ Authorization:`Bearer ${apiKey}`, 'X-Runway-Version':'2024-11-06' } }
+      );
+      const { status, output, failure } = r.data;
+      if (status === 'SUCCEEDED') {
+        const urls = Array.isArray(output) ? output : [output];
+        return res.json({ ok:true, status:'done', urls });
+      }
+      if (status === 'FAILED') {
+        return res.json({ ok:false, status:'failed', error: failure || 'Task failed' });
+      }
+      return res.json({ ok:true, status:'pending' });
+    }
+
+    res.status(400).json({ ok:false, error:`Unknown provider: ${provider}` });
+  } catch (e) {
+    const msg = e.response?.data?.message || e.response?.data?.error || e.message;
+    res.status(500).json({ ok:false, error:msg });
+  }
+});
+
 // ── PUSH SUBS PERSISTENCE ─────────────────────────────────────
 async function savePushSub(sub) {
   if (!supabase) return;
