@@ -367,7 +367,34 @@ async function getReply(id, userMsg, systemOverride) {
     systemOverride = OWNER_PROMPT;
   }
 
-  const sys = systemOverride || SYSTEM_PROMPT;
+  // Check auto-reply rules first
+  const lowerMsg = (userMsg || "").toLowerCase();
+  for (const rule of extrasRules) {
+    if (rule.trigger && lowerMsg.includes(rule.trigger.toLowerCase())) {
+      console.log(`[rules] matched: "${rule.trigger}"`);
+      return rule.reply;
+    }
+  }
+
+  // Build system prompt with mood override if set
+  let sys = systemOverride || SYSTEM_PROMPT;
+  if (extrasMood && !systemOverride) {
+    sys += `\n\nCURRENT MOOD OVERRIDE: You are feeling ${extrasMood} right now. Let this genuinely influence your tone, energy, and word choice.`;
+  }
+
+  // Apply per-contact persona if set
+  const personaForContact = extrasPersonas[rawPhone];
+  if (personaForContact && personaForContact !== 'default' && !systemOverride) {
+    const personaMap = {
+      sweet: "Be extra warm, caring, and affectionate with this person.",
+      cold: "Be distant, short, and slightly detached with this person. Not rude, just cold.",
+      flirty: "Be playfully flirty and teasing with this person.",
+      distant: "Be very brief and minimal with this person. One-word or short answers."
+    };
+    const inst = personaMap[personaForContact];
+    if (inst) sys += `\n\nPERSONA FOR THIS CONTACT: ${inst}`;
+  }
+
   const history = convo.messages.slice(-20).map(m => ({
     role: m.role === "user" ? "user" : "assistant",
     content: m.text
@@ -1133,6 +1160,141 @@ io.on("connection", socket => {
   socket.emit("init", { conversations: Object.values(conversations), takenOver: [...takenOver] });
 });
 
+
+// ── LIVE TALK ────────────────────────────────────────────────
+async function ttsBase64(text) {
+  const apiKey  = process.env.ELEVENLABS_API_KEY;
+  const voiceId = process.env.ELEVENLABS_VOICE_ID;
+  if (!apiKey || !voiceId) return null;
+  try {
+    const res = await axios.post(
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+      { text, model_id: "eleven_multilingual_v2", voice_settings: { stability: 0.5, similarity_boost: 0.75 } },
+      { headers: { "xi-api-key": apiKey, "Content-Type": "application/json", Accept: "audio/mpeg" }, responseType: "arraybuffer" }
+    );
+    return Buffer.from(res.data).toString("base64");
+  } catch(e) { console.warn("TTS base64 failed:", e.message); return null; }
+}
+
+async function callGeminiWithVision(history, sys, imageBase64) {
+  const contents = history.slice(0, -1).map(m => ({
+    role: m.role === "assistant" ? "model" : "user",
+    parts: [{ text: m.content }]
+  }));
+  const lastMsg = history[history.length - 1];
+  const lastParts = [{ text: lastMsg.content }];
+  if (imageBase64) {
+    lastParts.push({ inline_data: { mime_type: "image/jpeg", data: imageBase64 } });
+  }
+  contents.push({ role: "user", parts: lastParts });
+  const res = await axios.post(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+    {
+      system_instruction: { parts: [{ text: sys }] },
+      contents,
+      generationConfig: { temperature: 0.92, maxOutputTokens: 180 }
+    }
+  );
+  return res.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? null;
+}
+
+app.post("/api/talk", async (req, res) => {
+  const { message, history = [], imageBase64 } = req.body;
+  if (!message) return res.status(400).json({ error: "No message" });
+  try {
+    const brain = brainCache || {};
+    const identity = typeof brain.core_identity === "string" ? brain.core_identity : JSON.stringify(brain.core_identity || {});
+    const personality = typeof brain.personality === "string" ? brain.personality : JSON.stringify(brain.personality || {});
+    const moodOverride = extrasMood ? `\n\nCURRENT MOOD OVERRIDE: You are feeling ${extrasMood} right now. Let this influence your tone and energy.` : "";
+    const sysPrompt = `You are Ariana, a real person having a live voice conversation with the person who manages you. Be natural, warm, and conversational — short responses (1-3 sentences max). You're talking directly to your operator.\n\nYour identity: ${identity}\nYour personality: ${personality}${moodOverride}${imageBase64 ? "\n\nYou can see the person's environment through their camera. React naturally if something interesting is visible." : ""}`;
+    const msgs = [...history, { role: "user", content: message }];
+    let reply;
+    if (imageBase64) {
+      reply = await callGeminiWithVision(msgs, sysPrompt, imageBase64);
+    } else {
+      reply = await callGemini(msgs, sysPrompt, false);
+    }
+    if (!reply) throw new Error("No reply from AI");
+    const audioBase64 = await ttsBase64(reply);
+    res.json({ ok: true, reply, audioBase64 });
+  } catch(e) {
+    console.error("Talk error:", e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── EXTRAS (Mood / Scheduler / Persona / Rules / Analytics) ───
+let extrasMood = null;
+let extrasSchedules = [];
+let extrasPersonas = {};
+let extrasRules = [];
+
+// Mood
+app.get("/api/extras/mood", (_req, res) => res.json({ mood: extrasMood }));
+app.post("/api/extras/mood", (req, res) => {
+  extrasMood = req.body.mood || null;
+  res.json({ ok: true, mood: extrasMood });
+});
+
+// Schedules (in-memory + Supabase persist)
+app.get("/api/extras/schedules", (_req, res) => res.json({ schedules: extrasSchedules }));
+app.post("/api/extras/schedules", async (req, res) => {
+  extrasSchedules = req.body.schedules || [];
+  try { await supabase.from("ariana_brain").upsert({ key: "_schedules", value: JSON.stringify(extrasSchedules) }); } catch(e) {}
+  res.json({ ok: true });
+});
+
+// Personas
+app.get("/api/extras/personas", (_req, res) => res.json({ personas: extrasPersonas }));
+app.post("/api/extras/personas", async (req, res) => {
+  extrasPersonas = req.body.personas || {};
+  try { await supabase.from("ariana_brain").upsert({ key: "_personas", value: JSON.stringify(extrasPersonas) }); } catch(e) {}
+  res.json({ ok: true });
+});
+
+// Auto-reply rules
+app.get("/api/extras/rules", (_req, res) => res.json({ rules: extrasRules }));
+app.post("/api/extras/rules", async (req, res) => {
+  extrasRules = req.body.rules || [];
+  try { await supabase.from("ariana_brain").upsert({ key: "_autorules", value: JSON.stringify(extrasRules) }); } catch(e) {}
+  res.json({ ok: true });
+});
+
+// Analytics
+app.get("/api/extras/analytics", (_req, res) => {
+  const all = Object.values(conversations);
+  const totalContacts = all.length;
+  let totalMessages = 0, waMessages = 0;
+  const contactCounts = [];
+  all.forEach(c => {
+    const msgs = c.messages || [];
+    totalMessages += msgs.length;
+    waMessages += msgs.filter(m => m.platform === "wa").length;
+    contactCounts.push({ phone: c.phone, name: c.name || c.phone, count: msgs.length });
+  });
+  contactCounts.sort((a, b) => b.count - a.count);
+  const avgPerContact = totalContacts ? Math.round(totalMessages / totalContacts) : 0;
+  res.json({ totalMessages, totalContacts, waMessages, avgPerContact, topContacts: contactCounts.slice(0, 10) });
+});
+
+// Load extras from Supabase on startup
+async function loadExtras() {
+  try {
+    const { data } = await supabase.from("ariana_brain").select("key,value").in("key", ["_schedules","_personas","_autorules"]);
+    if (data) {
+      data.forEach(r => {
+        try {
+          const v = JSON.parse(r.value);
+          if (r.key === "_schedules") extrasSchedules = v;
+          if (r.key === "_personas") extrasPersonas = v;
+          if (r.key === "_autorules") extrasRules = v;
+        } catch(e) {}
+      });
+    }
+    console.log("✅ Extras loaded from Supabase");
+  } catch(e) { console.warn("Extras load failed:", e.message); }
+}
+
 // ── KEEP-ALIVE ────────────────────────────────────────────────
 app.get("/ping", (_req, res) => res.send("pong"));
 
@@ -1151,6 +1313,7 @@ server.listen(PORT, async () => {
   await loadBrain();
   await loadPushSubs();
   await ensureMediaBucket();
+  await loadExtras();
   console.log(`\n🌸 Ariana LIVE on port ${PORT}`);
   console.log(`📱 WhatsApp:    ${KAPSO_API_KEY                   ? "✅" : "❌"}`);
   console.log(`🤖 Groq:        ${GROQ_API_KEY                    ? "✅" : "❌"}`);
