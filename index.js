@@ -55,11 +55,12 @@ try {
                 || process.env.SUPABASE_KEY;
   if (process.env.SUPABASE_URL && SUPA_KEY) {
     supabase = createClient(process.env.SUPABASE_URL, SUPA_KEY, {
-      global: { WebSocket: ws }
+      auth: { persistSession: false },
+      realtime: { transport: ws }
     });
     console.log("✅ Supabase ready");
   } else {
-    console.log("⚠️  Supabase env vars missing — SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required");
+    console.log("⚠️  Supabase env vars missing");
   }
 } catch (e) { console.log("⚠️  Supabase init failed:", e.message); }
 
