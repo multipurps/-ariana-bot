@@ -48,12 +48,15 @@ const groq2 = GROQ_API_KEY_2 ? new Groq({ apiKey: GROQ_API_KEY_2 }) : null;
 let supabase = null;
 try {
   const { createClient } = require("@supabase/supabase-js");
+  const ws = require("ws");
   const SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
                 || process.env.SUPABASE_SERVICE_KEY
                 || process.env.SUPABASE_ANON_KEY
                 || process.env.SUPABASE_KEY;
   if (process.env.SUPABASE_URL && SUPA_KEY) {
-    supabase = createClient(process.env.SUPABASE_URL, SUPA_KEY);
+    supabase = createClient(process.env.SUPABASE_URL, SUPA_KEY, {
+      global: { WebSocket: ws }
+    });
     console.log("✅ Supabase ready");
   } else {
     console.log("⚠️  Supabase env vars missing — SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required");
