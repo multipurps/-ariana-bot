@@ -48,11 +48,17 @@ const groq2 = GROQ_API_KEY_2 ? new Groq({ apiKey: GROQ_API_KEY_2 }) : null;
 let supabase = null;
 try {
   const { createClient } = require("@supabase/supabase-js");
-  if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
-    supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
-    console.log("✅ Supabase persistence ready");
+  const SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+                || process.env.SUPABASE_SERVICE_KEY
+                || process.env.SUPABASE_ANON_KEY
+                || process.env.SUPABASE_KEY;
+  if (process.env.SUPABASE_URL && SUPA_KEY) {
+    supabase = createClient(process.env.SUPABASE_URL, SUPA_KEY);
+    console.log("✅ Supabase ready");
+  } else {
+    console.log("⚠️  Supabase env vars missing — SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required");
   }
-} catch { console.log("⚠️  @supabase/supabase-js not installed — chats won't persist"); }
+} catch (e) { console.log("⚠️  Supabase init failed:", e.message); }
 
 async function saveConvo(id) {
   if (!supabase || !conversations[id]) return;
@@ -495,29 +501,47 @@ async function initTelegram() {
     tgClient.addEventHandler(async (event) => {
       try {
         const msg = event.message;
-        if (!msg || msg.out) return; // skip messages we sent ourselves
+        if (!msg || msg.out) return;
 
         const sender = await msg.getSender();
-        if (!sender || sender.bot) return; // skip bots
+        if (!sender || sender.bot) return;
 
         const chatId = sender.id?.toString();
-        const text   = msg.text;
-        if (!chatId || !text) return;
+        if (!chatId) return;
 
         const name = [sender.firstName, sender.lastName].filter(Boolean).join(" ").trim()
                      || sender.username
                      || `User${chatId}`;
 
+        // Handle text OR media
+        let text = msg.text || null;
+        if (!text) {
+          const media = msg.media;
+          if (!media) return;
+          const mtype = media.className || "";
+          if      (mtype.includes("Photo"))    text = msg.message ? `[image: ${msg.message}]` : "[sent a photo]";
+          else if (mtype.includes("Document")) text = "[sent a file]";
+          else if (mtype.includes("Geo"))      text = "[sent a location]";
+          else if (mtype.includes("Voice") || mtype.includes("Audio")) text = "[sent a voice message]";
+          else if (mtype.includes("Video"))    text = msg.message ? `[video: ${msg.message}]` : "[sent a video]";
+          else                                 text = "[sent media]";
+        }
+
+        // Save contact name automatically
+        const convoId = `tg_${chatId}`;
+        if (name && conversations[convoId]) {
+          if (!conversations[convoId].name || conversations[convoId].name === convoId) {
+            conversations[convoId].name = name;
+            saveConvo(convoId);
+          }
+        }
+
         console.log(`💬 TG ${name} (${chatId}): "${text}"`);
 
         await handleMessage({
-          id: `tg_${chatId}`,
-          platform: "telegram",
-          from: chatId,
-          text,
-          chatId,
-          phoneNumberId: null,
-          name
+          id: convoId, platform: "telegram",
+          from: chatId, text, chatId,
+          phoneNumberId: null, name
         });
 
       } catch (e) { console.error("❌ TG message handler:", e.message); }
@@ -672,14 +696,43 @@ app.post("/webhook", async (req, res) => {
     const body = req.body || {};
     const msg  = body.message || body.data || body;
     const from = msg?.from || msg?.sender || msg?.contact?.phone || msg?.waId || null;
-    const text = msg?.text?.body || msg?.body || msg?.content || null;
+    if (!from) return;
+
+    // Extract contact name from webhook (WhatsApp sends pushName)
+    const contactName = msg?.pushName || msg?.senderName || msg?.contact?.name || null;
+
+    // Extract text OR media description
+    const text      = msg?.text?.body || msg?.body || msg?.content || null;
+    const mediaType = msg?.type || msg?.messageType || null;
+    const mediaUrl  = msg?.image?.url || msg?.video?.url || msg?.audio?.url
+                   || msg?.document?.url || msg?.sticker?.url || null;
+    const caption   = msg?.image?.caption || msg?.video?.caption || msg?.document?.caption || null;
+
+    // Build the message text — for media with no text, describe it
+    let finalText = text;
+    if (!finalText && mediaType) {
+      if      (mediaType === "image")    finalText = caption ? `[image: ${caption}]` : "[sent an image]";
+      else if (mediaType === "video")    finalText = caption ? `[video: ${caption}]` : "[sent a video]";
+      else if (mediaType === "audio")    finalText = "[sent a voice message]";
+      else if (mediaType === "document") finalText = "[sent a document]";
+      else if (mediaType === "sticker")  finalText = "[sent a sticker]";
+      else                               finalText = `[sent ${mediaType}]`;
+    }
+    if (!finalText) return;
+
     const msgId = msg?.id || msg?.message_id || null;
-    if (!from || !text) return;
-    console.log(`📱 WA ${from}: "${text}"`);
+    console.log(`📱 WA ${contactName||from}: "${finalText}"`);
     if (msgId) markWhatsAppRead(msgId, body.phone_number_id).catch(() => {});
+
+    // Save contact name so dashboard shows it
+    if (contactName && conversations[from] && !conversations[from].name || conversations[from]?.name === from) {
+      if (conversations[from]) conversations[from].name = contactName;
+    }
+
     await handleMessage({
-      id: from, platform: "whatsapp", from, text,
-      chatId: null, phoneNumberId: body.phone_number_id, name: null
+      id: from, platform: "whatsapp", from, text: finalText,
+      chatId: null, phoneNumberId: body.phone_number_id, name: contactName,
+      mediaUrl, mediaType
     });
   } catch (e) { console.error("❌ WA webhook:", e.message); }
 });
