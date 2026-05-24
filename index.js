@@ -958,8 +958,9 @@ app.post('/api/media/upload', async (req, res) => {
   try {
     const base64 = b64.replace(/^data:[^;]+;base64,/,'');
     const buffer = Buffer.from(base64,'base64');
+    const { randomUUID } = require('crypto');
+    const uid    = randomUUID();
     const ext    = (filename.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');
-    const uid    = `${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
     const storagePath = `${uid}.${ext}`;
     const contentType = mediaType==='video' ? `video/${ext}` : `image/${ext}`;
 
