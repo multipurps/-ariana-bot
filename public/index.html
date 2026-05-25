@@ -391,51 +391,243 @@ input,textarea{font-family:inherit;color:inherit}
 }
 
 /* ═══════════════════════════════════
-   LIVE TALK VIEW (Thing 6)
+   LIVE TALK — FULL REDESIGN
 ═══════════════════════════════════ */
-#view-talk{flex-direction:column;position:relative;overflow:hidden}
-#talk-topbar{display:flex;align-items:center;gap:12px;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top));border-bottom:1px solid var(--b1);flex-shrink:0;background:rgba(8,8,12,0.98)}
-#talk-topbar-spacer{width:40px;flex-shrink:0}
-#talk-topbar-title{flex:1;font-size:16px;font-weight:600;text-align:center}
-#talk-cam-toggle{background:rgba(255,255,255,.07);border:1px solid var(--b1);color:var(--t2);border-radius:9px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px}
-#talk-cam-toggle.active{background:rgba(167,139,250,.15);border-color:rgba(167,139,250,.3);color:var(--accent)}
-#talk-cam-toggle svg{width:14px;height:14px}
-#talk-body{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
-/* Camera preview */
-#talk-camera-wrap{position:absolute;top:12px;right:12px;width:100px;height:140px;border-radius:12px;overflow:hidden;border:2px solid rgba(167,139,250,.4);z-index:10;display:none;background:#000}
-#talk-camera-wrap.show{display:block}
-#talk-video{width:100%;height:100%;object-fit:cover}
+
+/* ── View shell ── */
+#view-talk{
+  flex-direction:column;
+  position:relative;
+  overflow:hidden;
+  background:#000;
+}
+
+/* ── Top bar ── */
+#talk-topbar{
+  position:absolute;top:0;left:0;right:0;z-index:30;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;
+  padding-top:calc(14px + env(safe-area-inset-top));
+  padding-bottom:14px;
+  background:linear-gradient(to bottom,rgba(0,0,0,0.7) 0%,transparent 100%);
+}
+#talk-back-btn{
+  width:36px;height:36px;border-radius:50%;
+  background:rgba(255,255,255,.1);border:none;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:#fff;flex-shrink:0;
+  transition:background .15s;
+}
+#talk-back-btn:hover{background:rgba(255,255,255,.18)}
+#talk-back-btn svg{width:18px;height:18px}
+#talk-cam-controls{display:flex;gap:8px;align-items:center}
+#talk-cam-on-btn,#talk-cam-flip-btn{
+  height:34px;border-radius:20px;border:1px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.1);color:#fff;
+  font-size:12px;font-weight:600;
+  display:flex;align-items:center;gap:6px;
+  cursor:pointer;transition:all .15s;padding:0 12px;
+}
+#talk-cam-on-btn svg,#talk-cam-flip-btn svg{width:14px;height:14px;flex-shrink:0}
+#talk-cam-on-btn.active{background:rgba(167,139,250,.25);border-color:rgba(167,139,250,.5);color:var(--accent)}
+#talk-cam-flip-btn{display:none;padding:0 10px}
+#talk-cam-flip-btn.show{display:flex}
+
+/* ── Camera full-bg (when on) ── */
+#talk-video-bg{
+  position:absolute;inset:0;z-index:1;
+  object-fit:cover;width:100%;height:100%;
+  display:none;opacity:0;
+  transition:opacity .4s ease;
+}
+#talk-video-bg.show{display:block;opacity:1}
 #talk-canvas{display:none}
-/* Conversation */
-#talk-convo{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
-#talk-convo::-webkit-scrollbar{width:0}
-.talk-msg{max-width:72%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.5;animation:msgIn .2s ease}
-.talk-msg.user{align-self:flex-end;background:rgba(167,139,250,.2);border:1px solid rgba(167,139,250,.25);border-bottom-right-radius:4px}
-.talk-msg.ariana{align-self:flex-start;background:rgba(255,255,255,.06);border:1px solid var(--b1);border-bottom-left-radius:4px}
-.talk-msg.ariana .talk-play{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:5px 10px;background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.25);border-radius:8px;font-size:11px;color:var(--accent);cursor:pointer;transition:background .15s}
-.talk-msg.ariana .talk-play:hover{background:rgba(167,139,250,.25)}
-.talk-msg.ariana .talk-play svg{width:12px;height:12px}
-.talk-typing{align-self:flex-start;display:flex;gap:4px;padding:12px 14px;background:rgba(255,255,255,.06);border:1px solid var(--b1);border-radius:16px;border-bottom-left-radius:4px}
-.talk-typing span{width:6px;height:6px;border-radius:50%;background:var(--t3);animation:typingDot 1.2s ease infinite}
-.talk-typing span:nth-child(2){animation-delay:.2s}
-.talk-typing span:nth-child(3){animation-delay:.4s}
-@keyframes typingDot{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
-/* Mic area */
-#talk-input-area{padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom));flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:10px;border-top:1px solid var(--b1)}
-#talk-status{font-size:12px;color:var(--t3);min-height:18px;text-align:center;transition:color .2s}
-#talk-status.listening{color:var(--accent)}
-#talk-status.speaking{color:#4ade80}
-#talk-mic-btn{width:72px;height:72px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;position:relative;background:rgba(167,139,250,.15);border:2px solid rgba(167,139,250,.3)}
-#talk-mic-btn:hover{background:rgba(167,139,250,.22);transform:scale(1.03)}
-#talk-mic-btn.listening{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.5);animation:micPulse 1.5s ease infinite}
-#talk-mic-btn.speaking{background:rgba(74,222,128,.1);border-color:rgba(74,222,128,.35)}
-#talk-mic-btn svg{width:28px;height:28px;color:#fff;transition:color .2s}
-#talk-mic-btn.listening svg{color:rgb(239,68,68)}
-#talk-mic-btn.speaking svg{color:#4ade80}
-@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4)}50%{box-shadow:0 0 0 14px rgba(239,68,68,0)}}
-#talk-mic-hint{font-size:11px;color:var(--t3);text-align:center}
-#talk-no-support{padding:40px 24px;text-align:center;color:var(--t2);font-size:14px}
-.sb-item.active.talk-item{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2)}
+
+/* ── Idle state ── */
+#talk-idle{
+  position:absolute;inset:0;z-index:10;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:20px;
+  pointer-events:none;
+  transition:opacity .3s;
+}
+#talk-idle.hidden{opacity:0;pointer-events:none}
+#talk-logo-wrap{
+  width:96px;height:96px;border-radius:50%;
+  background:radial-gradient(circle at 40% 40%,rgba(167,139,250,.25),rgba(99,102,241,.1));
+  border:1px solid rgba(167,139,250,.25);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 40px rgba(167,139,250,.15);
+}
+#talk-logo-wrap img{width:52px;height:52px;border-radius:12px;object-fit:cover}
+#talk-idle-greeting{font-size:20px;font-weight:600;color:#fff;text-align:center;padding:0 32px;line-height:1.4}
+#talk-idle-sub{font-size:13px;color:rgba(255,255,255,.4);text-align:center}
+
+/* ── Orb (speaking state) ── */
+#talk-orb-wrap{
+  position:absolute;inset:0;z-index:10;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:28px;
+  pointer-events:none;
+  opacity:0;transition:opacity .4s;
+}
+#talk-orb-wrap.show{opacity:1}
+#talk-transcript-top{
+  font-size:18px;font-weight:300;color:rgba(255,255,255,.7);
+  text-align:center;padding:0 40px;line-height:1.5;
+  min-height:60px;letter-spacing:.01em;
+}
+#talk-orb{
+  width:220px;height:220px;border-radius:50%;
+  position:relative;flex-shrink:0;
+}
+#talk-orb-canvas{
+  width:220px;height:220px;border-radius:50%;
+  position:absolute;inset:0;
+}
+#talk-orb-logo{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;z-index:2;
+}
+#talk-orb-logo img{width:44px;height:44px;border-radius:10px;object-fit:cover}
+#talk-orb-status-pill{
+  padding:8px 20px;border-radius:30px;
+  border:1px solid rgba(255,255,255,.15);
+  background:rgba(0,0,0,.35);
+  backdrop-filter:blur(12px);
+  font-size:13px;color:rgba(255,255,255,.75);
+  display:flex;align-items:center;gap:8px;
+}
+#talk-orb-status-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--accent);
+  animation:orbDotPulse 1.4s ease infinite;
+}
+@keyframes orbDotPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+
+/* ── Waveform bars ── */
+#talk-waveform{
+  position:absolute;left:0;right:0;
+  bottom:130px;
+  height:60px;
+  display:flex;align-items:center;justify-content:center;gap:3px;
+  z-index:20;
+  opacity:0;transition:opacity .25s;
+  pointer-events:none;
+}
+#talk-waveform.show{opacity:1}
+.wv-bar{
+  width:3px;border-radius:2px;
+  background:linear-gradient(to top,rgba(167,139,250,.3),rgba(167,139,250,.9));
+  min-height:3px;
+  transition:height .05s ease;
+  flex-shrink:0;
+}
+
+/* ── Bottom bar (idle / default) ── */
+#talk-bottom{
+  position:absolute;bottom:0;left:0;right:0;z-index:30;
+  padding:12px 16px;
+  padding-bottom:calc(16px + env(safe-area-inset-bottom));
+  background:linear-gradient(to top,rgba(0,0,0,.85) 0%,transparent 100%);
+}
+/* Standard bar */
+#talk-bar-standard{
+  display:flex;align-items:center;gap:10px;
+  background:rgba(30,30,38,.9);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:28px;
+  padding:8px 8px 8px 16px;
+  backdrop-filter:blur(20px);
+}
+#talk-bar-plus{
+  width:32px;height:32px;border-radius:50%;flex-shrink:0;
+  background:none;border:none;color:rgba(255,255,255,.5);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:color .15s;
+}
+#talk-bar-plus:hover{color:#fff}
+#talk-bar-plus svg{width:18px;height:18px}
+#talk-bar-input{
+  flex:1;font-size:14px;color:rgba(255,255,255,.5);
+  letter-spacing:.05em;user-select:none;
+}
+/* Standard right buttons */
+#talk-bar-right{display:flex;align-items:center;gap:6px}
+#talk-mic-std-btn{
+  width:40px;height:40px;border-radius:50%;flex-shrink:0;
+  background:none;border:none;color:rgba(255,255,255,.7);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:color .15s;
+}
+#talk-mic-std-btn:hover{color:#fff}
+#talk-mic-std-btn svg{width:20px;height:20px}
+#talk-voice-btn{
+  width:44px;height:44px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  border:none;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  box-shadow:0 2px 16px rgba(99,102,241,.5);
+  transition:transform .15s,box-shadow .15s;
+}
+#talk-voice-btn:hover{transform:scale(1.06);box-shadow:0 4px 24px rgba(99,102,241,.65)}
+#talk-voice-btn svg{width:20px;height:20px;color:#fff}
+/* Expanded options bar */
+#talk-bar-expanded{
+  display:none;
+  align-items:center;gap:10px;justify-content:space-between;
+  padding:0 8px;
+}
+#talk-bar-expanded.show{display:flex}
+.tb-exp-btn{
+  width:48px;height:48px;border-radius:50%;flex-shrink:0;
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.12);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:background .15s;
+}
+.tb-exp-btn:hover{background:rgba(255,255,255,.18)}
+.tb-exp-btn svg{width:20px;height:20px}
+#talk-display-tab{
+  flex:1;height:48px;border-radius:30px;
+  background:linear-gradient(135deg,rgba(99,102,241,.4),rgba(139,92,246,.4));
+  border:1px solid rgba(139,92,246,.4);
+  backdrop-filter:blur(16px);
+  display:flex;align-items:center;justify-content:center;
+  padding:0 16px;cursor:pointer;transition:all .15s;
+  position:relative;overflow:hidden;
+}
+#talk-display-tab:hover{background:linear-gradient(135deg,rgba(99,102,241,.55),rgba(139,92,246,.55))}
+#talk-display-tab-text{
+  font-size:12px;color:rgba(255,255,255,.7);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  max-width:140px;
+}
+#talk-exp-mic-btn{
+  width:48px;height:48px;border-radius:50%;flex-shrink:0;
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.12);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .15s;
+}
+#talk-exp-mic-btn.listening{
+  background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.5);
+  animation:micPulse 1.5s ease infinite;
+}
+#talk-exp-mic-btn svg{width:20px;height:20px}
+#talk-exp-close-btn{
+  width:48px;height:48px;border-radius:50%;flex-shrink:0;
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.12);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:background .15s;
+}
+#talk-exp-close-btn:hover{background:rgba(255,255,255,.18)}
+#talk-exp-close-btn svg{width:18px;height:18px}
+
+@keyframes micPulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.5)}
+  50%{box-shadow:0 0 0 12px rgba(239,68,68,0)}
+}
+
+.sb-item.active.talk-item{background:rgba(167,139,250,.12);color:var(--accent);border:1px solid rgba(167,139,250,.2)}
 
 /* ═══════════════════════════════════
    EXTRA FEATURES VIEW (Thing 7)
@@ -877,30 +1069,93 @@ input,textarea{font-family:inherit;color:inherit}
       </div>
     </div>
 
-    <!-- LIVE TALK VIEW (Thing 6) -->
+    <!-- LIVE TALK VIEW — full redesign -->
     <div id="view-talk" class="view">
+
+      <!-- top bar -->
       <div id="talk-topbar">
-        <div id="talk-topbar-spacer"></div>
-        <span id="talk-topbar-title">Live Talk</span>
-        <button id="talk-cam-toggle" onclick="toggleTalkCamera()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-          Camera
+        <button id="talk-back-btn" onclick="talkGoBack()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         </button>
-      </div>
-      <div id="talk-body">
-        <div id="talk-camera-wrap">
-          <video id="talk-video" autoplay muted playsinline></video>
-          <canvas id="talk-canvas" width="320" height="240"></canvas>
+        <div id="talk-cam-controls">
+          <button id="talk-cam-on-btn" onclick="talkToggleCamera()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+            Camera
+          </button>
+          <button id="talk-cam-flip-btn" onclick="talkFlipCamera()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+          </button>
         </div>
-        <div id="talk-convo"></div>
       </div>
-      <div id="talk-input-area">
-        <div id="talk-status">Tap the mic to speak</div>
-        <button id="talk-mic-btn" onclick="toggleTalkMic()">
-          <svg id="talk-mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-        </button>
-        <div id="talk-mic-hint">Tap mic to speak to Ariana</div>
+
+      <!-- camera bg video -->
+      <video id="talk-video-bg" autoplay muted playsinline></video>
+      <canvas id="talk-canvas"></canvas>
+
+      <!-- idle state: logo + greeting -->
+      <div id="talk-idle">
+        <div id="talk-logo-wrap">
+          <img src="/icons/icon-192.png" onerror="this.src=''" alt="Ariana">
+        </div>
+        <div id="talk-idle-greeting">Hi, what's the move?</div>
+        <div id="talk-idle-sub">Tap the mic or hold to speak</div>
       </div>
+
+      <!-- orb state: shown while Ariana is speaking -->
+      <div id="talk-orb-wrap">
+        <div id="talk-transcript-top"></div>
+        <div id="talk-orb">
+          <canvas id="talk-orb-canvas" width="440" height="440"></canvas>
+          <div id="talk-orb-logo">
+            <img src="/icons/icon-192.png" onerror="this.src=''" alt="Ariana">
+          </div>
+        </div>
+        <div id="talk-orb-status-pill">
+          <div id="talk-orb-status-dot"></div>
+          <span id="talk-orb-status-text">Speaking</span>
+        </div>
+      </div>
+
+      <!-- waveform bars (listening state) -->
+      <div id="talk-waveform"></div>
+
+      <!-- bottom -->
+      <div id="talk-bottom">
+        <!-- standard bar -->
+        <div id="talk-bar-standard">
+          <button id="talk-bar-plus" onclick="talkExpandOptions()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <div id="talk-bar-input"></div>
+          <div id="talk-bar-right">
+            <button id="talk-mic-std-btn" onclick="talkToggleMic()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            </button>
+            <button id="talk-voice-btn" onclick="talkExpandOptions()">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 15.5a3.5 3.5 0 0 0 3.5-3.5V6a3.5 3.5 0 0 0-7 0v6a3.5 3.5 0 0 0 3.5 3.5zm6.5-3.5a6.5 6.5 0 0 1-13 0H4a8 8 0 0 0 7 7.93V22h2v-2.07A8 8 0 0 0 20 12h-1.5z"/></svg>
+            </button>
+          </div>
+        </div>
+        <!-- expanded options bar -->
+        <div id="talk-bar-expanded">
+          <button class="tb-exp-btn" onclick="talkToggleCamera()" title="Camera">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+          </button>
+          <button class="tb-exp-btn" title="Share screen" style="opacity:.45;cursor:default">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          </button>
+          <div id="talk-display-tab" onclick="talkToggleMic()">
+            <span id="talk-display-tab-text">Tap to speak</span>
+          </div>
+          <button id="talk-exp-mic-btn" onclick="talkToggleMic()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+          <button id="talk-exp-close-btn" onclick="talkCollapseOptions()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+
     </div>
 
     <!-- EXTRAS VIEW (Thing 7) -->
@@ -1120,7 +1375,7 @@ function navTo(el){
   if(view==="media")initMediaView();
   if(view==="generate")initGenerateView();
   if(view==="extras"){window._cachedConvos=convos;initExtras();}
-  if(view==="talk"){window._cachedConvos=convos;}
+  if(view==="talk"){window._cachedConvos=convos;talkInit();}
 }
 
 // ══════════════════════════════════════════════
@@ -1650,181 +1905,535 @@ async function genSaveToLibrary(index){
 
 
 // ══════════════════════════════════════════════
-// LIVE TALK (Thing 6)
-// ══════════════════════════════════════════════
-let talkRecog = null;
-let talkListening = false;
-let talkCameraOn = false;
-let talkStream = null;
-let talkHistory = [];
-let talkAudio = null;
+// ══════════════════════════════════════════════════════════════
+// LIVE TALK — full redesign
+// ══════════════════════════════════════════════════════════════
 
-function talkSetStatus(msg, cls='') {
-  const s = document.getElementById('talk-status');
-  s.textContent = msg;
-  s.className = cls;
-}
+/* ── state ── */
+let talkRecog       = null;
+let talkListening   = false;
+let talkCameraOn    = false;
+let talkFacingMode  = 'user';          // 'user' | 'environment'
+let talkStream      = null;
+let talkHistory     = [];
+let talkAudio       = null;
+let talkExpanded    = false;           // options bar open
+let talkOrbAnim     = null;            // rAF handle for orb
+let talkWaveAnim    = null;            // rAF handle for waveform
+let talkAudioCtx    = null;
+let talkAnalyser    = null;
+let talkWaveBars    = [];
+let talkInterimText = '';              // live STT interim result
+let talkCurrentTranscript = '';        // Ariana current sentence typewriter
 
-function talkAppendMsg(role, text, audioBase64) {
-  const convo = document.getElementById('talk-convo');
-  const div = document.createElement('div');
-  div.className = 'talk-msg ' + role;
-  div.textContent = text;
-  if (role === 'ariana' && audioBase64) {
-    const playBtn = document.createElement('div');
-    playBtn.className = 'talk-play';
-    playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> Play voice';
-    const ab64 = audioBase64;
-    playBtn.onclick = () => playTalkAudio(ab64);
-    div.appendChild(playBtn);
+/* ── init waveform bars ── */
+function talkInitWaveform() {
+  const wrap = document.getElementById('talk-waveform');
+  wrap.innerHTML = '';
+  talkWaveBars = [];
+  const N = 28;
+  for (let i = 0; i < N; i++) {
+    const b = document.createElement('div');
+    b.className = 'wv-bar';
+    b.style.height = '3px';
+    wrap.appendChild(b);
+    talkWaveBars.push(b);
   }
-  convo.appendChild(div);
-  convo.scrollTop = convo.scrollHeight;
-  return div;
 }
 
-function talkShowTyping() {
-  const convo = document.getElementById('talk-convo');
-  const div = document.createElement('div');
-  div.className = 'talk-typing';
-  div.id = 'talk-typing-indicator';
-  div.innerHTML = '<span></span><span></span><span></span>';
-  convo.appendChild(div);
-  convo.scrollTop = convo.scrollHeight;
+/* ── state machine ── */
+// states: 'idle' | 'listening' | 'thinking' | 'speaking'
+let talkState = 'idle';
+
+function talkSetState(state) {
+  talkState = state;
+  const idle    = document.getElementById('talk-idle');
+  const orbWrap = document.getElementById('talk-orb-wrap');
+  const waveform= document.getElementById('talk-waveform');
+  const barInput= document.getElementById('talk-bar-input');
+  const expMic  = document.getElementById('talk-exp-mic-btn');
+  const displayTxt = document.getElementById('talk-display-tab-text');
+
+  // reset classes
+  if (expMic) { expMic.classList.remove('listening'); }
+
+  switch (state) {
+    case 'idle':
+      idle.classList.remove('hidden');
+      orbWrap.classList.remove('show');
+      waveform.classList.remove('show');
+      talkStopOrbAnim();
+      talkStopWaveAnim();
+      if (barInput) barInput.textContent = '';
+      if (displayTxt) displayTxt.textContent = 'Tap to speak';
+      break;
+
+    case 'listening':
+      idle.classList.add('hidden');
+      orbWrap.classList.remove('show');
+      waveform.classList.add('show');
+      talkStopOrbAnim();
+      talkStartWaveAnim();
+      if (expMic) expMic.classList.add('listening');
+      if (displayTxt) displayTxt.textContent = 'Listening...';
+      break;
+
+    case 'thinking':
+      idle.classList.add('hidden');
+      waveform.classList.remove('show');
+      talkStopWaveAnim();
+      // show orb in thinking mode
+      orbWrap.classList.add('show');
+      document.getElementById('talk-orb-status-text').textContent = 'Thinking';
+      talkStartOrbAnim('thinking');
+      if (displayTxt) displayTxt.textContent = 'Thinking...';
+      break;
+
+    case 'speaking':
+      idle.classList.add('hidden');
+      waveform.classList.remove('show');
+      talkStopWaveAnim();
+      orbWrap.classList.add('show');
+      document.getElementById('talk-orb-status-text').textContent = 'Speaking';
+      talkStartOrbAnim('speaking');
+      if (displayTxt) displayTxt.textContent = 'Speaking...';
+      break;
+  }
 }
 
-function talkHideTyping() {
-  const el = document.getElementById('talk-typing-indicator');
-  if (el) el.remove();
+/* ── orb canvas animation ── */
+function talkStartOrbAnim(mode) {
+  talkStopOrbAnim();
+  const canvas = document.getElementById('talk-orb-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2, R = W * 0.46;
+  let t = 0;
+
+  function frame() {
+    t += 0.018;
+    ctx.clearRect(0, 0, W, H);
+
+    // outer soft glow
+    const glowR = canvas.getContext('2d');
+    const grad = ctx.createRadialGradient(cx, cy, R * 0.1, cx, cy, R * 1.05);
+    grad.addColorStop(0, 'rgba(200,160,255,0.0)');
+    grad.addColorStop(0.5, 'rgba(120,80,255,0.06)');
+    grad.addColorStop(1, 'rgba(80,40,200,0.0)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, R * 1.05, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // base sphere gradient
+    const base = ctx.createRadialGradient(cx - R*0.28, cy - R*0.22, R*0.05, cx, cy, R);
+    if (mode === 'speaking') {
+      const pulse = 0.85 + 0.15 * Math.sin(t * 2.8);
+      base.addColorStop(0,   `rgba(${200 + 30*Math.sin(t)}, ${140 + 40*Math.cos(t*0.7)}, 255, ${0.82 * pulse})`);
+      base.addColorStop(0.38,`rgba(220, ${80 + 60*Math.sin(t*1.1)}, ${160 + 60*Math.cos(t*0.9)}, ${0.78 * pulse})`);
+      base.addColorStop(0.7, `rgba(${100 + 80*Math.cos(t*1.3)}, 60, 220, ${0.65 * pulse})`);
+      base.addColorStop(1,   'rgba(30, 10, 80, 0.6)');
+    } else {
+      // thinking — slower, cooler
+      base.addColorStop(0,   `rgba(160, 140, 255, ${0.55 + 0.1*Math.sin(t*1.2)})`);
+      base.addColorStop(0.5, `rgba(100, 80, 200, ${0.5 + 0.08*Math.cos(t*0.8)})`);
+      base.addColorStop(1,   'rgba(20, 10, 60, 0.5)');
+    }
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.fillStyle = base;
+    ctx.fill();
+
+    // floating colour blobs
+    const blobs = mode === 'speaking' ? [
+      { ox:0.25, oy:-0.18, cr:'255,120,60',  r:R*0.42, a:0.48, sp:1.1  },
+      { ox:-0.2, oy:0.22,  cr:'180,60,255',  r:R*0.38, a:0.44, sp:0.7  },
+      { ox:0.18, oy:0.28,  cr:'60,140,255',  r:R*0.32, a:0.36, sp:1.5  },
+    ] : [
+      { ox:0.1,  oy:-0.1,  cr:'120,100,255', r:R*0.36, a:0.35, sp:0.5  },
+      { ox:-0.15,oy:0.1,   cr:'80,60,200',   r:R*0.30, a:0.30, sp:0.35 },
+    ];
+
+    blobs.forEach(b => {
+      const bx = cx + b.ox * R * (1 + 0.3*Math.sin(t * b.sp));
+      const by = cy + b.oy * R * (1 + 0.3*Math.cos(t * b.sp * 0.8));
+      const bg = ctx.createRadialGradient(bx, by, 0, bx, by, b.r);
+      bg.addColorStop(0,   `rgba(${b.cr}, ${b.a})`);
+      bg.addColorStop(0.6, `rgba(${b.cr}, ${b.a * 0.4})`);
+      bg.addColorStop(1,   `rgba(${b.cr}, 0)`);
+      ctx.beginPath();
+      ctx.arc(bx, by, b.r, 0, Math.PI * 2);
+      ctx.fillStyle = bg;
+      ctx.fill();
+    });
+
+    // glass highlight
+    const hl = ctx.createRadialGradient(cx - R*0.3, cy - R*0.32, 0, cx - R*0.25, cy - R*0.2, R*0.55);
+    hl.addColorStop(0, 'rgba(255,255,255,0.28)');
+    hl.addColorStop(0.5,'rgba(255,255,255,0.06)');
+    hl.addColorStop(1,  'rgba(255,255,255,0)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI*2);
+    ctx.fillStyle = hl;
+    ctx.fill();
+
+    // clip to circle
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    talkOrbAnim = requestAnimationFrame(frame);
+  }
+  talkOrbAnim = requestAnimationFrame(frame);
 }
 
-function playTalkAudio(base64) {
-  if (talkAudio) { talkAudio.pause(); talkAudio = null; }
-  const blob = b64ToBlob(base64, 'audio/mpeg');
-  const url = URL.createObjectURL(blob);
-  talkAudio = new Audio(url);
-  const btn = document.getElementById('talk-mic-btn');
-  btn.classList.add('speaking');
-  talkSetStatus('Ariana is speaking...', 'speaking');
-  talkAudio.onended = () => {
-    btn.classList.remove('speaking');
-    talkSetStatus('Tap the mic to speak');
-    URL.revokeObjectURL(url);
-  };
-  talkAudio.play();
+function talkStopOrbAnim() {
+  if (talkOrbAnim) { cancelAnimationFrame(talkOrbAnim); talkOrbAnim = null; }
+  const canvas = document.getElementById('talk-orb-canvas');
+  if (canvas) canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
 }
 
-function b64ToBlob(b64, type) {
+/* ── waveform animation ── */
+function talkStartWaveAnim() {
+  talkStopWaveAnim();
+  const N = talkWaveBars.length;
+
+  function frame() {
+    if (talkAnalyser) {
+      const data = new Uint8Array(talkAnalyser.frequencyBinCount);
+      talkAnalyser.getByteFrequencyData(data);
+      const step = Math.floor(data.length / N);
+      talkWaveBars.forEach((bar, i) => {
+        const val = data[i * step] || 0;
+        const h = 3 + (val / 255) * 52;
+        bar.style.height = h + 'px';
+        bar.style.opacity = 0.35 + (val / 255) * 0.65;
+      });
+    } else {
+      // idle wave — soft sine
+      const now = performance.now() / 1000;
+      talkWaveBars.forEach((bar, i) => {
+        const norm = i / (N - 1);
+        const h = 5 + 20 * Math.abs(Math.sin(now * 3 + norm * Math.PI * 3));
+        bar.style.height = h + 'px';
+        bar.style.opacity = '0.5';
+      });
+    }
+    talkWaveAnim = requestAnimationFrame(frame);
+  }
+  talkWaveAnim = requestAnimationFrame(frame);
+}
+
+function talkStopWaveAnim() {
+  if (talkWaveAnim) { cancelAnimationFrame(talkWaveAnim); talkWaveAnim = null; }
+  talkWaveBars.forEach(b => { b.style.height = '3px'; b.style.opacity = '0.3'; });
+}
+
+/* ── typewriter transcript ── */
+let talkTypeTimer = null;
+function talkTypeTranscript(text) {
+  const el = document.getElementById('talk-transcript-top');
+  if (!el) return;
+  clearTimeout(talkTypeTimer);
+  el.textContent = '';
+  let i = 0;
+  function tick() {
+    if (i <= text.length) {
+      el.textContent = text.slice(0, i);
+      i++;
+      talkTypeTimer = setTimeout(tick, 28);
+    }
+  }
+  tick();
+}
+
+/* ── b64 audio ── */
+function talkB64ToBlob(b64, type) {
   const bytes = atob(b64);
   const arr = new Uint8Array(bytes.length);
   for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
   return new Blob([arr], { type });
 }
 
-async function toggleTalkCamera() {
-  const btn = document.getElementById('talk-cam-toggle');
-  const wrap = document.getElementById('talk-camera-wrap');
-  const video = document.getElementById('talk-video');
-  if (!talkCameraOn) {
-    try {
-      talkStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
-      video.srcObject = talkStream;
-      wrap.classList.add('show');
-      btn.classList.add('active');
-      talkCameraOn = true;
-    } catch(e) { showToast('Camera access denied'); }
-  } else {
+function talkPlayAudio(base64, transcript) {
+  if (talkAudio) { talkAudio.pause(); talkAudio = null; }
+  const blob = talkB64ToBlob(base64, 'audio/mpeg');
+  const url  = URL.createObjectURL(blob);
+  talkAudio  = new Audio(url);
+
+  // Try to hook analyser to audio for orb reactivity
+  try {
+    if (!talkAudioCtx) talkAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const src  = talkAudioCtx.createMediaElementSource(talkAudio);
+    const anal = talkAudioCtx.createAnalyser();
+    anal.fftSize = 256;
+    src.connect(anal);
+    anal.connect(talkAudioCtx.destination);
+  } catch(e) {}
+
+  talkSetState('speaking');
+  if (transcript) talkTypeTranscript(transcript);
+
+  talkAudio.onended = () => {
+    talkAudio = null;
+    URL.revokeObjectURL(url);
+    talkSetState('idle');
+    document.getElementById('talk-transcript-top').textContent = '';
+    if (talkExpanded) {
+      document.getElementById('talk-display-tab-text').textContent = 'Tap to speak';
+    }
+  };
+
+  talkAudio.onerror = (e) => {
+    console.error('Audio playback error:', e);
+    talkSetState('idle');
+  };
+
+  // Resume AudioContext if suspended (autoplay policy)
+  const playPromise = talkAudio.play();
+  if (playPromise !== undefined) {
+    playPromise.catch(err => {
+      console.warn('Autoplay blocked:', err);
+      // Still show orb, user can see transcript
+    });
+  }
+}
+
+/* ── mic with AudioContext analyser ── */
+async function talkStartMicAnalyser() {
+  try {
+    if (!talkAudioCtx) talkAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (talkAudioCtx.state === 'suspended') await talkAudioCtx.resume();
+    const micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    const src = talkAudioCtx.createMediaStreamSource(micStream);
+    talkAnalyser = talkAudioCtx.createAnalyser();
+    talkAnalyser.fftSize = 256;
+    src.connect(talkAnalyser);
+  } catch(e) {
+    talkAnalyser = null;
+  }
+}
+
+/* ── camera ── */
+async function talkToggleCamera() {
+  const video = document.getElementById('talk-video-bg');
+  const onBtn = document.getElementById('talk-cam-on-btn');
+  const flipBtn = document.getElementById('talk-cam-flip-btn');
+
+  if (talkCameraOn) {
     if (talkStream) { talkStream.getTracks().forEach(t => t.stop()); talkStream = null; }
     video.srcObject = null;
-    wrap.classList.remove('show');
-    btn.classList.remove('active');
+    video.classList.remove('show');
+    onBtn.classList.remove('active');
+    onBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg> Camera`;
+    flipBtn.classList.remove('show');
     talkCameraOn = false;
+  } else {
+    try {
+      talkStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: talkFacingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false
+      });
+      video.srcObject = talkStream;
+      video.classList.add('show');
+      onBtn.classList.add('active');
+      onBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg> Camera On`;
+      flipBtn.classList.add('show');
+      talkCameraOn = true;
+    } catch(e) {
+      showToast('Camera access denied');
+    }
   }
 }
 
-function captureCameraFrame() {
+async function talkFlipCamera() {
+  if (!talkCameraOn) return;
+  talkFacingMode = talkFacingMode === 'user' ? 'environment' : 'user';
+  if (talkStream) { talkStream.getTracks().forEach(t => t.stop()); talkStream = null; }
+  const video = document.getElementById('talk-video-bg');
+  try {
+    talkStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: talkFacingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false
+    });
+    video.srcObject = talkStream;
+  } catch(e) {
+    showToast('Could not switch camera');
+  }
+}
+
+function talkCaptureFrame() {
   if (!talkCameraOn || !talkStream) return null;
   const canvas = document.getElementById('talk-canvas');
-  const video = document.getElementById('talk-video');
-  canvas.width = 320; canvas.height = 240;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(video, 0, 0, 320, 240);
-  return canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+  const video  = document.getElementById('talk-video-bg');
+  if (!video.videoWidth) return null;
+  canvas.width  = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  return canvas.toDataURL('image/jpeg', 0.75).split(',')[1];
 }
 
-function toggleTalkMic() {
+/* ── options bar ── */
+function talkExpandOptions() {
+  talkExpanded = true;
+  document.getElementById('talk-bar-standard').style.display = 'none';
+  document.getElementById('talk-bar-expanded').classList.add('show');
+}
+
+function talkCollapseOptions() {
+  talkExpanded = false;
+  if (talkListening) talkStopListening();
+  document.getElementById('talk-bar-expanded').classList.remove('show');
+  document.getElementById('talk-bar-standard').style.display = 'flex';
+}
+
+/* ── mic toggle ── */
+function talkToggleMic() {
   if (talkListening) {
-    stopTalkListening();
+    talkStopListening();
   } else {
-    startTalkListening();
+    talkStartListening();
   }
 }
 
-function startTalkListening() {
+async function talkStartListening() {
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRec) {
     showToast('Speech recognition not supported in this browser');
     return;
   }
   if (talkAudio) { talkAudio.pause(); talkAudio = null; }
+
+  await talkStartMicAnalyser();
+
   talkRecog = new SpeechRec();
   talkRecog.lang = 'en-US';
-  talkRecog.interimResults = false;
+  talkRecog.interimResults = true;
   talkRecog.maxAlternatives = 1;
+  talkRecog.continuous = false;
+
   talkRecog.onstart = () => {
     talkListening = true;
-    document.getElementById('talk-mic-btn').classList.add('listening');
-    talkSetStatus('Listening...', 'listening');
+    talkSetState('listening');
   };
-  talkRecog.onresult = async (e) => {
-    const transcript = e.results[0][0].transcript;
-    stopTalkListening(true);
-    await processTalkMessage(transcript);
+
+  talkRecog.onresult = (e) => {
+    let interim = '';
+    let final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    // Show interim in the display tab
+    const display = document.getElementById('talk-display-tab-text');
+    if (display) display.textContent = interim || final || 'Listening...';
+
+    if (final) {
+      talkStopListening(true);
+      talkProcessMessage(final.trim());
+    }
   };
+
   talkRecog.onerror = (e) => {
-    stopTalkListening(true);
-    if (e.error !== 'aborted') talkSetStatus('Could not hear you — try again');
+    talkStopListening(true);
+    if (e.error !== 'aborted' && e.error !== 'no-speech') {
+      showToast('Could not hear you');
+    }
+    if (talkState === 'listening') talkSetState('idle');
   };
-  talkRecog.onend = () => { if (talkListening) stopTalkListening(true); };
+
+  talkRecog.onend = () => {
+    if (talkListening) talkStopListening(true);
+  };
+
   talkRecog.start();
 }
 
-function stopTalkListening(keepState) {
+function talkStopListening(keepState) {
   talkListening = false;
-  document.getElementById('talk-mic-btn').classList.remove('listening');
-  if (!keepState) talkSetStatus('Tap the mic to speak');
+  talkAnalyser = null;
   if (talkRecog) { try { talkRecog.abort(); } catch(e) {} talkRecog = null; }
+  if (!keepState && talkState === 'listening') talkSetState('idle');
 }
 
-async function processTalkMessage(text) {
-  talkAppendMsg('user', text, null);
+/* ── message processing ── */
+async function talkProcessMessage(text) {
+  if (!text) return;
+  const imageBase64 = talkCaptureFrame();
+  talkSetState('thinking');
+
   talkHistory.push({ role: 'user', content: text });
-  talkShowTyping();
-  talkSetStatus('Ariana is thinking...');
-  const imageBase64 = captureCameraFrame();
+
   try {
     const res = await fetch('/api/talk', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, history: talkHistory.slice(-10), imageBase64 })
+      body: JSON.stringify({
+        message: text,
+        history: talkHistory.slice(-12),
+        imageBase64
+      })
     });
+
+    if (!res.ok) throw new Error('Server error ' + res.status);
     const data = await res.json();
-    talkHideTyping();
+
     if (data.reply) {
       talkHistory.push({ role: 'assistant', content: data.reply });
-      const msgEl = talkAppendMsg('ariana', data.reply, data.audioBase64 || null);
+
       if (data.audioBase64) {
-        setTimeout(() => playTalkAudio(data.audioBase64), 300);
+        talkPlayAudio(data.audioBase64, data.reply);
       } else {
-        talkSetStatus('Tap the mic to speak');
+        // Voice not available — show transcript on orb, return to idle after 4s
+        talkSetState('speaking');
+        talkTypeTranscript(data.reply);
+        setTimeout(() => {
+          talkSetState('idle');
+          document.getElementById('talk-transcript-top').textContent = '';
+        }, 4000 + data.reply.length * 30);
       }
     } else {
-      talkSetStatus('Something went wrong — try again');
+      talkSetState('idle');
+      showToast('No response from Ariana');
     }
   } catch(e) {
-    talkHideTyping();
-    talkSetStatus('Connection error — try again');
+    console.error('Talk error:', e);
+    talkSetState('idle');
+    showToast('Connection error');
   }
+}
+
+/* ── back / cleanup ── */
+function talkGoBack() {
+  if (talkListening) talkStopListening();
+  if (talkAudio) { talkAudio.pause(); talkAudio = null; }
+  talkStopOrbAnim();
+  talkStopWaveAnim();
+  if (talkStream) { talkStream.getTracks().forEach(t => t.stop()); talkStream = null; }
+  talkCameraOn = false;
+  talkExpanded = false;
+  talkSetState('idle');
+  document.getElementById('talk-bar-expanded').classList.remove('show');
+  document.getElementById('talk-bar-standard').style.display = 'flex';
+  // Return to chats
+  const chatsBtn = document.querySelector('.sb-item[data-view="chats"]');
+  if (chatsBtn) navTo(chatsBtn);
+}
+
+/* ── init on view load ── */
+function talkInit() {
+  talkInitWaveform();
+  talkHistory = [];
+  talkSetState('idle');
+  document.getElementById('talk-transcript-top').textContent = '';
+  // Reset camera
+  const flipBtn = document.getElementById('talk-cam-flip-btn');
+  if (flipBtn) flipBtn.classList.remove('show');
+  const onBtn = document.getElementById('talk-cam-on-btn');
+  if (onBtn) onBtn.classList.remove('active');
 }
 
 // ══════════════════════════════════════════════
