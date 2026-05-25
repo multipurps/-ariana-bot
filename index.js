@@ -1161,64 +1161,136 @@ io.on("connection", socket => {
 });
 
 
-// ── LIVE TALK ────────────────────────────────────────────────
-async function ttsBase64(text) {
-  const apiKey  = process.env.ELEVENLABS_API_KEY;
-  const voiceId = process.env.ELEVENLABS_VOICE_ID;
-  if (!apiKey || !voiceId) return null;
-  try {
-    const res = await axios.post(
-      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-      { text, model_id: "eleven_multilingual_v2", voice_settings: { stability: 0.5, similarity_boost: 0.75 } },
-      { headers: { "xi-api-key": apiKey, "Content-Type": "application/json", Accept: "audio/mpeg" }, responseType: "arraybuffer" }
-    );
-    return Buffer.from(res.data).toString("base64");
-  } catch(e) { console.warn("TTS base64 failed:", e.message); return null; }
-}
-
+// ── LIVE TALK ─────────────────────────────────────────────────
+// ── Gemini vision call — accepts full history + attaches image to final user turn ──
 async function callGeminiWithVision(history, sys, imageBase64) {
-  const contents = history.slice(0, -1).map(m => ({
-    role: m.role === "assistant" ? "model" : "user",
-    parts: [{ text: m.content }]
-  }));
-  const lastMsg = history[history.length - 1];
-  const lastParts = [{ text: lastMsg.content }];
-  if (imageBase64) {
-    lastParts.push({ inline_data: { mime_type: "image/jpeg", data: imageBase64 } });
+  // Build contents: all prior turns as text, final user turn gets image appended
+  const contents = [];
+
+  for (let i = 0; i < history.length; i++) {
+    const m = history[i];
+    const role = (m.role === "assistant" || m.role === "model") ? "model" : "user";
+    const isLast = i === history.length - 1;
+
+    if (isLast && role === "user" && imageBase64) {
+      // Attach camera frame to the final user message
+      contents.push({
+        role: "user",
+        parts: [
+          { text: m.content },
+          { inline_data: { mime_type: "image/jpeg", data: imageBase64 } }
+        ]
+      });
+    } else {
+      contents.push({ role, parts: [{ text: m.content }] });
+    }
   }
-  contents.push({ role: "user", parts: lastParts });
+
   const res = await axios.post(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
     {
       system_instruction: { parts: [{ text: sys }] },
       contents,
-      generationConfig: { temperature: 0.92, maxOutputTokens: 180 }
-    }
+      generationConfig: { temperature: 0.9, maxOutputTokens: 200 }
+    },
+    { timeout: 20000 }
   );
   return res.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? null;
 }
 
+// ── ElevenLabs TTS → base64 mp3 ──
+async function ttsBase64(text) {
+  const apiKey  = process.env.ELEVENLABS_API_KEY;
+  const voiceId = process.env.ELEVENLABS_VOICE_ID;
+  if (!apiKey || !voiceId) {
+    console.warn("[TTS] ElevenLabs keys not set — skipping voice");
+    return null;
+  }
+  try {
+    const res = await axios.post(
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+      {
+        text,
+        model_id: "eleven_multilingual_v2",
+        voice_settings: { stability: 0.48, similarity_boost: 0.78, style: 0.1, use_speaker_boost: true }
+      },
+      {
+        headers: {
+          "xi-api-key": apiKey,
+          "Content-Type": "application/json",
+          "Accept": "audio/mpeg"
+        },
+        responseType: "arraybuffer",
+        timeout: 25000
+      }
+    );
+    if (!res.data || res.data.byteLength === 0) throw new Error("Empty audio response");
+    const b64 = Buffer.from(res.data).toString("base64");
+    console.log(`[TTS] Generated ${Math.round(b64.length / 1024)}KB audio`);
+    return b64;
+  } catch(e) {
+    console.error("[TTS] ElevenLabs failed:", e.response?.status, e.message);
+    return null;
+  }
+}
+
+// ── /api/talk — Live Talk endpoint ──
 app.post("/api/talk", async (req, res) => {
   const { message, history = [], imageBase64 } = req.body;
   if (!message) return res.status(400).json({ error: "No message" });
+
+  console.log(`[talk] "${message.slice(0,60)}" | cam:${imageBase64 ? "yes(" + Math.round(imageBase64.length/1024) + "KB)" : "no"}`);
+
   try {
     const brain = brainCache || {};
-    const identity = typeof brain.core_identity === "string" ? brain.core_identity : JSON.stringify(brain.core_identity || {});
-    const personality = typeof brain.personality === "string" ? brain.personality : JSON.stringify(brain.personality || {});
-    const moodOverride = extrasMood ? `\n\nCURRENT MOOD OVERRIDE: You are feeling ${extrasMood} right now. Let this influence your tone and energy.` : "";
-    const sysPrompt = `You are Ariana, a real person having a live voice conversation with the person who manages you. Be natural, warm, and conversational — short responses (1-3 sentences max). You're talking directly to your operator.\n\nYour identity: ${identity}\nYour personality: ${personality}${moodOverride}${imageBase64 ? "\n\nYou can see the person's environment through their camera. React naturally if something interesting is visible." : ""}`;
-    const msgs = [...history, { role: "user", content: message }];
-    let reply;
+    const identity    = typeof brain.core_identity === "string" ? brain.core_identity : JSON.stringify(brain.core_identity || {});
+    const personality = typeof brain.personality   === "string" ? brain.personality   : JSON.stringify(brain.personality   || {});
+    const moodLine    = extrasMood ? `\n\nYour current mood: ${extrasMood}. Let this subtly colour your energy and word choice.` : "";
+    const camLine     = imageBase64
+      ? "\n\nYou can currently see the person's environment through their camera feed. Describe what you see if relevant, or react naturally to anything interesting visible."
+      : "";
+
+    const sysPrompt =
+      `You are Ariana — a real person, not an AI, having a live voice conversation with the person who created and manages you. ` +
+      `Be natural, warm, spontaneous. Keep replies short — 1 to 3 sentences maximum. No lists, no asterisks, no markdown. ` +
+      `Speak exactly as you would out loud.\n\n` +
+      `Your identity: ${identity}\nYour personality: ${personality}` +
+      moodLine + camLine;
+
+    // Build message history with current message appended
+    const msgs = [
+      ...history.map(m => ({ role: m.role, content: m.content })),
+      { role: "user", content: message }
+    ];
+
+    // Choose call: vision if camera frame present, else standard Gemini
+    let reply = null;
     if (imageBase64) {
-      reply = await callGeminiWithVision(msgs, sysPrompt, imageBase64);
+      try {
+        reply = await callGeminiWithVision(msgs, sysPrompt, imageBase64);
+        console.log("[talk] Vision reply:", reply?.slice(0,60));
+      } catch(e) {
+        console.warn("[talk] Vision failed, falling back to text:", e.message);
+        reply = await callGemini(msgs, sysPrompt, false);
+      }
     } else {
       reply = await callGemini(msgs, sysPrompt, false);
     }
-    if (!reply) throw new Error("No reply from AI");
+
+    // Fallback chain if Gemini fails
+    if (!reply) {
+      try { reply = await callGroq(msgs, sysPrompt, false); } catch(e) {}
+    }
+    if (!reply) return res.status(500).json({ error: "All AI calls failed" });
+
+    // Generate voice — always attempt
     const audioBase64 = await ttsBase64(reply);
-    res.json({ ok: true, reply, audioBase64 });
+    if (!audioBase64) console.warn("[talk] Voice unavailable — sending text only");
+
+    res.json({ ok: true, reply, audioBase64: audioBase64 || null });
+
   } catch(e) {
-    console.error("Talk error:", e.message);
+    console.error("[talk] Unhandled error:", e.message);
     res.status(500).json({ error: e.message });
   }
 });
