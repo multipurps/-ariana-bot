@@ -458,7 +458,8 @@ input,textarea{font-family:inherit;color:inherit}
   opacity:0;pointer-events:none;
   transition:opacity .4s;
 }
-#talk-orb-scene.show{opacity:1}
+#talk-orb-scene.show{opacity:1;pointer-events:all}
+#talk-orb-scene.orb-full{z-index:50;background:#000}
 #talk-transcript{
   font-size:17px;font-weight:300;letter-spacing:.01em;
   color:rgba(255,255,255,.75);
@@ -468,19 +469,13 @@ input,textarea{font-family:inherit;color:inherit}
 #talk-orb{
   width:260px;height:260px;border-radius:50%;
   position:relative;flex-shrink:0;
-  transition:box-shadow .6s;
+  overflow:hidden;
 }
-#talk-orb.speaking{
-  box-shadow:
-    0 0 0 1px rgba(200,140,255,.25),
-    0 0 70px rgba(180,80,255,.35),
-    0 0 140px rgba(220,80,140,.18);
+#talk-orb-canvas{
+  position:absolute;inset:0;
+  width:100%;height:100%;border-radius:50%;
 }
-#talk-orb.thinking{
-  box-shadow:
-    0 0 0 1px rgba(140,160,255,.2),
-    0 0 50px rgba(100,100,255,.25);
-}
+/* fallback CSS layers — only visible if canvas fails */
 .ol{position:absolute;inset:0;border-radius:50%}
 #ol-base{
   background:radial-gradient(circle at 38% 32%,
@@ -491,35 +486,39 @@ input,textarea{font-family:inherit;color:inherit}
     rgba(15,4,55,.9)    100%
   );
 }
-#ol-warm{
-  background:radial-gradient(circle at 30% 26%,rgba(255,165,55,.72) 0%,transparent 55%);
-  animation:bw 4s ease-in-out infinite;
-}
-#ol-cool{
-  background:radial-gradient(circle at 70% 70%,rgba(95,45,255,.65) 0%,transparent 52%);
-  animation:bc 3.5s ease-in-out infinite .6s;
-}
-#ol-red{
-  background:radial-gradient(circle at 68% 32%,rgba(220,45,95,.52) 0%,transparent 44%);
-  animation:br 5.2s ease-in-out infinite 1.2s;
-}
-#ol-glass{
-  background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.28) 0%,rgba(255,255,255,.04) 44%,transparent 62%);
-}
-#ol-logo{
-  position:absolute;inset:0;
-  display:flex;align-items:center;justify-content:center;z-index:2;
-}
-#ol-logo img{
-  width:50px;height:50px;border-radius:12px;object-fit:cover;
-  filter:drop-shadow(0 2px 14px rgba(0,0,0,.5));
-}
+#ol-warm{background:radial-gradient(circle at 30% 26%,rgba(255,165,55,.72) 0%,transparent 55%);animation:bw 4s ease-in-out infinite}
+#ol-cool{background:radial-gradient(circle at 70% 70%,rgba(95,45,255,.65) 0%,transparent 52%);animation:bc 3.5s ease-in-out infinite .6s}
+#ol-red{background:radial-gradient(circle at 68% 32%,rgba(220,45,95,.52) 0%,transparent 44%);animation:br 5.2s ease-in-out infinite 1.2s}
+#ol-glass{background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.28) 0%,rgba(255,255,255,.04) 44%,transparent 62%)}
+#ol-logo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2}
+#ol-logo img{width:50px;height:50px;border-radius:12px;object-fit:cover;filter:drop-shadow(0 2px 14px rgba(0,0,0,.5))}
 @keyframes bw{0%,100%{transform:translate(0,0) scale(1);opacity:.72}50%{transform:translate(18px,-13px) scale(1.14);opacity:.92}}
 @keyframes bc{0%,100%{transform:translate(0,0) scale(1);opacity:.65}50%{transform:translate(-13px,10px) scale(1.11);opacity:.82}}
 @keyframes br{0%,100%{transform:translate(0,0) scale(1);opacity:.52}50%{transform:translate(8px,15px) scale(1.09);opacity:.72}}
-#talk-orb-scene.show.speaking #talk-orb{animation:orbBreathe 2.1s ease-in-out infinite}
-#talk-orb-scene.show.thinking #talk-orb{animation:orbBreathe 3.5s ease-in-out infinite}
-@keyframes orbBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.055)}}
+
+/* orb outer glow rings — driven by JS class */
+#talk-orb.speaking{
+  box-shadow:
+    0 0 0 1px rgba(200,140,255,.28),
+    0 0 80px rgba(180,80,255,.4),
+    0 0 160px rgba(220,80,140,.2);
+}
+#talk-orb.thinking{
+  box-shadow:
+    0 0 0 1px rgba(140,160,255,.22),
+    0 0 55px rgba(100,100,255,.28);
+}
+#talk-orb.listening{
+  box-shadow:
+    0 0 0 1px rgba(167,200,255,.2),
+    0 0 50px rgba(80,140,255,.3),
+    0 0 100px rgba(80,140,255,.12);
+}
+/* orb size expands in fullscreen mode */
+#talk-orb-scene.orb-full #talk-orb{
+  width:min(72vw,320px);
+  height:min(72vw,320px);
+}
 #talk-status-pill{
   padding:9px 22px;border-radius:30px;
   border:1px solid rgba(255,255,255,.14);
@@ -597,23 +596,97 @@ input,textarea{font-family:inherit;color:inherit}
 #talk-mic-inline-btn svg{width:20px;height:20px}
 #talk-voice-btn{
   width:46px;height:46px;border-radius:50%;flex-shrink:0;
-  background:linear-gradient(140deg,#7c3aed,#6366f1);
-  border:none;
+  background:none;border:none;padding:0;
   display:flex;align-items:center;justify-content:center;
-  cursor:pointer;
-  box-shadow:0 2px 18px rgba(99,102,241,.55);
-  transition:transform .15s,box-shadow .15s;
+  cursor:pointer;overflow:visible;position:relative;
+  -webkit-tap-highlight-color:transparent;
 }
-#talk-voice-btn:hover{transform:scale(1.07);box-shadow:0 4px 26px rgba(99,102,241,.7)}
-#talk-voice-btn svg{width:20px;height:20px;color:#fff}
+#talk-voice-orb{
+  width:46px;height:46px;border-radius:50%;position:relative;
+  background:radial-gradient(circle at 35% 30%,
+    rgba(170,110,255,0.97) 0%,
+    rgba(100,55,230,0.92) 42%,
+    rgba(45,20,170,0.88) 100%);
+  box-shadow:
+    0 0 0 1px rgba(155,105,255,0.38),
+    0 0 16px rgba(110,65,255,0.6),
+    0 0 36px rgba(110,65,255,0.25),
+    0 0 60px rgba(110,65,255,0.1);
+  animation:orbBtnBreath 3.6s ease-in-out infinite;
+  overflow:hidden;
+  transition:transform .15s;
+}
+#talk-voice-btn:active #talk-voice-orb{transform:scale(0.93)}
+#talk-voice-orb::before{
+  content:"";position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 28% 22%,
+    rgba(255,255,255,0.3) 0%,
+    rgba(255,255,255,0.04) 48%,
+    transparent 68%);
+}
+#talk-voice-orb-warm{
+  position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 62% 65%,rgba(255,130,55,0.5) 0%,transparent 55%);
+  animation:orbBtnWarm 4.4s ease-in-out infinite 0.9s;
+}
+#talk-voice-orb-cool{
+  position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 70% 28%,rgba(80,200,255,0.35) 0%,transparent 50%);
+  animation:orbBtnCool 5.1s ease-in-out infinite 2.1s;
+}
+@keyframes orbBtnBreath{
+  0%,100%{
+    transform:scale(1);
+    box-shadow:0 0 0 1px rgba(155,105,255,0.38),0 0 16px rgba(110,65,255,0.6),0 0 36px rgba(110,65,255,0.25),0 0 60px rgba(110,65,255,0.1);
+  }
+  50%{
+    transform:scale(1.07);
+    box-shadow:0 0 0 1px rgba(165,115,255,0.5),0 0 26px rgba(130,80,255,0.8),0 0 52px rgba(130,80,255,0.35),0 0 80px rgba(130,80,255,0.15);
+  }
+}
+@keyframes orbBtnWarm{0%,100%{opacity:0.5;transform:translate(0,0) scale(1)}50%{opacity:0.78;transform:translate(-7px,-6px) scale(1.18)}}
+@keyframes orbBtnCool{0%,100%{opacity:0.35;transform:translate(0,0) scale(1)}50%{opacity:0.6;transform:translate(5px,8px) scale(1.12)}}
 
-/* expanded bar */
+/* expanded bar — mic mode only (NOT orb mode) */
 #talk-bar-exp{
   display:none;
   align-items:center;gap:8px;justify-content:space-between;
   padding:0 4px;
 }
 #talk-bar-exp.show{display:flex}
+
+/* ── orb fullscreen mode bottom controls ── */
+#talk-orb-btm{
+  position:absolute;bottom:0;left:0;right:0;z-index:30;
+  padding:18px 24px calc(24px + env(safe-area-inset-bottom));
+  display:none;flex-direction:column;align-items:center;gap:14px;
+  background:linear-gradient(to top,rgba(0,0,0,0.85) 0%,transparent 100%);
+  pointer-events:none;
+}
+#talk-orb-btm.show{display:flex}
+#talk-orb-status-pill{
+  padding:10px 24px;border-radius:30px;
+  border:1px solid rgba(255,255,255,0.14);
+  background:rgba(0,0,0,0.38);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  font-size:13px;color:rgba(255,255,255,0.75);
+  display:flex;align-items:center;gap:9px;
+  pointer-events:all;
+}
+#talk-orb-status-dot{
+  width:7px;height:7px;border-radius:50%;background:var(--accent);
+  animation:sdot 1.4s ease-in-out infinite;flex-shrink:0;
+}
+#talk-orb-close-btn{
+  width:52px;height:52px;border-radius:50%;
+  background:rgba(255,255,255,0.1);
+  border:1px solid rgba(255,255,255,0.15);
+  display:flex;align-items:center;justify-content:center;
+  color:rgba(255,255,255,0.8);
+  cursor:pointer;transition:background .15s,transform .1s;
+  pointer-events:all;
+}
+#talk-orb-close-btn:active{transform:scale(0.9);background:rgba(255,255,255,0.18)}
+#talk-orb-close-btn svg{width:20px;height:20px}
 .tbe-btn{
   width:52px;height:52px;border-radius:50%;flex-shrink:0;
   background:rgba(255,255,255,.1);
@@ -1156,23 +1229,35 @@ input,textarea{font-family:inherit;color:inherit}
         <div id="talk-idle-sub">Tap the mic or hold to speak</div>
       </div>
 
-      <!-- ORB SCENE (thinking + speaking) -->
+      <!-- ORB SCENE (thinking + speaking + orb-mode listening) -->
       <div id="talk-orb-scene">
         <div id="talk-transcript"></div>
         <div id="talk-orb">
+          <canvas id="talk-orb-canvas"></canvas>
+          <!-- CSS fallback layers (hidden when canvas active) -->
           <div class="ol" id="ol-base"></div>
           <div class="ol" id="ol-warm"></div>
           <div class="ol" id="ol-cool"></div>
           <div class="ol" id="ol-red"></div>
           <div class="ol" id="ol-glass"></div>
-          <div id="ol-logo">
-            <img src="/icons/icon-192.png" alt="Ariana" onerror="this.style.display='none'">
-          </div>
         </div>
         <div id="talk-status-pill">
           <div id="talk-status-dot"></div>
           <span id="talk-status-txt">Thinking</span>
         </div>
+      </div>
+
+      <!-- ORB MODE BOTTOM CONTROLS (fullscreen orb) -->
+      <div id="talk-orb-btm">
+        <div id="talk-orb-status-pill">
+          <div id="talk-orb-status-dot"></div>
+          <span id="talk-orb-status-label">Listening…</span>
+        </div>
+        <button id="talk-orb-close-btn" onclick="talkLeaveOrbMode()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
 
       <!-- WAVEFORM (listening state) -->
@@ -1206,9 +1291,10 @@ input,textarea{font-family:inherit;color:inherit}
             </svg>
           </button>
           <button id="talk-voice-btn" onclick="talkEnterOrbMode()">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 15.5a3.5 3.5 0 0 0 3.5-3.5V6a3.5 3.5 0 0 0-7 0v6a3.5 3.5 0 0 0 3.5 3.5zm6.5-3.5a6.5 6.5 0 0 1-13 0H4a8 8 0 0 0 7 7.93V22h2v-2.07A8 8 0 0 0 20 12h-1.5z"/>
-            </svg>
+            <div id="talk-voice-orb">
+              <div id="talk-voice-orb-warm"></div>
+              <div id="talk-voice-orb-cool"></div>
+            </div>
           </button>
         </div>
 
@@ -1996,6 +2082,217 @@ async function genSaveToLibrary(index){
 
 
 // ══════════════════════════════════════════════════════════════
+// ORB CANVAS RENDERER — plasma sphere with noise-based motion
+// ══════════════════════════════════════════════════════════════
+
+class OrbRenderer {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.ctx    = canvas.getContext('2d');
+    this.raf    = null;
+    this.state  = 'idle';       // idle | listening | thinking | speaking
+    this.energy = 0;            // smoothed audio energy 0-1
+    this.targetEnergy = 0;
+    this.startTime = performance.now();
+
+    // Independent noise seeds per layer
+    this.layers = [
+      { cx:0.40, cy:0.33, r:0.58, color:[215,140,255], freq:0.00045, phaseX:0.0,  phaseY:1.3, driftSpd:0.72 },
+      { cx:0.28, cy:0.27, r:0.38, color:[255,155,55],  freq:0.00065, phaseX:2.1,  phaseY:0.4, driftSpd:1.05 },
+      { cx:0.72, cy:0.68, r:0.42, color:[85,45,255],   freq:0.00055, phaseX:4.3,  phaseY:2.8, driftSpd:0.88 },
+      { cx:0.66, cy:0.34, r:0.30, color:[220,45,90],   freq:0.00038, phaseX:1.7,  phaseY:3.5, driftSpd:0.62 },
+      { cx:0.50, cy:0.58, r:0.22, color:[55,200,255],  freq:0.00078, phaseX:5.2,  phaseY:0.9, driftSpd:1.22 },
+    ];
+  }
+
+  // Smooth Perlin-like noise from multiple sine octaves
+  _noise(px, py, t, phaseSeed) {
+    const s = phaseSeed;
+    return (
+      Math.sin(px * 3.7 + t * 0.00062 + s)         * 0.30 +
+      Math.sin(py * 2.9 + t * 0.00048 + s * 1.3)   * 0.28 +
+      Math.sin((px+py) * 2.1 + t * 0.00091 + s * 2.1) * 0.22 +
+      Math.sin(Math.sqrt(px*px+py*py)*6.1 + t*0.00113 + s*0.7) * 0.20
+    );
+  }
+
+  // Called from audio analyser loop — raw rms 0-255
+  setAudio(rms) {
+    this.targetEnergy = Math.min(1, rms / 140);
+  }
+
+  setState(st) {
+    this.state = st;
+    // For thinking/speaking bump base energy
+    if (st === 'thinking')  this.targetEnergy = 0.18;
+    if (st === 'idle')      this.targetEnergy = 0;
+  }
+
+  start() {
+    if (this.raf) return;
+    const render = (now) => {
+      this._draw(now);
+      this.raf = requestAnimationFrame(render);
+    };
+    this.raf = requestAnimationFrame(render);
+  }
+
+  stop() {
+    if (this.raf) { cancelAnimationFrame(this.raf); this.raf = null; }
+  }
+
+  _draw(now) {
+    const { canvas, ctx } = this;
+    const W = canvas.width, H = canvas.height;
+    if (!W || !H) return;
+    const cx = W * 0.5, cy = H * 0.5;
+    const R  = Math.min(W, H) * 0.5;
+    const t  = now - this.startTime;
+
+    // Smooth energy (different speeds per state)
+    const eSmooth = this.state === 'speaking' ? 0.12 : 0.06;
+    this.energy += (this.targetEnergy - this.energy) * eSmooth;
+
+    // Speaking auto-energy pulses (no audio needed for speaking state)
+    let e = this.energy;
+    if (this.state === 'speaking') {
+      e = Math.max(e, 0.25 + 0.18 * Math.abs(Math.sin(t * 0.0024)));
+    }
+
+    // Breathing: subtle overall scale — never stops
+    const breathe = 1 + 0.025 * Math.sin(t * 0.00055) + e * 0.05;
+    const drawR = R * breathe;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // ── Outer bloom glow ──
+    {
+      const bloomR  = drawR * 1.55;
+      const alpha   = 0.18 + e * 0.22;
+      const glow    = ctx.createRadialGradient(cx, cy, drawR * 0.75, cx, cy, bloomR);
+      glow.addColorStop(0, `rgba(170,80,255,${alpha})`);
+      glow.addColorStop(0.45,`rgba(210,80,150,${alpha * 0.55})`);
+      glow.addColorStop(1,   'rgba(0,0,0,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    // ── Circular clip for orb body ──
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, drawR, 0, Math.PI * 2);
+    ctx.clip();
+
+    // Dark base fill
+    const base = ctx.createRadialGradient(cx, cy*0.85, 0, cx, cy, drawR);
+    base.addColorStop(0, 'rgba(18,5,62,0.98)');
+    base.addColorStop(1, 'rgba(8,2,28,1)');
+    ctx.fillStyle = base;
+    ctx.fillRect(0, 0, W, H);
+
+    // ── Plasma layers ──
+    ctx.globalCompositeOperation = 'screen';
+    for (const lyr of this.layers) {
+      // Independent noise drift per layer
+      const n1 = this._noise(lyr.cx, lyr.cy, t * lyr.driftSpd, lyr.phaseX);
+      const n2 = this._noise(lyr.cy, lyr.cx, t * lyr.driftSpd, lyr.phaseY);
+      // Energy makes layers more active
+      const amp  = 0.28 + e * 0.32;
+      const bx   = cx + (lyr.cx - 0.5) * W + n1 * W * amp;
+      const by   = cy + (lyr.cy - 0.5) * H + n2 * H * amp;
+      const br   = drawR * lyr.r * (1 + Math.abs(n1) * 0.22 + e * 0.14);
+      const aMax = 0.68 + e * 0.22;
+      const aMin = 0;
+
+      const g = ctx.createRadialGradient(bx, by, 0, bx, by, br);
+      g.addColorStop(0,   `rgba(${lyr.color},${aMax})`);
+      g.addColorStop(0.55,`rgba(${lyr.color},${aMax * 0.45})`);
+      g.addColorStop(1,   `rgba(${lyr.color},${aMin})`);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    // ── Inner pressure ripples when listening/speaking ──
+    if (e > 0.05) {
+      ctx.globalCompositeOperation = 'screen';
+      const ripples = 3;
+      for (let i = 0; i < ripples; i++) {
+        const phase = t * 0.0018 + i * (Math.PI * 2 / ripples);
+        const rr    = drawR * (0.35 + 0.4 * ((Math.sin(phase) + 1) / 2));
+        const ra    = e * 0.18 * Math.max(0, Math.sin(phase));
+        if (ra < 0.01) continue;
+        const rg = ctx.createRadialGradient(cx, cy, rr * 0.5, cx, cy, rr);
+        rg.addColorStop(0,   `rgba(255,200,255,0)`);
+        rg.addColorStop(0.7, `rgba(200,120,255,${ra})`);
+        rg.addColorStop(1,   `rgba(255,200,255,0)`);
+        ctx.fillStyle = rg;
+        ctx.fillRect(0, 0, W, H);
+      }
+    }
+
+    // ── Glass highlight (always on top) ──
+    ctx.globalCompositeOperation = 'source-over';
+    const glassX = cx - drawR * 0.22;
+    const glassY = cy - drawR * 0.28;
+    const glass  = ctx.createRadialGradient(glassX, glassY, 0, cx, cy, drawR * 0.85);
+    glass.addColorStop(0,    `rgba(255,255,255,${0.24 + e * 0.06})`);
+    glass.addColorStop(0.35, 'rgba(255,255,255,0.04)');
+    glass.addColorStop(1,    'transparent');
+    ctx.fillStyle = glass;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.restore();
+  }
+}
+
+function orbCanvasInit() {
+  const canvas = document.getElementById('talk-orb-canvas');
+  if (!canvas) return;
+  // Hide CSS fallback layers
+  document.querySelectorAll('#talk-orb .ol').forEach(el => el.style.display = 'none');
+
+  // Size the canvas
+  const resize = () => {
+    const orb = document.getElementById('talk-orb');
+    if (!orb) return;
+    const r = orb.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width  = r.width  * dpr;
+    canvas.height = r.height * dpr;
+    canvas.style.width  = r.width  + 'px';
+    canvas.style.height = r.height + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+  };
+
+  // Wait for layout then resize
+  setTimeout(resize, 60);
+
+  if (window._orbRenderer) window._orbRenderer.stop();
+  window._orbRenderer = new OrbRenderer(canvas);
+  window._orbRenderer.start();
+
+  // Hook into audio analyser for reactivity
+  window._orbAudioRaf = null;
+  function orbAudioLoop() {
+    if (!window._orbRenderer || !talkAnalyser) {
+      window._orbAudioRaf = requestAnimationFrame(orbAudioLoop);
+      return;
+    }
+    const data = new Uint8Array(talkAnalyser.frequencyBinCount);
+    talkAnalyser.getByteFrequencyData(data);
+    // RMS of lower frequencies (voice range)
+    let sum = 0;
+    const half = Math.floor(data.length * 0.3);
+    for (let i = 0; i < half; i++) sum += data[i] * data[i];
+    const rms = Math.sqrt(sum / half);
+    window._orbRenderer.setAudio(rms);
+    window._orbAudioRaf = requestAnimationFrame(orbAudioLoop);
+  }
+  window._orbAudioRaf = requestAnimationFrame(orbAudioLoop);
+}
+
+// ══════════════════════════════════════════════════════════════
 // LIVE TALK
 // ══════════════════════════════════════════════════════════════
 
@@ -2055,8 +2352,12 @@ function talkInit() {
   document.getElementById('talk-send-btn').classList.remove('show');
   document.getElementById('talk-bar-std').style.display  = 'flex';
   document.getElementById('talk-bar-exp').classList.remove('show');
+  document.getElementById('talk-bottom').style.display = '';
+  document.getElementById('talk-orb-btm').classList.remove('show');
+  document.getElementById('talk-orb-scene').classList.remove('orb-full');
   document.getElementById('talk-cam-flip-btn').classList.remove('show');
   document.getElementById('talk-cam-on-btn').classList.remove('active');
+  if (window._orbRenderer) { window._orbRenderer.stop(); window._orbRenderer = null; }
 }
 
 /* ── state machine: idle | listening | thinking | speaking ── */
@@ -2069,38 +2370,55 @@ function talkShowState(st) {
   const pillTxt= document.getElementById('talk-pill-text');
   const pillWv = document.getElementById('talk-pill-wave');
   const statusTxt = document.getElementById('talk-status-txt');
+  const orbOrb    = document.getElementById('talk-orb');
+  const orbLabel  = document.getElementById('talk-orb-status-label');
 
   // reset
-  scene.classList.remove('speaking','thinking');
-  expMic.classList.remove('listening');
+  scene.classList.remove('speaking','thinking','listening');
+  expMic && expMic.classList.remove('listening');
+  orbOrb && orbOrb.classList.remove('speaking','thinking','listening');
 
   switch (st) {
     case 'idle':
       wf.classList.remove('show');
       talkStopWave();
-      pillTxt.classList.remove('hidden');
-      pillWv.classList.remove('show');
+      if (pillTxt) { pillTxt.classList.remove('hidden'); pillTxt.textContent='Tap to speak'; }
+      if (pillWv) pillWv.classList.remove('show');
       if (talkOrbMode) {
+        // Orb mode idle — orb is visible, bottom controls show with "Tap to speak"
         idle.classList.add('hidden');
         scene.classList.add('show');
-        scene.classList.remove('speaking','thinking');
-        statusTxt.textContent = 'Tap to speak';
-        pillTxt.textContent = 'Tap to speak';
+        statusTxt.textContent = 'Ready';
+        if (orbLabel) orbLabel.textContent = 'Tap to speak';
+        if (orbOrb) orbOrb.classList.remove('speaking','thinking','listening');
+        if (window._orbRenderer) window._orbRenderer.setState('idle');
       } else {
         idle.classList.remove('hidden');
         scene.classList.remove('show');
-        pillTxt.textContent = 'Tap to speak';
       }
       break;
 
     case 'listening':
       idle.classList.add('hidden');
-      scene.classList.remove('show');
-      wf.classList.add('show');
-      talkStartWave();
-      expMic.classList.add('listening');
-      pillTxt.classList.add('hidden');
-      pillWv.classList.add('show');
+      if (talkOrbMode) {
+        // In orb mode: keep orb visible, react to audio — no waveform
+        scene.classList.add('show','listening');
+        wf.classList.remove('show');
+        talkStopWave();
+        statusTxt.textContent = 'Listening';
+        if (orbLabel) orbLabel.textContent = 'Listening…';
+        if (orbOrb) orbOrb.classList.add('listening');
+        if (window._orbRenderer) window._orbRenderer.setState('listening');
+        if (expMic) expMic.classList.add('listening');
+      } else {
+        // Standard mic mode: hide orb, show waveform
+        scene.classList.remove('show');
+        wf.classList.add('show');
+        talkStartWave();
+        if (expMic) expMic.classList.add('listening');
+        if (pillTxt) pillTxt.classList.add('hidden');
+        if (pillWv) pillWv.classList.add('show');
+      }
       break;
 
     case 'thinking':
@@ -2109,10 +2427,12 @@ function talkShowState(st) {
       talkStopWave();
       scene.classList.add('show','thinking');
       statusTxt.textContent = 'Thinking';
-      if (talkExpanded) {
-        pillTxt.textContent = 'Thinking...';
-        pillTxt.classList.remove('hidden');
-        pillWv.classList.remove('show');
+      if (orbOrb) orbOrb.classList.add('thinking');
+      if (orbLabel) orbLabel.textContent = 'Thinking…';
+      if (window._orbRenderer) window._orbRenderer.setState('thinking');
+      if (talkExpanded && !talkOrbMode) {
+        if (pillTxt) { pillTxt.textContent='Thinking...'; pillTxt.classList.remove('hidden'); }
+        if (pillWv) pillWv.classList.remove('show');
       }
       break;
 
@@ -2122,10 +2442,12 @@ function talkShowState(st) {
       talkStopWave();
       scene.classList.add('show','speaking');
       statusTxt.textContent = 'Speaking';
-      if (talkExpanded) {
-        pillTxt.textContent = 'Speaking...';
-        pillTxt.classList.remove('hidden');
-        pillWv.classList.remove('show');
+      if (orbOrb) orbOrb.classList.add('speaking');
+      if (orbLabel) orbLabel.textContent = 'Speaking…';
+      if (window._orbRenderer) window._orbRenderer.setState('speaking');
+      if (talkExpanded && !talkOrbMode) {
+        if (pillTxt) { pillTxt.textContent='Speaking...'; pillTxt.classList.remove('hidden'); }
+        if (pillWv) pillWv.classList.remove('show');
       }
       break;
   }
@@ -2339,6 +2661,7 @@ function talkExpandVoice() {
   talkExpanded = true;
   document.getElementById('talk-bar-std').style.display = 'none';
   document.getElementById('talk-bar-exp').classList.add('show');
+  document.getElementById('talk-bottom').style.display = '';
 }
 
 function talkCollapseVoice() {
@@ -2347,24 +2670,58 @@ function talkCollapseVoice() {
   talkOrbMode  = false;
   document.getElementById('talk-bar-exp').classList.remove('show');
   document.getElementById('talk-bar-std').style.display = 'flex';
+  document.getElementById('talk-bottom').style.display = '';
+  document.getElementById('talk-orb-btm').classList.remove('show');
+  const scene = document.getElementById('talk-orb-scene');
+  scene.classList.remove('orb-full');
+  if (window._orbRenderer) { window._orbRenderer.stop(); window._orbRenderer = null; }
   talkShowState('idle');
 }
 
-/* ── orb mode: purple button takes you straight to the glowing page ── */
+/* ── orb mode: orb button → fullscreen glowing orb, auto-listens ── */
 async function talkEnterOrbMode() {
   talkOrbMode  = true;
-  talkExpanded = true;
-  // Hide idle, show orb immediately in a soft ready state
+  talkExpanded = false;
+
+  // Hide idle and std bar
   document.getElementById('talk-idle').classList.add('hidden');
-  const scene = document.getElementById('talk-orb-scene');
-  scene.classList.add('show');
-  scene.classList.remove('speaking','thinking');
-  document.getElementById('talk-status-txt').textContent = 'Ready';
-  // Show expanded bar
   document.getElementById('talk-bar-std').style.display = 'none';
-  document.getElementById('talk-bar-exp').classList.add('show');
+  document.getElementById('talk-bar-exp').classList.remove('show');
+  document.getElementById('talk-bottom').style.display = 'none';
+
+  // Show fullscreen orb
+  const scene = document.getElementById('talk-orb-scene');
+  scene.classList.add('show', 'orb-full');
+  scene.classList.remove('speaking','thinking','listening');
+  document.getElementById('talk-status-txt').textContent = 'Ready';
+
+  // Show orb bottom controls
+  const btm = document.getElementById('talk-orb-btm');
+  btm.classList.add('show');
+  document.getElementById('talk-orb-status-label').textContent = 'Ready…';
+
+  // Init canvas orb
+  orbCanvasInit();
+  if (window._orbRenderer) window._orbRenderer.setState('idle');
+
   // Auto-start listening
   await talkStartListening();
+}
+
+function talkLeaveOrbMode() {
+  if (talkListening) talkStopListening();
+  talkOrbMode  = false;
+  talkExpanded = false;
+
+  const scene = document.getElementById('talk-orb-scene');
+  scene.classList.remove('show','orb-full','speaking','thinking','listening');
+
+  document.getElementById('talk-orb-btm').classList.remove('show');
+  document.getElementById('talk-bottom').style.display = '';
+  document.getElementById('talk-bar-std').style.display = 'flex';
+  document.getElementById('talk-idle').classList.remove('hidden');
+
+  if (window._orbRenderer) { window._orbRenderer.stop(); window._orbRenderer = null; }
 }
 
 /* ── mic toggle ── */
@@ -2431,8 +2788,11 @@ async function talkStartListening() {
 function talkStopListening(keep) {
   talkListening = false;
   talkAnalyser  = null;
-  document.getElementById('talk-exp-mic').classList.remove('listening');
+  const expMic = document.getElementById('talk-exp-mic');
+  if (expMic) expMic.classList.remove('listening');
   if (talkRecog) { try { talkRecog.abort(); } catch(e) {} talkRecog = null; }
+  // Reset orb energy
+  if (window._orbRenderer && !keep) window._orbRenderer.targetEnergy = 0;
   if (!keep) talkShowState('idle');
 }
 
