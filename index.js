@@ -1201,9 +1201,14 @@ async function callGeminiWithVision(history, sys, imageBase64) {
 // ── ElevenLabs TTS → base64 mp3 ──
 async function ttsBase64(text) {
   const apiKey  = process.env.ELEVENLABS_API_KEY;
-  const voiceId = process.env.ELEVENLABS_VOICE_ID;
+  // Support multiple possible env var names for the voice ID
+  const voiceId = process.env.ELEVENLABS_VOICE_ID
+               || process.env.ELEVENLABS_VOICE
+               || process.env.ELEVEN_VOICE_ID
+               || process.env.VOICE_ID;
   if (!apiKey || !voiceId) {
-    console.warn("[TTS] ElevenLabs keys not set — skipping voice");
+    console.warn("[TTS] ElevenLabs env missing — ELEVENLABS_API_KEY:", !!apiKey, "| voiceId found:", !!voiceId);
+    console.warn("[TTS] Checked: ELEVENLABS_VOICE_ID, ELEVENLABS_VOICE, ELEVEN_VOICE_ID, VOICE_ID");
     return null;
   }
   try {
