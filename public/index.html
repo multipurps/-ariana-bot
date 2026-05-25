@@ -1205,7 +1205,7 @@ input,textarea{font-family:inherit;color:inherit}
               <line x1="8" y1="23" x2="16" y2="23"/>
             </svg>
           </button>
-          <button id="talk-voice-btn" onclick="talkExpandVoice()">
+          <button id="talk-voice-btn" onclick="talkEnterOrbMode()">
             <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 15.5a3.5 3.5 0 0 0 3.5-3.5V6a3.5 3.5 0 0 0-7 0v6a3.5 3.5 0 0 0 3.5 3.5zm6.5-3.5a6.5 6.5 0 0 1-13 0H4a8 8 0 0 0 7 7.93V22h2v-2.07A8 8 0 0 0 20 12h-1.5z"/>
             </svg>
@@ -2014,12 +2014,14 @@ let talkWaveBars    = [];
 let talkPillBars    = [];
 let talkWaveRaf     = null;
 let talkTypeTimer   = null;
+let talkOrbMode     = false;
 
 /* ── init ── */
 function talkInit() {
   talkHistory  = [];
   talkListening = false;
   talkExpanded  = false;
+  talkOrbMode   = false;
   if (talkAudio) { talkAudio.pause(); talkAudio = null; }
   if (talkWaveRaf) { cancelAnimationFrame(talkWaveRaf); talkWaveRaf = null; }
   clearTimeout(talkTypeTimer);
@@ -2074,13 +2076,21 @@ function talkShowState(st) {
 
   switch (st) {
     case 'idle':
-      idle.classList.remove('hidden');
-      scene.classList.remove('show');
       wf.classList.remove('show');
       talkStopWave();
-      pillTxt.textContent = 'Tap to speak';
       pillTxt.classList.remove('hidden');
       pillWv.classList.remove('show');
+      if (talkOrbMode) {
+        idle.classList.add('hidden');
+        scene.classList.add('show');
+        scene.classList.remove('speaking','thinking');
+        statusTxt.textContent = 'Tap to speak';
+        pillTxt.textContent = 'Tap to speak';
+      } else {
+        idle.classList.remove('hidden');
+        scene.classList.remove('show');
+        pillTxt.textContent = 'Tap to speak';
+      }
       break;
 
     case 'listening':
@@ -2179,45 +2189,52 @@ function talkTypeText(text) {
   tick();
 }
 
-/* ── audio playback via base64 ── */
+/* ── audio playback via Web Audio API (works on iOS Safari) ── */
 function talkPlayAudio(b64, transcript) {
   if (talkAudio) { talkAudio.pause(); talkAudio = null; }
-
-  // decode base64 → blob → object URL
-  const bytes = atob(b64);
-  const arr   = new Uint8Array(bytes.length);
-  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-  const blob  = new Blob([arr], { type: 'audio/mpeg' });
-  const url   = URL.createObjectURL(blob);
-
-  talkAudio = new Audio(url);
-  talkAudio.preload = 'auto';
 
   talkShowState('speaking');
   if (transcript) talkTypeText(transcript);
 
-  talkAudio.oncanplaythrough = () => {
-    // resume AudioContext if suspended (mobile autoplay policy)
-    if (talkAudioCtx && talkAudioCtx.state === 'suspended') {
-      talkAudioCtx.resume();
-    }
-    const p = talkAudio.play();
-    if (p) p.catch(e => console.warn('[talk] play blocked:', e));
-  };
+  const bytes = atob(b64);
+  const arr   = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
 
-  talkAudio.onended = () => {
-    URL.revokeObjectURL(url);
-    talkAudio = null;
-    talkShowState('idle');
-    document.getElementById('talk-transcript').textContent = '';
-  };
+  // Ensure AudioContext exists and is running (required after user gesture)
+  if (!talkAudioCtx) {
+    talkAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
 
-  talkAudio.onerror = (e) => {
-    console.error('[talk] audio error:', e);
-    URL.revokeObjectURL(url);
-    talkAudio = null;
+  talkAudioCtx.resume().then(() => {
+    talkAudioCtx.decodeAudioData(arr.buffer.slice(0), (buffer) => {
+      const source = talkAudioCtx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(talkAudioCtx.destination);
+      source.start(0);
+      source.onended = () => {
+        talkShowState('idle');
+        const el = document.getElementById('talk-transcript');
+        if (el) el.textContent = '';
+      };
+    }, (err) => {
+      console.error('[talk] WebAudio decode failed, falling back:', err);
+      // Fallback: HTML Audio element
+      const blob = new Blob([arr], { type: 'audio/mpeg' });
+      const url  = URL.createObjectURL(blob);
+      talkAudio  = new Audio(url);
+      talkAudio.play().catch(e => console.warn('[talk] play blocked:', e));
+      talkAudio.onended = () => {
+        URL.revokeObjectURL(url);
+        talkAudio = null;
+        talkShowState('idle');
+        const el = document.getElementById('talk-transcript');
+        if (el) el.textContent = '';
+      };
+    });
+  }).catch(e => {
+    console.error('[talk] AudioContext resume failed:', e);
     talkShowState('idle');
-  };
+  });
 }
 
 /* ── mic analyser ── */
@@ -2327,8 +2344,27 @@ function talkExpandVoice() {
 function talkCollapseVoice() {
   if (talkListening) talkStopListening();
   talkExpanded = false;
+  talkOrbMode  = false;
   document.getElementById('talk-bar-exp').classList.remove('show');
   document.getElementById('talk-bar-std').style.display = 'flex';
+  talkShowState('idle');
+}
+
+/* ── orb mode: purple button takes you straight to the glowing page ── */
+async function talkEnterOrbMode() {
+  talkOrbMode  = true;
+  talkExpanded = true;
+  // Hide idle, show orb immediately in a soft ready state
+  document.getElementById('talk-idle').classList.add('hidden');
+  const scene = document.getElementById('talk-orb-scene');
+  scene.classList.add('show');
+  scene.classList.remove('speaking','thinking');
+  document.getElementById('talk-status-txt').textContent = 'Ready';
+  // Show expanded bar
+  document.getElementById('talk-bar-std').style.display = 'none';
+  document.getElementById('talk-bar-exp').classList.add('show');
+  // Auto-start listening
+  await talkStartListening();
 }
 
 /* ── mic toggle ── */
