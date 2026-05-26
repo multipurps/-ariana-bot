@@ -459,7 +459,13 @@ input,textarea{font-family:inherit;color:inherit}
   transition:opacity .4s;
 }
 #talk-orb-scene.show{opacity:1;pointer-events:all}
-#talk-orb-scene.orb-full{z-index:50;background:#000}
+
+/* Fullscreen orb mode — Ariana orb top, controls bottom */
+#talk-orb-scene.orb-full{
+  z-index:50;background:#000;
+  justify-content:flex-start;
+  padding-top:10vh;
+}
 #talk-transcript{
   font-size:17px;font-weight:300;letter-spacing:.01em;
   color:rgba(255,255,255,.75);
@@ -470,6 +476,7 @@ input,textarea{font-family:inherit;color:inherit}
   width:260px;height:260px;border-radius:50%;
   position:relative;flex-shrink:0;
   overflow:hidden;
+  transition:box-shadow .5s;
 }
 #talk-orb-canvas{
   position:absolute;inset:0;
@@ -495,29 +502,25 @@ input,textarea{font-family:inherit;color:inherit}
 @keyframes bc{0%,100%{transform:translate(0,0) scale(1);opacity:.65}50%{transform:translate(-13px,10px) scale(1.11);opacity:.82}}
 @keyframes br{0%,100%{transform:translate(0,0) scale(1);opacity:.52}50%{transform:translate(8px,15px) scale(1.09);opacity:.72}}
 
-/* orb outer glow rings — driven by JS class */
-#talk-orb.speaking{
-  box-shadow:
-    0 0 0 1px rgba(80,180,255,.35),
-    0 0 80px rgba(40,140,255,.50),
-    0 0 160px rgba(20,100,255,.22);
-}
-#talk-orb.thinking{
-  box-shadow:
-    0 0 0 1px rgba(100,180,255,.22),
-    0 0 55px rgba(60,130,255,.30);
-}
-#talk-orb.listening{
-  box-shadow:
-    0 0 0 1px rgba(120,210,255,.25),
-    0 0 55px rgba(50,160,255,.35),
-    0 0 110px rgba(30,120,255,.14);
-}
-/* orb size expands in fullscreen mode */
+/* orb outer glow */
+#talk-orb.speaking{box-shadow:0 0 0 1px rgba(80,180,255,.35),0 0 80px rgba(40,140,255,.55),0 0 160px rgba(20,100,255,.22)}
+#talk-orb.thinking{box-shadow:0 0 0 1px rgba(100,180,255,.22),0 0 55px rgba(60,130,255,.32)}
+#talk-orb.listening{box-shadow:0 0 0 1px rgba(120,210,255,.25),0 0 60px rgba(50,160,255,.38),0 0 110px rgba(30,120,255,.14)}
+
+/* orb size in fullscreen mode */
 #talk-orb-scene.orb-full #talk-orb{
-  width:min(72vw,320px);
-  height:min(72vw,320px);
+  width:min(75vw,340px);
+  height:min(75vw,340px);
 }
+
+/* Ariana name label */
+#talk-orb-name{
+  font-size:15px;font-weight:500;letter-spacing:.04em;
+  color:rgba(255,255,255,.5);margin-top:-8px;
+  display:none;
+}
+#talk-orb-scene.orb-full #talk-orb-name{display:block}
+
 #talk-status-pill{
   padding:9px 22px;border-radius:30px;
   border:1px solid rgba(255,255,255,.14);
@@ -525,11 +528,77 @@ input,textarea{font-family:inherit;color:inherit}
   font-size:13px;color:rgba(255,255,255,.75);
   display:flex;align-items:center;gap:8px;
 }
+#talk-orb-scene.orb-full #talk-status-pill{display:none}
 #talk-status-dot{
   width:7px;height:7px;border-radius:50%;background:var(--accent);
   animation:sdot 1.4s ease-in-out infinite;
 }
 @keyframes sdot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.65)}}
+
+/* ── SS2-style bottom controls for orb mode ── */
+#talk-orb-btm{
+  position:absolute;bottom:0;left:0;right:0;z-index:60;
+  display:none;
+  flex-direction:column;align-items:center;
+  padding-bottom:calc(28px + env(safe-area-inset-bottom));
+  background:linear-gradient(to top,rgba(0,0,0,0.92) 0%,transparent 100%);
+  pointer-events:none;
+}
+#talk-orb-btm.show{display:flex}
+#talk-orb-btm-row{
+  display:flex;align-items:center;justify-content:center;
+  gap:18px;pointer-events:all;
+}
+/* small round control buttons */
+.orb-ctrl-btn{
+  width:56px;height:56px;border-radius:50%;
+  background:rgba(255,255,255,0.10);
+  border:1px solid rgba(255,255,255,0.14);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:rgba(255,255,255,.85);
+  -webkit-tap-highlight-color:transparent;
+  transition:background .15s,transform .1s;
+}
+.orb-ctrl-btn:active{transform:scale(0.9);background:rgba(255,255,255,.18)}
+.orb-ctrl-btn svg{width:22px;height:22px}
+
+/* user mini-orb — center button, SS2 circled one */
+#talk-user-orb-btn{
+  width:64px;height:64px;border-radius:50%;
+  position:relative;overflow:hidden;
+  background:radial-gradient(circle at 38% 32%,
+    rgba(120,90,200,.95) 0%,
+    rgba(60,40,160,.90)  45%,
+    rgba(15,10,60,.95)  100%);
+  box-shadow:0 0 0 1px rgba(120,90,200,.3),0 0 22px rgba(80,60,200,.4);
+  border:none;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+  transition:box-shadow .3s;
+  flex-shrink:0;
+}
+#talk-user-orb-btn.speaking{
+  box-shadow:0 0 0 1px rgba(140,110,255,.5),0 0 32px rgba(100,70,255,.65),0 0 60px rgba(80,50,200,.3);
+}
+#talk-user-orb-btn-shine{
+  position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 30% 22%,rgba(255,255,255,.22) 0%,transparent 55%);
+  animation:uorbShine 3.2s ease-in-out infinite;
+}
+#talk-user-orb-btn-glow{
+  position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 65% 68%,rgba(100,70,255,.45) 0%,transparent 55%);
+  animation:uorbGlow 4.1s ease-in-out infinite 1.1s;
+}
+@keyframes uorbShine{0%,100%{opacity:.7;transform:translate(0,0) scale(1)}50%{opacity:1;transform:translate(-4px,-3px) scale(1.06)}}
+@keyframes uorbGlow{0%,100%{opacity:.5;transform:translate(0,0) scale(1)}50%{opacity:.8;transform:translate(5px,4px) scale(1.10)}}
+
+/* transcript shown above controls in orb mode */
+#talk-orb-transcript{
+  font-size:15px;font-weight:300;color:rgba(255,255,255,.65);
+  text-align:center;padding:0 32px 16px;
+  min-height:0;max-width:320px;line-height:1.5;
+  pointer-events:none;
+}
 
 /* ── waveform (listening overlay, behind bottom bar) ── */
 #talk-waveform{
@@ -623,29 +692,7 @@ input,textarea{font-family:inherit;color:inherit}
   pointer-events:none;
 }
 #talk-orb-btm.show{display:flex}
-#talk-orb-status-pill{
-  padding:10px 24px;border-radius:30px;
-  border:1px solid rgba(255,255,255,0.14);
-  background:rgba(0,0,0,0.38);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-  font-size:13px;color:rgba(255,255,255,0.75);
-  display:flex;align-items:center;gap:9px;
-  pointer-events:all;
-}
-#talk-orb-status-dot{
-  width:7px;height:7px;border-radius:50%;background:var(--accent);
-  animation:sdot 1.4s ease-in-out infinite;flex-shrink:0;
-}
-#talk-orb-close-btn{
-  width:52px;height:52px;border-radius:50%;
-  background:rgba(255,255,255,0.1);
-  border:1px solid rgba(255,255,255,0.15);
-  display:flex;align-items:center;justify-content:center;
-  color:rgba(255,255,255,0.8);
-  cursor:pointer;transition:background .15s,transform .1s;
-  pointer-events:all;
-}
-#talk-orb-close-btn:active{transform:scale(0.9);background:rgba(255,255,255,0.18)}
-#talk-orb-close-btn svg{width:20px;height:20px}
+/* (old orb btm pill removed) */
 .tbe-btn{
   width:52px;height:52px;border-radius:50%;flex-shrink:0;
   background:rgba(255,255,255,.1);
@@ -1188,35 +1235,60 @@ input,textarea{font-family:inherit;color:inherit}
         <div id="talk-idle-sub">Say something or type below</div>
       </div>
 
-      <!-- ORB SCENE (thinking + speaking + orb-mode listening) -->
+      <!-- ORB SCENE (fullscreen + thinking/speaking when not in orb mode) -->
       <div id="talk-orb-scene">
         <div id="talk-transcript"></div>
         <div id="talk-orb">
           <canvas id="talk-orb-canvas"></canvas>
-          <!-- CSS fallback layers (hidden when canvas active) -->
           <div class="ol" id="ol-base"></div>
           <div class="ol" id="ol-warm"></div>
           <div class="ol" id="ol-cool"></div>
           <div class="ol" id="ol-red"></div>
           <div class="ol" id="ol-glass"></div>
         </div>
+        <div id="talk-orb-name">ARIANA</div>
         <div id="talk-status-pill">
           <div id="talk-status-dot"></div>
           <span id="talk-status-txt">Thinking</span>
         </div>
       </div>
 
-      <!-- ORB MODE BOTTOM CONTROLS (fullscreen orb) -->
+      <!-- ORB MODE BOTTOM — transcript + SS2-style controls -->
       <div id="talk-orb-btm">
-        <div id="talk-orb-status-pill">
-          <div id="talk-orb-status-dot"></div>
-          <span id="talk-orb-status-label">Listening…</span>
+        <div id="talk-orb-transcript"></div>
+        <div id="talk-orb-btm-row">
+          <!-- Camera -->
+          <button class="orb-ctrl-btn" onclick="talkToggleCamera()" title="Camera">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+              <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>
+            </svg>
+          </button>
+          <!-- Screen share (disabled) -->
+          <button class="orb-ctrl-btn" style="opacity:.4" title="Screen share">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+              <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+            </svg>
+          </button>
+          <!-- User mini-orb (center, SS2 circled button) -->
+          <button id="talk-user-orb-btn">
+            <div id="talk-user-orb-btn-shine"></div>
+            <div id="talk-user-orb-btn-glow"></div>
+          </button>
+          <!-- Mic mute toggle -->
+          <button class="orb-ctrl-btn" id="talk-orb-mic-btn" onclick="talkOrbMicToggle()" title="Mute">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+          </button>
+          <!-- Exit -->
+          <button class="orb-ctrl-btn" onclick="talkLeaveOrbMode()" title="End">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
         </div>
-        <button id="talk-orb-close-btn" onclick="talkLeaveOrbMode()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
       </div>
 
       <!-- WAVEFORM (listening state) -->
@@ -2339,7 +2411,6 @@ function talkShowState(st) {
   const pillWv = document.getElementById('talk-pill-wave');
   const statusTxt = document.getElementById('talk-status-txt');
   const orbOrb    = document.getElementById('talk-orb');
-  const orbLabel  = document.getElementById('talk-orb-status-label');
 
   // reset
   scene.classList.remove('speaking','thinking','listening');
@@ -2352,12 +2423,11 @@ function talkShowState(st) {
       talkStopWave();
       if (pillTxt) { pillTxt.classList.remove('hidden'); pillTxt.textContent='Tap to speak'; }
       if (pillWv) pillWv.classList.remove('show');
+      { const uOrb = document.getElementById('talk-user-orb-btn'); if (uOrb) uOrb.classList.remove('speaking'); }
       if (talkOrbMode) {
-        // Orb mode idle — orb is visible, bottom controls show with "Tap to speak"
         idle.classList.add('hidden');
         scene.classList.add('show');
         statusTxt.textContent = 'Ready';
-        if (orbLabel) orbLabel.textContent = 'Tap to speak';
         if (orbOrb) orbOrb.classList.remove('speaking','thinking','listening');
         if (window._orbRenderer) window._orbRenderer.setState('idle');
       } else {
@@ -2369,17 +2439,17 @@ function talkShowState(st) {
     case 'listening':
       idle.classList.add('hidden');
       if (talkOrbMode) {
-        // In orb mode: keep orb visible, react to audio — no waveform
         scene.classList.add('show','listening');
         wf.classList.remove('show');
         talkStopWave();
         statusTxt.textContent = 'Listening';
-        if (orbLabel) orbLabel.textContent = 'Listening…';
         if (orbOrb) orbOrb.classList.add('listening');
         if (window._orbRenderer) window._orbRenderer.setState('listening');
-        if (expMic) expMic.classList.add('listening');
+        if (expMic) expMic.classList.remove('listening');
+        // User mini-orb calm when Ariana is listening (user speaking)
+        const uOrb = document.getElementById('talk-user-orb-btn');
+        if (uOrb) uOrb.classList.add('speaking');
       } else {
-        // Standard mic mode: hide orb, show waveform
         scene.classList.remove('show');
         wf.classList.add('show');
         talkStartWave();
@@ -2396,8 +2466,9 @@ function talkShowState(st) {
       scene.classList.add('show','thinking');
       statusTxt.textContent = 'Thinking';
       if (orbOrb) orbOrb.classList.add('thinking');
-      if (orbLabel) orbLabel.textContent = 'Thinking…';
       if (window._orbRenderer) window._orbRenderer.setState('thinking');
+      // User mini-orb goes quiet
+      { const uOrb = document.getElementById('talk-user-orb-btn'); if (uOrb) uOrb.classList.remove('speaking'); }
       if (talkExpanded && !talkOrbMode) {
         if (pillTxt) { pillTxt.textContent='Thinking...'; pillTxt.classList.remove('hidden'); }
         if (pillWv) pillWv.classList.remove('show');
@@ -2411,8 +2482,8 @@ function talkShowState(st) {
       scene.classList.add('show','speaking');
       statusTxt.textContent = 'Speaking';
       if (orbOrb) orbOrb.classList.add('speaking');
-      if (orbLabel) orbLabel.textContent = 'Speaking…';
       if (window._orbRenderer) window._orbRenderer.setState('speaking');
+      { const uOrb = document.getElementById('talk-user-orb-btn'); if (uOrb) uOrb.classList.remove('speaking'); }
       if (talkExpanded && !talkOrbMode) {
         if (pillTxt) { pillTxt.textContent='Speaking...'; pillTxt.classList.remove('hidden'); }
         if (pillWv) pillWv.classList.remove('show');
@@ -2496,7 +2567,7 @@ function talkPlayAudio(b64, transcript) {
 
   const afterSpeak = () => {
     talkProcessing = false;
-    const el = document.getElementById('talk-transcript');
+    const el = document.getElementById(talkOrbMode ? 'talk-orb-transcript' : 'talk-transcript');
     if (el) el.textContent = '';
     if (talkOrbMode) {
       talkShowState('listening');
@@ -2669,9 +2740,7 @@ async function talkEnterOrbMode() {
   document.getElementById('talk-status-txt').textContent = 'Ready';
 
   // Show orb bottom controls
-  const btm = document.getElementById('talk-orb-btm');
-  btm.classList.add('show');
-  document.getElementById('talk-orb-status-label').textContent = 'Ready…';
+  document.getElementById('talk-orb-btm').classList.add('show');
 
   // Init canvas orb
   orbCanvasInit();
@@ -2682,19 +2751,47 @@ async function talkEnterOrbMode() {
 }
 
 function talkLeaveOrbMode() {
-  if (talkListening) talkStopListening();
-  talkOrbMode  = false;
-  talkExpanded = false;
+  // Hard stop everything immediately
+  talkOrbMode     = false;
+  talkProcessing  = false;
+  talkListening   = false;
 
+  // Kill recogniser
+  if (talkRecog) { try { talkRecog.abort(); } catch(e){} talkRecog = null; }
+
+  // Kill audio playback
+  if (talkAudio) { talkAudio.pause(); talkAudio = null; }
+
+  // Stop canvas + audio loop
+  if (window._orbRenderer) { window._orbRenderer.stop(); window._orbRenderer = null; }
+  if (window._orbAudioRaf) { cancelAnimationFrame(window._orbAudioRaf); window._orbAudioRaf = null; }
+  if (window._orbResizeObs) { window._orbResizeObs.disconnect(); window._orbResizeObs = null; }
+
+  // Reset UI
   const scene = document.getElementById('talk-orb-scene');
   scene.classList.remove('show','orb-full','speaking','thinking','listening');
-
   document.getElementById('talk-orb-btm').classList.remove('show');
   document.getElementById('talk-bottom').style.display = '';
   document.getElementById('talk-bar-std').style.display = 'flex';
   document.getElementById('talk-idle').classList.remove('hidden');
+  const trEl = document.getElementById('talk-orb-transcript');
+  if (trEl) trEl.textContent = '';
+  const orbBtn = document.getElementById('talk-user-orb-btn');
+  if (orbBtn) orbBtn.classList.remove('speaking');
+}
 
-  if (window._orbRenderer) { window._orbRenderer.stop(); window._orbRenderer = null; }
+function talkOrbMicToggle() {
+  if (talkListening) {
+    // Mute: stop recogniser but stay in orb mode
+    if (talkRecog) { try { talkRecog.abort(); } catch(e){} talkRecog = null; }
+    talkListening = false;
+    const btn = document.getElementById('talk-orb-mic-btn');
+    if (btn) btn.style.opacity = '0.4';
+  } else {
+    const btn = document.getElementById('talk-orb-mic-btn');
+    if (btn) btn.style.opacity = '';
+    talkStartListening();
+  }
 }
 
 /* ── mic toggle ── */
@@ -2755,9 +2852,9 @@ async function talkStartListening() {
       pillTxt.textContent = interim || final;
       pillTxt.classList.remove('hidden');
     }
-    // In orb mode show transcript above orb
+    // In orb mode show transcript above controls
     if (talkOrbMode) {
-      const tr = document.getElementById('talk-transcript');
+      const tr = document.getElementById('talk-orb-transcript');
       if (tr && (interim || final)) tr.textContent = interim || final;
     }
     if (final) {
@@ -2819,7 +2916,9 @@ async function talkProcess(text) {
   talkHistory.push({ role: 'user', content: text });
 
   // Clear transcript display while thinking
-  const trEl = document.getElementById('talk-transcript');
+  const trEl = talkOrbMode
+    ? document.getElementById('talk-orb-transcript')
+    : document.getElementById('talk-transcript');
   if (trEl) trEl.textContent = '';
 
   try {
@@ -2848,7 +2947,8 @@ async function talkProcess(text) {
         } else {
           talkShowState('idle');
         }
-        if (trEl) trEl.textContent = '';
+        const el2 = document.getElementById(talkOrbMode ? 'talk-orb-transcript' : 'talk-transcript');
+        if (el2) el2.textContent = '';
       }, dur);
     }
   } catch(e) {
