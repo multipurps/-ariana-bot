@@ -684,14 +684,6 @@ input,textarea{font-family:inherit;color:inherit}
 #talk-bar-exp.show{display:flex}
 
 /* ── orb fullscreen mode bottom controls ── */
-#talk-orb-btm{
-  position:absolute;bottom:0;left:0;right:0;z-index:30;
-  padding:18px 24px calc(24px + env(safe-area-inset-bottom));
-  display:none;flex-direction:column;align-items:center;gap:14px;
-  background:linear-gradient(to top,rgba(0,0,0,0.85) 0%,transparent 100%);
-  pointer-events:none;
-}
-#talk-orb-btm.show{display:flex}
 /* (old orb btm pill removed) */
 .tbe-btn{
   width:52px;height:52px;border-radius:50%;flex-shrink:0;
@@ -2701,15 +2693,21 @@ async function talkSendText() {
 }
 
 /* ── voice bar expand/collapse ── */
-function talkExpandVoice() {
+async function talkExpandVoice() {
   talkExpanded = true;
   document.getElementById('talk-bar-std').style.display = 'none';
   document.getElementById('talk-bar-exp').classList.add('show');
   document.getElementById('talk-bottom').style.display = '';
+  // Start listening immediately — no tap required
+  await talkStartListening();
 }
 
 function talkCollapseVoice() {
-  if (talkListening) talkStopListening();
+  // Hard stop mic
+  if (talkListening) {
+    talkListening = false;
+    if (talkRecog) { try { talkRecog.abort(); } catch(e){} talkRecog = null; }
+  }
   talkExpanded = false;
   talkOrbMode  = false;
   document.getElementById('talk-bar-exp').classList.remove('show');
