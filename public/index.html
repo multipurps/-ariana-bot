@@ -393,7 +393,14 @@ input,textarea{font-family:inherit;color:inherit}
 /* ═══════════════════════════════════
    LIVE TALK
 ═══════════════════════════════════ */
-#view-talk{flex-direction:column;background:#000;position:relative;overflow:hidden}
+#view-talk{
+  flex-direction:column;position:relative;overflow:hidden;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 110%, rgba(15,40,100,0.95) 0%, transparent 65%),
+    radial-gradient(ellipse 80% 60% at 20% 80%,  rgba(10,25,80,0.7)  0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 80% 90%,  rgba(20,50,120,0.5) 0%, transparent 50%),
+    linear-gradient(180deg, #000 0%, #01050f 40%, #010818 70%, #020d22 100%);
+}
 
 /* top bar */
 #talk-topbar{
@@ -675,13 +682,49 @@ input,textarea{font-family:inherit;color:inherit}
 #talk-voice-btn:active{transform:scale(0.91)}
 #talk-voice-btn svg{width:22px;height:22px;color:#fff}
 
-/* expanded bar — mic mode only (NOT orb mode) */
+/* expanded bar — mic listening mode ONLY, no orb */
 #talk-bar-exp{
   display:none;
-  align-items:center;gap:8px;justify-content:space-between;
-  padding:0 4px;
+  align-items:center;gap:10px;
+  background:rgba(26,26,34,.92);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:30px;padding:8px 10px 8px 14px;
+  backdrop-filter:blur(20px);
 }
 #talk-bar-exp.show{display:flex}
+
+/* inline waveform lives inside the bar */
+#talk-inline-wave{
+  flex:1;height:38px;
+  display:flex;align-items:center;justify-content:center;
+  gap:2px;overflow:hidden;
+}
+.tiw{
+  width:2px;border-radius:2px;flex-shrink:0;
+  background:rgba(167,139,250,0.85);
+  min-height:2px;
+  transition:height .05s ease;
+}
+
+/* mic active indicator dot */
+#talk-mic-live-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:#ef4444;flex-shrink:0;
+  animation:liveDot 1.2s ease-in-out infinite;
+}
+@keyframes liveDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.6)}}
+
+/* close button inside bar */
+#talk-bar-close{
+  width:36px;height:36px;border-radius:50%;flex-shrink:0;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.1);
+  color:rgba(255,255,255,.7);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:background .15s;
+}
+#talk-bar-close:active{background:rgba(255,255,255,.18)}
+#talk-bar-close svg{width:14px;height:14px}
 
 /* ── orb fullscreen mode bottom controls ── */
 /* (old orb btm pill removed) */
@@ -1322,36 +1365,13 @@ input,textarea{font-family:inherit;color:inherit}
           </button>
         </div>
 
-        <!-- expanded voice bar -->
+        <!-- expanded voice bar — ONLY inline waveform, no orb -->
         <div id="talk-bar-exp">
-          <button class="tbe-btn" id="tbe-cam" onclick="talkToggleCamera()" title="Camera">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-              <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>
-            </svg>
-          </button>
-          <button class="tbe-btn disabled" title="Screen share">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-              <rect x="2" y="3" width="20" height="14" rx="2"/>
-              <path d="M8 21h8M12 17v4"/>
-            </svg>
-          </button>
-          <!-- centre display pill: shows live transcript while listening -->
-          <div id="talk-display-pill" onclick="talkToggleMic()">
-            <span id="talk-pill-text">Tap to speak</span>
-            <div id="talk-pill-wave"></div>
-          </div>
-          <button id="talk-exp-mic" onclick="talkToggleMic()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-              <line x1="12" y1="19" x2="12" y2="23"/>
-              <line x1="8" y1="23" x2="16" y2="23"/>
-            </svg>
-          </button>
-          <button id="talk-exp-close" onclick="talkCollapseVoice()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
+          <div id="talk-mic-live-dot"></div>
+          <div id="talk-inline-wave"></div>
+          <button id="talk-bar-close" onclick="talkCollapseVoice()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
           </button>
         </div>
@@ -2341,6 +2361,7 @@ let talkAudioCtx    = null;
 let talkAnalyser    = null;
 let talkWaveBars    = [];
 let talkPillBars    = [];
+let talkInlineBars  = [];
 let talkWaveRaf     = null;
 let talkTypeTimer   = null;
 let talkOrbMode     = false;
@@ -2355,7 +2376,7 @@ function talkInit() {
   if (talkWaveRaf) { cancelAnimationFrame(talkWaveRaf); talkWaveRaf = null; }
   clearTimeout(talkTypeTimer);
 
-  // build waveform bars
+  // build waveform bars (large, unused in listening — kept for thinking/speaking)
   const wf = document.getElementById('talk-waveform');
   wf.innerHTML = '';
   talkWaveBars = [];
@@ -2367,17 +2388,20 @@ function talkInit() {
     talkWaveBars.push(b);
   }
 
-  // build pill wave bars
-  const pw = document.getElementById('talk-pill-wave');
-  pw.innerHTML = '';
-  talkPillBars = [];
-  for (let i = 0; i < 22; i++) {
-    const b = document.createElement('div');
-    b.className = 'pw';
-    b.style.height = '3px';
-    pw.appendChild(b);
-    talkPillBars.push(b);
+  // build inline wave bars (inside the expanded bar)
+  const iw = document.getElementById('talk-inline-wave');
+  if (iw) {
+    iw.innerHTML = '';
+    talkInlineBars = [];
+    for (let i = 0; i < 28; i++) {
+      const b = document.createElement('div');
+      b.className = 'tiw';
+      b.style.height = '2px';
+      iw.appendChild(b);
+      talkInlineBars.push(b);
+    }
   }
+  talkPillBars = [];
 
   talkShowState('idle');
   document.getElementById('talk-text-input').value = '';
@@ -2413,8 +2437,6 @@ function talkShowState(st) {
     case 'idle':
       wf.classList.remove('show');
       talkStopWave();
-      if (pillTxt) { pillTxt.classList.remove('hidden'); pillTxt.textContent='Tap to speak'; }
-      if (pillWv) pillWv.classList.remove('show');
       { const uOrb = document.getElementById('talk-user-orb-btn'); if (uOrb) uOrb.classList.remove('speaking'); }
       if (talkOrbMode) {
         idle.classList.add('hidden');
@@ -2424,30 +2446,28 @@ function talkShowState(st) {
         if (window._orbRenderer) window._orbRenderer.setState('idle');
       } else {
         idle.classList.remove('hidden');
-        scene.classList.remove('show');
+        // Only hide orb scene if we're not in the middle of AI thinking/speaking
+        if (!scene.classList.contains('thinking') && !scene.classList.contains('speaking')) {
+          scene.classList.remove('show');
+        }
       }
       break;
 
     case 'listening':
       idle.classList.add('hidden');
+      wf.classList.remove('show');
+      scene.classList.remove('show');
       if (talkOrbMode) {
+        // Orb mode: orb stays visible, reacts via audio energy
         scene.classList.add('show','listening');
-        wf.classList.remove('show');
-        talkStopWave();
         statusTxt.textContent = 'Listening';
         if (orbOrb) orbOrb.classList.add('listening');
         if (window._orbRenderer) window._orbRenderer.setState('listening');
-        if (expMic) expMic.classList.remove('listening');
-        // User mini-orb calm when Ariana is listening (user speaking)
         const uOrb = document.getElementById('talk-user-orb-btn');
         if (uOrb) uOrb.classList.add('speaking');
       } else {
-        scene.classList.remove('show');
-        wf.classList.add('show');
-        talkStartWave();
-        if (expMic) expMic.classList.add('listening');
-        if (pillTxt) pillTxt.classList.add('hidden');
-        if (pillWv) pillWv.classList.add('show');
+        // Mic bar mode: inline waveform only, NO orb, NO fullscreen
+        talkStartInlineWave();
       }
       break;
 
@@ -2461,10 +2481,8 @@ function talkShowState(st) {
       if (window._orbRenderer) window._orbRenderer.setState('thinking');
       // User mini-orb goes quiet
       { const uOrb = document.getElementById('talk-user-orb-btn'); if (uOrb) uOrb.classList.remove('speaking'); }
-      if (talkExpanded && !talkOrbMode) {
-        if (pillTxt) { pillTxt.textContent='Thinking...'; pillTxt.classList.remove('hidden'); }
-        if (pillWv) pillWv.classList.remove('show');
-      }
+      // Orb materializes for AI response — fade in smoothly
+      if (!talkOrbMode) { orbCanvasInit(); }
       break;
 
     case 'speaking':
@@ -2476,10 +2494,7 @@ function talkShowState(st) {
       if (orbOrb) orbOrb.classList.add('speaking');
       if (window._orbRenderer) window._orbRenderer.setState('speaking');
       { const uOrb = document.getElementById('talk-user-orb-btn'); if (uOrb) uOrb.classList.remove('speaking'); }
-      if (talkExpanded && !talkOrbMode) {
-        if (pillTxt) { pillTxt.textContent='Speaking...'; pillTxt.classList.remove('hidden'); }
-        if (pillWv) pillWv.classList.remove('show');
-      }
+      if (!talkOrbMode) { orbCanvasInit(); }
       break;
   }
 }
@@ -2525,6 +2540,67 @@ function talkStopWave() {
   if (talkWaveRaf) { cancelAnimationFrame(talkWaveRaf); talkWaveRaf = null; }
   talkWaveBars.forEach(b => { b.style.height = '3px'; b.style.opacity = '0.25'; });
   talkPillBars.forEach(b => { b.style.height = '3px'; });
+  talkInlineBars.forEach(b => { b.style.height = '2px'; b.style.opacity = '0.4'; });
+}
+
+/* Inline waveform — minimal, elegant, lives inside the bar */
+function talkStartInlineWave() {
+  talkStopWave();
+  const N = talkInlineBars.length;
+  if (!N) return;
+
+  function frame() {
+    if (talkAnalyser) {
+      const data = new Uint8Array(talkAnalyser.frequencyBinCount);
+      talkAnalyser.getByteFrequencyData(data);
+      const step = Math.floor(data.length / N);
+      talkInlineBars.forEach((b, i) => {
+        const v = data[i * step] || 0;
+        // Max height 22px — restrained, elegant
+        const h = 2 + (v / 255) * 22;
+        b.style.height = h + 'px';
+        b.style.opacity = 0.35 + (v / 255) * 0.65;
+      });
+    } else {
+      // Ambient idle animation when no audio data yet
+      const t = performance.now() / 1000;
+      talkInlineBars.forEach((b, i) => {
+        const n = i / (N - 1);
+        const h = 2 + 8 * Math.abs(Math.sin(t * 2.8 + n * Math.PI * 3.5));
+        b.style.height = h + 'px';
+        b.style.opacity = '0.5';
+      });
+    }
+    talkWaveRaf = requestAnimationFrame(frame);
+  }
+  talkWaveRaf = requestAnimationFrame(frame);
+}
+
+/* Full mic/audio cleanup — stops all tracks, closes AudioContext */
+function talkFullMicCleanup() {
+  talkListening  = false;
+  talkProcessing = false;
+
+  // Stop recogniser
+  if (talkRecog) { try { talkRecog.abort(); } catch(e){} talkRecog = null; }
+
+  // Stop MediaStream tracks (removes iOS red indicator)
+  if (window._talkMicStream) {
+    window._talkMicStream.getTracks().forEach(t => { t.stop(); });
+    window._talkMicStream = null;
+  }
+  window._talkMicGranted  = false;
+  window._talkMicAnalyser = null;
+  talkAnalyser = null;
+
+  // Close AudioContext fully
+  if (talkAudioCtx) {
+    try { talkAudioCtx.close(); } catch(e){}
+    talkAudioCtx = null;
+  }
+
+  // Stop waveform
+  talkStopWave();
 }
 
 /* ── typewriter for transcript ── */
@@ -2695,28 +2771,33 @@ async function talkSendText() {
 /* ── voice bar expand/collapse ── */
 async function talkExpandVoice() {
   talkExpanded = true;
+  // Show expanded bar (inline waveform), keep orb hidden
   document.getElementById('talk-bar-std').style.display = 'none';
   document.getElementById('talk-bar-exp').classList.add('show');
   document.getElementById('talk-bottom').style.display = '';
-  // Start listening immediately — no tap required
+  // Start listening — waveform only, no orb
   await talkStartListening();
 }
 
 function talkCollapseVoice() {
-  // Hard stop mic
-  if (talkListening) {
-    talkListening = false;
-    if (talkRecog) { try { talkRecog.abort(); } catch(e){} talkRecog = null; }
-  }
+  talkFullMicCleanup();
   talkExpanded = false;
   talkOrbMode  = false;
+
   document.getElementById('talk-bar-exp').classList.remove('show');
   document.getElementById('talk-bar-std').style.display = 'flex';
   document.getElementById('talk-bottom').style.display = '';
   document.getElementById('talk-orb-btm').classList.remove('show');
+
+  // Hide orb scene completely when collapsing mic bar
   const scene = document.getElementById('talk-orb-scene');
-  scene.classList.remove('orb-full');
+  scene.classList.remove('show','orb-full','speaking','thinking','listening');
+
+  // Stop canvas
   if (window._orbRenderer) { window._orbRenderer.stop(); window._orbRenderer = null; }
+  if (window._orbAudioRaf) { cancelAnimationFrame(window._orbAudioRaf); window._orbAudioRaf = null; }
+  if (window._orbResizeObs) { window._orbResizeObs.disconnect(); window._orbResizeObs = null; }
+
   talkShowState('idle');
 }
 
@@ -2749,18 +2830,13 @@ async function talkEnterOrbMode() {
 }
 
 function talkLeaveOrbMode() {
-  // Hard stop everything immediately
-  talkOrbMode     = false;
-  talkProcessing  = false;
-  talkListening   = false;
+  talkFullMicCleanup();
+  talkOrbMode = false;
 
-  // Kill recogniser
-  if (talkRecog) { try { talkRecog.abort(); } catch(e){} talkRecog = null; }
-
-  // Kill audio playback
+  // Stop audio playback
   if (talkAudio) { talkAudio.pause(); talkAudio = null; }
 
-  // Stop canvas + audio loop
+  // Stop canvas + loops
   if (window._orbRenderer) { window._orbRenderer.stop(); window._orbRenderer = null; }
   if (window._orbAudioRaf) { cancelAnimationFrame(window._orbAudioRaf); window._orbAudioRaf = null; }
   if (window._orbResizeObs) { window._orbResizeObs.disconnect(); window._orbResizeObs = null; }
@@ -2772,10 +2848,13 @@ function talkLeaveOrbMode() {
   document.getElementById('talk-bottom').style.display = '';
   document.getElementById('talk-bar-std').style.display = 'flex';
   document.getElementById('talk-idle').classList.remove('hidden');
+
   const trEl = document.getElementById('talk-orb-transcript');
   if (trEl) trEl.textContent = '';
-  const orbBtn = document.getElementById('talk-user-orb-btn');
-  if (orbBtn) orbBtn.classList.remove('speaking');
+  const trEl2 = document.getElementById('talk-transcript');
+  if (trEl2) trEl2.textContent = '';
+  const uOrb = document.getElementById('talk-user-orb-btn');
+  if (uOrb) uOrb.classList.remove('speaking');
 }
 
 function talkOrbMicToggle() {
@@ -2897,11 +2976,13 @@ async function talkStartListening() {
 function talkStopListening(keep) {
   talkListening = false;
   talkAnalyser  = null;
-  const expMic = document.getElementById('talk-exp-mic');
-  if (expMic) expMic.classList.remove('listening');
   if (talkRecog) { try { talkRecog.abort(); } catch(e) {} talkRecog = null; }
   // Reset orb energy
-  if (window._orbRenderer && !keep) window._orbRenderer.targetEnergy = 0;
+  if (window._orbRenderer) window._orbRenderer.targetEnergy = 0;
+  // Stop inline waveform
+  talkStopWave();
+  const expMic = document.getElementById('talk-exp-mic');
+  if (expMic) expMic.classList.remove('listening');
   if (!keep) talkShowState('idle');
 }
 
