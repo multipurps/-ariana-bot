@@ -478,18 +478,17 @@ input,textarea{font-family:inherit;color:inherit}
 /* fallback CSS layers — only visible if canvas fails */
 .ol{position:absolute;inset:0;border-radius:50%}
 #ol-base{
-  background:radial-gradient(circle at 38% 32%,
-    rgba(215,140,255,.95) 0%,
-    rgba(200,70,165,.85) 32%,
-    rgba(255,88,48,.5)   58%,
-    rgba(85,28,205,.8)   80%,
-    rgba(15,4,55,.9)    100%
+  background:radial-gradient(circle at 42% 38%,
+    rgba(80,180,255,.95) 0%,
+    rgba(30,100,255,.88) 38%,
+    rgba(10,40,200,.82)  70%,
+    rgba(2,8,60,.95)    100%
   );
 }
-#ol-warm{background:radial-gradient(circle at 30% 26%,rgba(255,165,55,.72) 0%,transparent 55%);animation:bw 4s ease-in-out infinite}
-#ol-cool{background:radial-gradient(circle at 70% 70%,rgba(95,45,255,.65) 0%,transparent 52%);animation:bc 3.5s ease-in-out infinite .6s}
-#ol-red{background:radial-gradient(circle at 68% 32%,rgba(220,45,95,.52) 0%,transparent 44%);animation:br 5.2s ease-in-out infinite 1.2s}
-#ol-glass{background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.28) 0%,rgba(255,255,255,.04) 44%,transparent 62%)}
+#ol-warm{background:radial-gradient(circle at 28% 22%,rgba(200,240,255,.80) 0%,transparent 50%);animation:bw 4s ease-in-out infinite}
+#ol-cool{background:radial-gradient(circle at 68% 72%,rgba(20,80,255,.65) 0%,transparent 52%);animation:bc 3.5s ease-in-out infinite .6s}
+#ol-red{background:radial-gradient(circle at 65% 28%,rgba(100,220,255,.55) 0%,transparent 44%);animation:br 5.2s ease-in-out infinite 1.2s}
+#ol-glass{background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.30) 0%,rgba(255,255,255,.05) 44%,transparent 62%)}
 #ol-logo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2}
 #ol-logo img{width:50px;height:50px;border-radius:12px;object-fit:cover;filter:drop-shadow(0 2px 14px rgba(0,0,0,.5))}
 @keyframes bw{0%,100%{transform:translate(0,0) scale(1);opacity:.72}50%{transform:translate(18px,-13px) scale(1.14);opacity:.92}}
@@ -499,20 +498,20 @@ input,textarea{font-family:inherit;color:inherit}
 /* orb outer glow rings — driven by JS class */
 #talk-orb.speaking{
   box-shadow:
-    0 0 0 1px rgba(200,140,255,.28),
-    0 0 80px rgba(180,80,255,.4),
-    0 0 160px rgba(220,80,140,.2);
+    0 0 0 1px rgba(80,180,255,.35),
+    0 0 80px rgba(40,140,255,.50),
+    0 0 160px rgba(20,100,255,.22);
 }
 #talk-orb.thinking{
   box-shadow:
-    0 0 0 1px rgba(140,160,255,.22),
-    0 0 55px rgba(100,100,255,.28);
+    0 0 0 1px rgba(100,180,255,.22),
+    0 0 55px rgba(60,130,255,.30);
 }
 #talk-orb.listening{
   box-shadow:
-    0 0 0 1px rgba(167,200,255,.2),
-    0 0 50px rgba(80,140,255,.3),
-    0 0 100px rgba(80,140,255,.12);
+    0 0 0 1px rgba(120,210,255,.25),
+    0 0 55px rgba(50,160,255,.35),
+    0 0 110px rgba(30,120,255,.14);
 }
 /* orb size expands in fullscreen mode */
 #talk-orb-scene.orb-full #talk-orb{
@@ -596,56 +595,16 @@ input,textarea{font-family:inherit;color:inherit}
 #talk-mic-inline-btn svg{width:20px;height:20px}
 #talk-voice-btn{
   width:46px;height:46px;border-radius:50%;flex-shrink:0;
-  background:none;border:none;padding:0;
+  background:linear-gradient(145deg,#1a6fef,#1452c8);
+  border:none;padding:0;
   display:flex;align-items:center;justify-content:center;
-  cursor:pointer;overflow:visible;position:relative;
+  cursor:pointer;
+  box-shadow:0 0 0 1px rgba(40,130,255,.45),0 2px 20px rgba(40,130,255,.55);
+  transition:transform .12s,box-shadow .2s;
   -webkit-tap-highlight-color:transparent;
 }
-#talk-voice-orb{
-  width:46px;height:46px;border-radius:50%;position:relative;
-  background:radial-gradient(circle at 35% 30%,
-    rgba(170,110,255,0.97) 0%,
-    rgba(100,55,230,0.92) 42%,
-    rgba(45,20,170,0.88) 100%);
-  box-shadow:
-    0 0 0 1px rgba(155,105,255,0.38),
-    0 0 16px rgba(110,65,255,0.6),
-    0 0 36px rgba(110,65,255,0.25),
-    0 0 60px rgba(110,65,255,0.1);
-  animation:orbBtnBreath 3.6s ease-in-out infinite;
-  overflow:hidden;
-  transition:transform .15s;
-}
-#talk-voice-btn:active #talk-voice-orb{transform:scale(0.93)}
-#talk-voice-orb::before{
-  content:"";position:absolute;inset:0;border-radius:50%;
-  background:radial-gradient(circle at 28% 22%,
-    rgba(255,255,255,0.3) 0%,
-    rgba(255,255,255,0.04) 48%,
-    transparent 68%);
-}
-#talk-voice-orb-warm{
-  position:absolute;inset:0;border-radius:50%;
-  background:radial-gradient(circle at 62% 65%,rgba(255,130,55,0.5) 0%,transparent 55%);
-  animation:orbBtnWarm 4.4s ease-in-out infinite 0.9s;
-}
-#talk-voice-orb-cool{
-  position:absolute;inset:0;border-radius:50%;
-  background:radial-gradient(circle at 70% 28%,rgba(80,200,255,0.35) 0%,transparent 50%);
-  animation:orbBtnCool 5.1s ease-in-out infinite 2.1s;
-}
-@keyframes orbBtnBreath{
-  0%,100%{
-    transform:scale(1);
-    box-shadow:0 0 0 1px rgba(155,105,255,0.38),0 0 16px rgba(110,65,255,0.6),0 0 36px rgba(110,65,255,0.25),0 0 60px rgba(110,65,255,0.1);
-  }
-  50%{
-    transform:scale(1.07);
-    box-shadow:0 0 0 1px rgba(165,115,255,0.5),0 0 26px rgba(130,80,255,0.8),0 0 52px rgba(130,80,255,0.35),0 0 80px rgba(130,80,255,0.15);
-  }
-}
-@keyframes orbBtnWarm{0%,100%{opacity:0.5;transform:translate(0,0) scale(1)}50%{opacity:0.78;transform:translate(-7px,-6px) scale(1.18)}}
-@keyframes orbBtnCool{0%,100%{opacity:0.35;transform:translate(0,0) scale(1)}50%{opacity:0.6;transform:translate(5px,8px) scale(1.12)}}
+#talk-voice-btn:active{transform:scale(0.91)}
+#talk-voice-btn svg{width:22px;height:22px;color:#fff}
 
 /* expanded bar — mic mode only (NOT orb mode) */
 #talk-bar-exp{
@@ -1226,7 +1185,7 @@ input,textarea{font-family:inherit;color:inherit}
         <img id="talk-logo-alone" src="/icons/icon-192.png" alt="Ariana"
           onerror="this.style.display='none'">
         <div id="talk-idle-greeting">Hi, what's the move?</div>
-        <div id="talk-idle-sub">Tap the mic or hold to speak</div>
+        <div id="talk-idle-sub">Say something or type below</div>
       </div>
 
       <!-- ORB SCENE (thinking + speaking + orb-mode listening) -->
@@ -1291,10 +1250,11 @@ input,textarea{font-family:inherit;color:inherit}
             </svg>
           </button>
           <button id="talk-voice-btn" onclick="talkEnterOrbMode()">
-            <div id="talk-voice-orb">
-              <div id="talk-voice-orb-warm"></div>
-              <div id="talk-voice-orb-cool"></div>
-            </div>
+            <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="5"  width="3" height="14" rx="1.5"/>
+              <rect x="10.5" y="2" width="3" height="20" rx="1.5"/>
+              <rect x="18" y="7" width="3" height="10" rx="1.5"/>
+            </svg>
           </button>
         </div>
 
@@ -2082,59 +2042,59 @@ async function genSaveToLibrary(index){
 
 
 // ══════════════════════════════════════════════════════════════
-// ORB CANVAS RENDERER — plasma sphere with noise-based motion
+// ORB CANVAS RENDERER — vivid blue/cyan/white plasma sphere
 // ══════════════════════════════════════════════════════════════
 
 class OrbRenderer {
   constructor(canvas) {
-    this.canvas = canvas;
-    this.ctx    = canvas.getContext('2d');
-    this.raf    = null;
-    this.state  = 'idle';       // idle | listening | thinking | speaking
-    this.energy = 0;            // smoothed audio energy 0-1
+    this.canvas    = canvas;
+    this.ctx       = canvas.getContext('2d');
+    this.raf       = null;
+    this.state     = 'idle';
+    this.energy    = 0;
     this.targetEnergy = 0;
     this.startTime = performance.now();
 
-    // Independent noise seeds per layer
+    // Plasma blobs — blue/cyan/white palette like SS3
     this.layers = [
-      { cx:0.40, cy:0.33, r:0.58, color:[215,140,255], freq:0.00045, phaseX:0.0,  phaseY:1.3, driftSpd:0.72 },
-      { cx:0.28, cy:0.27, r:0.38, color:[255,155,55],  freq:0.00065, phaseX:2.1,  phaseY:0.4, driftSpd:1.05 },
-      { cx:0.72, cy:0.68, r:0.42, color:[85,45,255],   freq:0.00055, phaseX:4.3,  phaseY:2.8, driftSpd:0.88 },
-      { cx:0.66, cy:0.34, r:0.30, color:[220,45,90],   freq:0.00038, phaseX:1.7,  phaseY:3.5, driftSpd:0.62 },
-      { cx:0.50, cy:0.58, r:0.22, color:[55,200,255],  freq:0.00078, phaseX:5.2,  phaseY:0.9, driftSpd:1.22 },
+      // base: strong vivid blue
+      { cx:0.50, cy:0.55, r:0.72, color:'23,120,255',   driftSpd:0.55, phaseX:0.0, phaseY:1.1 },
+      // cyan highlight top-left
+      { cx:0.28, cy:0.22, r:0.52, color:'80,210,255',   driftSpd:0.80, phaseX:2.2, phaseY:0.5 },
+      // white/ice core center
+      { cx:0.50, cy:0.38, r:0.36, color:'200,235,255',  driftSpd:0.65, phaseX:4.1, phaseY:2.9 },
+      // deep blue bottom
+      { cx:0.60, cy:0.72, r:0.48, color:'10,60,200',    driftSpd:0.42, phaseX:1.5, phaseY:3.8 },
+      // bright sky accent
+      { cx:0.72, cy:0.30, r:0.30, color:'140,225,255',  driftSpd:1.05, phaseX:3.4, phaseY:1.7 },
     ];
   }
 
-  // Smooth Perlin-like noise from multiple sine octaves
-  _noise(px, py, t, phaseSeed) {
-    const s = phaseSeed;
+  _noise(px, py, t, seed) {
+    const s = seed;
     return (
-      Math.sin(px * 3.7 + t * 0.00062 + s)         * 0.30 +
-      Math.sin(py * 2.9 + t * 0.00048 + s * 1.3)   * 0.28 +
-      Math.sin((px+py) * 2.1 + t * 0.00091 + s * 2.1) * 0.22 +
-      Math.sin(Math.sqrt(px*px+py*py)*6.1 + t*0.00113 + s*0.7) * 0.20
+      Math.sin(px * 3.8 + t * 0.00058 + s)              * 0.28 +
+      Math.sin(py * 2.7 + t * 0.00044 + s * 1.4)        * 0.26 +
+      Math.sin((px+py)*2.3 + t * 0.00087 + s * 2.0)     * 0.24 +
+      Math.sin(Math.sqrt(px*px+py*py)*5.9 + t*0.00105 + s*0.8) * 0.22
     );
   }
 
-  // Called from audio analyser loop — raw rms 0-255
   setAudio(rms) {
-    this.targetEnergy = Math.min(1, rms / 140);
+    this.targetEnergy = Math.min(1, rms / 130);
   }
 
   setState(st) {
     this.state = st;
-    // For thinking/speaking bump base energy
-    if (st === 'thinking')  this.targetEnergy = 0.18;
+    if (st === 'thinking')  this.targetEnergy = Math.max(this.targetEnergy, 0.18);
+    if (st === 'speaking')  this.targetEnergy = Math.max(this.targetEnergy, 0.30);
     if (st === 'idle')      this.targetEnergy = 0;
   }
 
   start() {
     if (this.raf) return;
-    const render = (now) => {
-      this._draw(now);
-      this.raf = requestAnimationFrame(render);
-    };
-    this.raf = requestAnimationFrame(render);
+    const loop = (now) => { this._draw(now); this.raf = requestAnimationFrame(loop); };
+    this.raf = requestAnimationFrame(loop);
   }
 
   stop() {
@@ -2146,99 +2106,109 @@ class OrbRenderer {
     const W = canvas.width, H = canvas.height;
     if (!W || !H) return;
     const cx = W * 0.5, cy = H * 0.5;
-    const R  = Math.min(W, H) * 0.5;
+    const R  = Math.min(W, H) * 0.48;
     const t  = now - this.startTime;
 
-    // Smooth energy (different speeds per state)
-    const eSmooth = this.state === 'speaking' ? 0.12 : 0.06;
+    // Smooth energy
+    const eSmooth = this.state === 'speaking' ? 0.10 : 0.05;
     this.energy += (this.targetEnergy - this.energy) * eSmooth;
-
-    // Speaking auto-energy pulses (no audio needed for speaking state)
     let e = this.energy;
     if (this.state === 'speaking') {
-      e = Math.max(e, 0.25 + 0.18 * Math.abs(Math.sin(t * 0.0024)));
+      e = Math.max(e, 0.28 + 0.18 * Math.abs(Math.sin(t * 0.0022)));
     }
 
-    // Breathing: subtle overall scale — never stops
-    const breathe = 1 + 0.025 * Math.sin(t * 0.00055) + e * 0.05;
-    const drawR = R * breathe;
+    // Gentle breath — never stops
+    const breath   = 1 + 0.022 * Math.sin(t * 0.00052) + e * 0.04;
+    const drawR    = R * breath;
 
     ctx.clearRect(0, 0, W, H);
 
-    // ── Outer bloom glow ──
+    // Outer atmospheric glow (blue halo)
     {
-      const bloomR  = drawR * 1.55;
-      const alpha   = 0.18 + e * 0.22;
-      const glow    = ctx.createRadialGradient(cx, cy, drawR * 0.75, cx, cy, bloomR);
-      glow.addColorStop(0, `rgba(170,80,255,${alpha})`);
-      glow.addColorStop(0.45,`rgba(210,80,150,${alpha * 0.55})`);
-      glow.addColorStop(1,   'rgba(0,0,0,0)');
-      ctx.fillStyle = glow;
+      const gr = ctx.createRadialGradient(cx, cy, drawR * 0.7, cx, cy, drawR * 1.7);
+      gr.addColorStop(0,   `rgba(40,140,255,${0.22 + e * 0.18})`);
+      gr.addColorStop(0.5, `rgba(60,170,255,${0.08 + e * 0.08})`);
+      gr.addColorStop(1,   'rgba(0,0,0,0)');
+      ctx.fillStyle = gr;
       ctx.fillRect(0, 0, W, H);
     }
 
-    // ── Circular clip for orb body ──
+    // Clip to circle
     ctx.save();
     ctx.beginPath();
     ctx.arc(cx, cy, drawR, 0, Math.PI * 2);
     ctx.clip();
 
-    // Dark base fill
-    const base = ctx.createRadialGradient(cx, cy*0.85, 0, cx, cy, drawR);
-    base.addColorStop(0, 'rgba(18,5,62,0.98)');
-    base.addColorStop(1, 'rgba(8,2,28,1)');
+    // Dark base (deep navy, not black — so blue layers pop through)
+    const base = ctx.createRadialGradient(cx, cy*0.8, 0, cx, cy, drawR);
+    base.addColorStop(0, 'rgba(5,20,80,1)');
+    base.addColorStop(1, 'rgba(2,8,35,1)');
     ctx.fillStyle = base;
     ctx.fillRect(0, 0, W, H);
 
-    // ── Plasma layers ──
+    // Plasma blob layers — screen blend = additive vivid light
     ctx.globalCompositeOperation = 'screen';
+
     for (const lyr of this.layers) {
-      // Independent noise drift per layer
-      const n1 = this._noise(lyr.cx, lyr.cy, t * lyr.driftSpd, lyr.phaseX);
-      const n2 = this._noise(lyr.cy, lyr.cx, t * lyr.driftSpd, lyr.phaseY);
-      // Energy makes layers more active
-      const amp  = 0.28 + e * 0.32;
-      const bx   = cx + (lyr.cx - 0.5) * W + n1 * W * amp;
-      const by   = cy + (lyr.cy - 0.5) * H + n2 * H * amp;
-      const br   = drawR * lyr.r * (1 + Math.abs(n1) * 0.22 + e * 0.14);
-      const aMax = 0.68 + e * 0.22;
-      const aMin = 0;
+      const n1  = this._noise(lyr.cx, lyr.cy, t * lyr.driftSpd, lyr.phaseX);
+      const n2  = this._noise(lyr.cy, lyr.cx, t * lyr.driftSpd, lyr.phaseY);
+      const amp = 0.24 + e * 0.28;
+      const bx  = cx + (lyr.cx - 0.5) * W * 1.1 + n1 * W * amp;
+      const by  = cy + (lyr.cy - 0.5) * H * 1.1 + n2 * H * amp;
+      const br  = drawR * lyr.r * (1 + Math.abs(n1) * 0.18 + e * 0.12);
+      const alpha = 0.82 + e * 0.16;
 
       const g = ctx.createRadialGradient(bx, by, 0, bx, by, br);
-      g.addColorStop(0,   `rgba(${lyr.color},${aMax})`);
-      g.addColorStop(0.55,`rgba(${lyr.color},${aMax * 0.45})`);
-      g.addColorStop(1,   `rgba(${lyr.color},${aMin})`);
+      g.addColorStop(0,    `rgba(${lyr.color},${alpha})`);
+      g.addColorStop(0.45, `rgba(${lyr.color},${alpha * 0.48})`);
+      g.addColorStop(1,    `rgba(${lyr.color},0)`);
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, W, H);
     }
 
-    // ── Inner pressure ripples when listening/speaking ──
-    if (e > 0.05) {
-      ctx.globalCompositeOperation = 'screen';
-      const ripples = 3;
-      for (let i = 0; i < ripples; i++) {
-        const phase = t * 0.0018 + i * (Math.PI * 2 / ripples);
-        const rr    = drawR * (0.35 + 0.4 * ((Math.sin(phase) + 1) / 2));
-        const ra    = e * 0.18 * Math.max(0, Math.sin(phase));
+    // Diagonal light band — the SS3 swept diagonal white/cyan streak
+    {
+      const ang   = -0.55 + Math.sin(t * 0.00028) * 0.08;
+      const sweep = Math.sin(t * 0.00032 + 1.2) * 0.12;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(ang + sweep);
+      const band = ctx.createLinearGradient(-drawR, 0, drawR, 0);
+      band.addColorStop(0,   'rgba(200,235,255,0)');
+      band.addColorStop(0.35,'rgba(180,225,255,0)');
+      band.addColorStop(0.48,`rgba(220,242,255,${0.45 + e * 0.2})`);
+      band.addColorStop(0.55,`rgba(255,255,255,${0.30 + e * 0.15})`);
+      band.addColorStop(0.65,'rgba(140,210,255,0.08)');
+      band.addColorStop(1,   'rgba(200,235,255,0)');
+      ctx.fillStyle = band;
+      ctx.fillRect(-drawR * 1.2, -drawR * 1.2, drawR * 2.4, drawR * 2.4);
+      ctx.restore();
+    }
+
+    // Pressure ripples when active
+    if (e > 0.06) {
+      for (let i = 0; i < 3; i++) {
+        const ph  = t * 0.0016 + i * (Math.PI * 2 / 3);
+        const rr  = drawR * (0.3 + 0.45 * ((Math.sin(ph) + 1) / 2));
+        const ra  = e * 0.14 * Math.max(0, Math.sin(ph));
         if (ra < 0.01) continue;
         const rg = ctx.createRadialGradient(cx, cy, rr * 0.5, cx, cy, rr);
-        rg.addColorStop(0,   `rgba(255,200,255,0)`);
-        rg.addColorStop(0.7, `rgba(200,120,255,${ra})`);
-        rg.addColorStop(1,   `rgba(255,200,255,0)`);
+        rg.addColorStop(0,   'rgba(120,200,255,0)');
+        rg.addColorStop(0.7, `rgba(120,200,255,${ra})`);
+        rg.addColorStop(1,   'rgba(180,230,255,0)');
         ctx.fillStyle = rg;
         ctx.fillRect(0, 0, W, H);
       }
     }
 
-    // ── Glass highlight (always on top) ──
+    // Glass specular — top-left white shine
     ctx.globalCompositeOperation = 'source-over';
-    const glassX = cx - drawR * 0.22;
-    const glassY = cy - drawR * 0.28;
-    const glass  = ctx.createRadialGradient(glassX, glassY, 0, cx, cy, drawR * 0.85);
-    glass.addColorStop(0,    `rgba(255,255,255,${0.24 + e * 0.06})`);
-    glass.addColorStop(0.35, 'rgba(255,255,255,0.04)');
-    glass.addColorStop(1,    'transparent');
-    ctx.fillStyle = glass;
+    const gx = cx - drawR * 0.25, gy = cy - drawR * 0.3;
+    const gl = ctx.createRadialGradient(gx, gy, 0, cx, cy, drawR * 0.88);
+    gl.addColorStop(0,    `rgba(255,255,255,${0.30 + e * 0.05})`);
+    gl.addColorStop(0.28, 'rgba(255,255,255,0.06)');
+    gl.addColorStop(1,    'transparent');
+    ctx.fillStyle = gl;
     ctx.fillRect(0, 0, W, H);
 
     ctx.restore();
@@ -2248,47 +2218,44 @@ class OrbRenderer {
 function orbCanvasInit() {
   const canvas = document.getElementById('talk-orb-canvas');
   if (!canvas) return;
+
   // Hide CSS fallback layers
   document.querySelectorAll('#talk-orb .ol').forEach(el => el.style.display = 'none');
 
-  // Size the canvas
   const resize = () => {
     const orb = document.getElementById('talk-orb');
     if (!orb) return;
-    const r = orb.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
+    const r   = orb.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width  = r.width  * dpr;
     canvas.height = r.height * dpr;
     canvas.style.width  = r.width  + 'px';
     canvas.style.height = r.height + 'px';
     const ctx = canvas.getContext('2d');
-    ctx.scale(dpr, dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   };
-
-  // Wait for layout then resize
-  setTimeout(resize, 60);
+  setTimeout(resize, 40);
+  window._orbResizeObs = new ResizeObserver(resize);
+  window._orbResizeObs.observe(document.getElementById('talk-orb'));
 
   if (window._orbRenderer) window._orbRenderer.stop();
   window._orbRenderer = new OrbRenderer(canvas);
   window._orbRenderer.start();
 
-  // Hook into audio analyser for reactivity
-  window._orbAudioRaf = null;
+  // Audio reactivity loop
   function orbAudioLoop() {
-    if (!window._orbRenderer || !talkAnalyser) {
-      window._orbAudioRaf = requestAnimationFrame(orbAudioLoop);
-      return;
+    if (!window._orbRenderer) return;
+    if (talkAnalyser) {
+      const data = new Uint8Array(talkAnalyser.frequencyBinCount);
+      talkAnalyser.getByteFrequencyData(data);
+      let sum = 0;
+      const half = Math.floor(data.length * 0.3);
+      for (let i = 0; i < half; i++) sum += data[i] * data[i];
+      window._orbRenderer.setAudio(Math.sqrt(sum / half));
     }
-    const data = new Uint8Array(talkAnalyser.frequencyBinCount);
-    talkAnalyser.getByteFrequencyData(data);
-    // RMS of lower frequencies (voice range)
-    let sum = 0;
-    const half = Math.floor(data.length * 0.3);
-    for (let i = 0; i < half; i++) sum += data[i] * data[i];
-    const rms = Math.sqrt(sum / half);
-    window._orbRenderer.setAudio(rms);
     window._orbAudioRaf = requestAnimationFrame(orbAudioLoop);
   }
+  if (window._orbAudioRaf) cancelAnimationFrame(window._orbAudioRaf);
   window._orbAudioRaf = requestAnimationFrame(orbAudioLoop);
 }
 
@@ -2299,6 +2266,7 @@ function orbCanvasInit() {
 /* ── core state ── */
 let talkRecog       = null;
 let talkListening   = false;
+let talkProcessing  = false;
 let talkExpanded    = false;
 let talkCameraOn    = false;
 let talkFacing      = 'user';
@@ -2522,10 +2490,21 @@ function talkPlayAudio(b64, transcript) {
   const arr   = new Uint8Array(bytes.length);
   for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
 
-  // Ensure AudioContext exists and is running (required after user gesture)
   if (!talkAudioCtx) {
     talkAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
+
+  const afterSpeak = () => {
+    talkProcessing = false;
+    const el = document.getElementById('talk-transcript');
+    if (el) el.textContent = '';
+    if (talkOrbMode) {
+      talkShowState('listening');
+      setTimeout(() => { if (talkOrbMode) talkStartListening(); }, 300);
+    } else {
+      talkShowState('idle');
+    }
+  };
 
   talkAudioCtx.resume().then(() => {
     talkAudioCtx.decodeAudioData(arr.buffer.slice(0), (buffer) => {
@@ -2533,14 +2512,9 @@ function talkPlayAudio(b64, transcript) {
       source.buffer = buffer;
       source.connect(talkAudioCtx.destination);
       source.start(0);
-      source.onended = () => {
-        talkShowState('idle');
-        const el = document.getElementById('talk-transcript');
-        if (el) el.textContent = '';
-      };
+      source.onended = afterSpeak;
     }, (err) => {
       console.error('[talk] WebAudio decode failed, falling back:', err);
-      // Fallback: HTML Audio element
       const blob = new Blob([arr], { type: 'audio/mpeg' });
       const url  = URL.createObjectURL(blob);
       talkAudio  = new Audio(url);
@@ -2548,13 +2522,12 @@ function talkPlayAudio(b64, transcript) {
       talkAudio.onended = () => {
         URL.revokeObjectURL(url);
         talkAudio = null;
-        talkShowState('idle');
-        const el = document.getElementById('talk-transcript');
-        if (el) el.textContent = '';
+        afterSpeak();
       };
     });
   }).catch(e => {
     console.error('[talk] AudioContext resume failed:', e);
+    talkProcessing = false;
     talkShowState('idle');
   });
 }
@@ -2738,7 +2711,26 @@ async function talkStartListening() {
   if (!SR) { showToast('Speech recognition not supported in this browser'); return; }
   if (talkAudio) { talkAudio.pause(); talkAudio = null; }
 
-  await talkStartMicAnalyser();
+  // Request mic permission ONCE — reuse stream after that
+  if (!window._talkMicGranted) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      window._talkMicStream = stream;
+      window._talkMicGranted = true;
+      // Build analyser once from the persistent stream
+      if (!talkAudioCtx) talkAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (talkAudioCtx.state === 'suspended') await talkAudioCtx.resume();
+      const src = talkAudioCtx.createMediaStreamSource(stream);
+      window._talkMicAnalyser = talkAudioCtx.createAnalyser();
+      window._talkMicAnalyser.fftSize = 256;
+      src.connect(window._talkMicAnalyser);
+    } catch(e) {
+      showToast('Microphone access denied');
+      return;
+    }
+  }
+  // Always point talkAnalyser at the cached analyser
+  talkAnalyser = window._talkMicAnalyser || null;
 
   talkRecog = new SR();
   talkRecog.lang = 'en-US';
@@ -2757,11 +2749,16 @@ async function talkStartListening() {
       if (e.results[i].isFinal) final += e.results[i][0].transcript;
       else interim += e.results[i][0].transcript;
     }
-    // live transcript in centre pill
+    // Live transcript in pill (expanded mic bar mode only)
     const pillTxt = document.getElementById('talk-pill-text');
-    if (pillTxt && (interim || final)) {
+    if (pillTxt && (interim || final) && !talkOrbMode) {
       pillTxt.textContent = interim || final;
       pillTxt.classList.remove('hidden');
+    }
+    // In orb mode show transcript above orb
+    if (talkOrbMode) {
+      const tr = document.getElementById('talk-transcript');
+      if (tr && (interim || final)) tr.textContent = interim || final;
     }
     if (final) {
       talkStopListening(true);
@@ -2771,18 +2768,35 @@ async function talkStartListening() {
 
   talkRecog.onerror = (e) => {
     console.warn('[talk] recog error:', e.error);
-    talkStopListening(true);
-    if (e.error !== 'aborted' && e.error !== 'no-speech') showToast('Could not hear you');
-    if (talkListening || document.getElementById('talk-waveform').classList.contains('show')) {
+    if (e.error === 'not-allowed') {
+      window._talkMicGranted = false;
+      showToast('Microphone permission denied');
+      talkStopListening();
+      return;
+    }
+    // no-speech and aborted are fine — auto-restart in orb mode
+    talkListening = false;
+    if (talkOrbMode) {
+      setTimeout(() => { if (talkOrbMode) talkStartListening(); }, 200);
+    } else {
       talkShowState('idle');
     }
   };
 
   talkRecog.onend = () => {
-    if (talkListening) talkStopListening(true);
+    talkListening = false;
+    // Auto-restart when in orb mode (always-on listening)
+    if (talkOrbMode && !talkProcessing) {
+      setTimeout(() => { if (talkOrbMode) talkStartListening(); }, 150);
+    }
   };
 
-  talkRecog.start();
+  try {
+    talkRecog.start();
+  } catch(e) {
+    console.warn('[talk] recog start failed:', e);
+    if (talkOrbMode) setTimeout(() => { if (talkOrbMode) talkStartListening(); }, 400);
+  }
 }
 
 function talkStopListening(keep) {
@@ -2799,9 +2813,14 @@ function talkStopListening(keep) {
 /* ── core: send to server, play response ── */
 async function talkProcess(text) {
   if (!text) return;
+  talkProcessing = true;
   const imageBase64 = talkCaptureFrame();
   talkShowState('thinking');
   talkHistory.push({ role: 'user', content: text });
+
+  // Clear transcript display while thinking
+  const trEl = document.getElementById('talk-transcript');
+  if (trEl) trEl.textContent = '';
 
   try {
     const res = await fetch('/api/talk', {
@@ -2818,18 +2837,29 @@ async function talkProcess(text) {
     if (data.audioBase64) {
       talkPlayAudio(data.audioBase64, data.reply);
     } else {
-      // no audio — show transcript on orb, auto return to idle
       talkShowState('speaking');
       talkTypeText(data.reply);
       const dur = 2500 + data.reply.length * 40;
       talkTypeTimer = setTimeout(() => {
-        talkShowState('idle');
-        document.getElementById('talk-transcript').textContent = '';
+        talkProcessing = false;
+        if (talkOrbMode) {
+          talkShowState('listening');
+          talkStartListening();
+        } else {
+          talkShowState('idle');
+        }
+        if (trEl) trEl.textContent = '';
       }, dur);
     }
   } catch(e) {
     console.error('[talk] process error:', e);
-    talkShowState('idle');
+    talkProcessing = false;
+    if (talkOrbMode) {
+      talkShowState('listening');
+      talkStartListening();
+    } else {
+      talkShowState('idle');
+    }
     showToast('Connection error — try again');
   }
 }
