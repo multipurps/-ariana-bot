@@ -484,23 +484,7 @@ input,textarea{font-family:inherit;color:inherit}
 }
 /* fallback CSS layers — only visible if canvas fails */
 .ol{position:absolute;inset:0;border-radius:50%}
-#ol-base{
-  background:radial-gradient(circle at 42% 38%,
-    rgba(80,180,255,.95) 0%,
-    rgba(30,100,255,.88) 38%,
-    rgba(10,40,200,.82)  70%,
-    rgba(2,8,60,.95)    100%
-  );
-}
-#ol-warm{background:radial-gradient(circle at 28% 22%,rgba(200,240,255,.80) 0%,transparent 50%);animation:bw 4s ease-in-out infinite}
-#ol-cool{background:radial-gradient(circle at 68% 72%,rgba(20,80,255,.65) 0%,transparent 52%);animation:bc 3.5s ease-in-out infinite .6s}
-#ol-red{background:radial-gradient(circle at 65% 28%,rgba(100,220,255,.55) 0%,transparent 44%);animation:br 5.2s ease-in-out infinite 1.2s}
-#ol-glass{background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.30) 0%,rgba(255,255,255,.05) 44%,transparent 62%)}
-#ol-logo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2}
-#ol-logo img{width:50px;height:50px;border-radius:12px;object-fit:cover;filter:drop-shadow(0 2px 14px rgba(0,0,0,.5))}
-@keyframes bw{0%,100%{transform:translate(0,0) scale(1);opacity:.72}50%{transform:translate(18px,-13px) scale(1.14);opacity:.92}}
-@keyframes bc{0%,100%{transform:translate(0,0) scale(1);opacity:.65}50%{transform:translate(-13px,10px) scale(1.11);opacity:.82}}
-@keyframes br{0%,100%{transform:translate(0,0) scale(1);opacity:.52}50%{transform:translate(8px,15px) scale(1.09);opacity:.72}}
+#ol-base,#ol-warm,#ol-cool,#ol-red,#ol-glass,#ol-logo{display:none !important}
 
 /* orb outer glow */
 #talk-orb.speaking{box-shadow:0 0 0 1px rgba(80,180,255,.35),0 0 80px rgba(40,140,255,.55),0 0 160px rgba(20,100,255,.22)}
@@ -566,31 +550,21 @@ input,textarea{font-family:inherit;color:inherit}
 #talk-user-orb-btn{
   width:64px;height:64px;border-radius:50%;
   position:relative;overflow:hidden;
-  background:radial-gradient(circle at 38% 32%,
-    rgba(120,90,200,.95) 0%,
-    rgba(60,40,160,.90)  45%,
-    rgba(15,10,60,.95)  100%);
-  box-shadow:0 0 0 1px rgba(120,90,200,.3),0 0 22px rgba(80,60,200,.4);
+  background:transparent;
+  box-shadow:0 0 0 1px rgba(60,130,220,.25),0 0 18px rgba(40,100,200,.35);
   border:none;cursor:pointer;
   -webkit-tap-highlight-color:transparent;
-  transition:box-shadow .3s;
+  transition:box-shadow .4s ease;
   flex-shrink:0;
 }
 #talk-user-orb-btn.speaking{
-  box-shadow:0 0 0 1px rgba(140,110,255,.5),0 0 32px rgba(100,70,255,.65),0 0 60px rgba(80,50,200,.3);
+  box-shadow:0 0 0 1px rgba(80,160,255,.45),0 0 28px rgba(50,130,240,.55),0 0 50px rgba(30,100,200,.25);
 }
-#talk-user-orb-btn-shine{
-  position:absolute;inset:0;border-radius:50%;
-  background:radial-gradient(circle at 30% 22%,rgba(255,255,255,.22) 0%,transparent 55%);
-  animation:uorbShine 3.2s ease-in-out infinite;
+#talk-user-orb-btn canvas{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  border-radius:50%;
 }
-#talk-user-orb-btn-glow{
-  position:absolute;inset:0;border-radius:50%;
-  background:radial-gradient(circle at 65% 68%,rgba(100,70,255,.45) 0%,transparent 55%);
-  animation:uorbGlow 4.1s ease-in-out infinite 1.1s;
-}
-@keyframes uorbShine{0%,100%{opacity:.7;transform:translate(0,0) scale(1)}50%{opacity:1;transform:translate(-4px,-3px) scale(1.06)}}
-@keyframes uorbGlow{0%,100%{opacity:.5;transform:translate(0,0) scale(1)}50%{opacity:.8;transform:translate(5px,4px) scale(1.10)}}
 
 /* transcript shown above controls in orb mode */
 #talk-orb-transcript{
@@ -1263,8 +1237,7 @@ input,textarea{font-family:inherit;color:inherit}
           </button>
           <!-- User mini-orb (center, SS2 circled button) -->
           <button id="talk-user-orb-btn">
-            <div id="talk-user-orb-btn-shine"></div>
-            <div id="talk-user-orb-btn-glow"></div>
+            <canvas id="talk-user-orb-canvas"></canvas>
           </button>
           <!-- Mic mute toggle -->
           <button class="orb-ctrl-btn" id="talk-orb-mic-btn" onclick="talkOrbMicToggle()" title="Mute">
@@ -2110,220 +2083,232 @@ async function genSaveToLibrary(index){
 // ══════════════════════════════════════════════════════════════
 
 class OrbRenderer {
-  constructor(canvas) {
-    this.canvas    = canvas;
-    this.ctx       = canvas.getContext('2d');
-    this.raf       = null;
-    this.state     = 'idle';
-    this.energy    = 0;
+  constructor(canvas, opts = {}) {
+    this.canvas = canvas;
+    this.ctx    = canvas.getContext('2d');
+    this.raf    = null;
+    this.state  = 'idle';
+    this.energy = 0;
     this.targetEnergy = 0;
     this.startTime = performance.now();
-
-    // Plasma blobs — blue/cyan/white palette like SS3
+    this.opts = opts;
+    this.scale = opts.scale || 1;
     this.layers = [
-      // base: strong vivid blue
-      { cx:0.50, cy:0.55, r:0.72, color:'23,120,255',   driftSpd:0.55, phaseX:0.0, phaseY:1.1 },
-      // cyan highlight top-left
-      { cx:0.28, cy:0.22, r:0.52, color:'80,210,255',   driftSpd:0.80, phaseX:2.2, phaseY:0.5 },
-      // white/ice core center
-      { cx:0.50, cy:0.38, r:0.36, color:'200,235,255',  driftSpd:0.65, phaseX:4.1, phaseY:2.9 },
-      // deep blue bottom
-      { cx:0.60, cy:0.72, r:0.48, color:'10,60,200',    driftSpd:0.42, phaseX:1.5, phaseY:3.8 },
-      // bright sky accent
-      { cx:0.72, cy:0.30, r:0.30, color:'140,225,255',  driftSpd:1.05, phaseX:3.4, phaseY:1.7 },
+      { cx: 0.50, cy: 0.52, r: 0.78, color: '8, 20, 55',    driftSpd: 0.18, phaseX: 0.0, phaseY: 1.3, alphaBase: 0.95 },
+      { cx: 0.32, cy: 0.28, r: 0.55, color: '45, 130, 200', driftSpd: 0.35, phaseX: 2.1, phaseY: 0.7, alphaBase: 0.55 },
+      { cx: 0.68, cy: 0.72, r: 0.48, color: '15, 50, 120',  driftSpd: 0.22, phaseX: 1.5, phaseY: 3.2, alphaBase: 0.45 },
+      { cx: 0.48, cy: 0.38, r: 0.32, color: '180, 215, 240',driftSpd: 0.42, phaseX: 3.8, phaseY: 2.4, alphaBase: 0.35 },
+      { cx: 0.55, cy: 0.55, r: 0.88, color: '25, 80, 160',  driftSpd: 0.12, phaseX: 5.2, phaseY: 4.1, alphaBase: 0.20 },
     ];
+    this.noiseSeeds = [Math.random() * 100, Math.random() * 100, Math.random() * 100];
   }
-
   _noise(px, py, t, seed) {
     const s = seed;
-    return (
-      Math.sin(px * 3.8 + t * 0.00058 + s)              * 0.28 +
-      Math.sin(py * 2.7 + t * 0.00044 + s * 1.4)        * 0.26 +
-      Math.sin((px+py)*2.3 + t * 0.00087 + s * 2.0)     * 0.24 +
-      Math.sin(Math.sqrt(px*px+py*py)*5.9 + t*0.00105 + s*0.8) * 0.22
-    );
+    let v = 0, amp = 1, freq = 1;
+    for (let o = 0; o < 4; o++) {
+      v += amp * (
+        Math.sin(px * freq * 3.1 + t * 0.00038 + s + o * 1.7) *
+        Math.cos(py * freq * 2.7 + t * 0.00029 + s * 1.3 + o * 2.3) +
+        Math.sin((px + py) * freq * 1.9 + t * 0.00052 + s * 0.8 + o * 0.9) * 0.5
+      );
+      amp *= 0.5;
+      freq *= 2.1;
+    }
+    return v;
   }
-
-  setAudio(rms) {
-    this.targetEnergy = Math.min(1, rms / 130);
-  }
-
+  setAudio(rms) { this.targetEnergy = Math.min(1, rms / 180); }
   setState(st) {
     this.state = st;
-    if (st === 'thinking')  this.targetEnergy = Math.max(this.targetEnergy, 0.18);
-    if (st === 'speaking')  this.targetEnergy = Math.max(this.targetEnergy, 0.30);
-    if (st === 'idle')      this.targetEnergy = 0;
+    if (st === 'thinking')  this.targetEnergy = Math.max(this.targetEnergy, 0.12);
+    if (st === 'speaking')  this.targetEnergy = Math.max(this.targetEnergy, 0.22);
+    if (st === 'listening') this.targetEnergy = Math.max(this.targetEnergy, 0.08);
+    if (st === 'idle')      this.targetEnergy = Math.max(this.targetEnergy, 0.02);
   }
-
   start() {
     if (this.raf) return;
     const loop = (now) => { this._draw(now); this.raf = requestAnimationFrame(loop); };
     this.raf = requestAnimationFrame(loop);
   }
-
   stop() {
     if (this.raf) { cancelAnimationFrame(this.raf); this.raf = null; }
   }
-
   _draw(now) {
     const { canvas, ctx } = this;
-    const W = canvas.width, H = canvas.height;
+    const W = canvas.width / (window.devicePixelRatio || 1);
+    const H = canvas.height / (window.devicePixelRatio || 1);
     if (!W || !H) return;
     const cx = W * 0.5, cy = H * 0.5;
-    const R  = Math.min(W, H) * 0.48;
+    const R  = Math.min(W, H) * 0.48 * this.scale;
     const t  = now - this.startTime;
-
-    // Smooth energy
-    const eSmooth = this.state === 'speaking' ? 0.10 : 0.05;
+    const eSmooth = this.state === 'speaking' ? 0.08 : 0.035;
     this.energy += (this.targetEnergy - this.energy) * eSmooth;
     let e = this.energy;
-    if (this.state === 'speaking') {
-      e = Math.max(e, 0.28 + 0.18 * Math.abs(Math.sin(t * 0.0022)));
-    }
-
-    // Gentle breath — never stops
-    const breath   = 1 + 0.022 * Math.sin(t * 0.00052) + e * 0.04;
-    const drawR    = R * breath;
-
-    ctx.clearRect(0, 0, W, H);
-
-    // Outer atmospheric glow (blue halo)
+    const idleBreath = 0.015;
+    const breathAmp  = 0.018 + e * 0.025;
+    const breath     = 1 + breathAmp * Math.sin(t * 0.00042 + this.noiseSeeds[0]) + idleBreath;
+    const drawR = R * breath;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     {
-      const gr = ctx.createRadialGradient(cx, cy, drawR * 0.7, cx, cy, drawR * 1.7);
-      gr.addColorStop(0,   `rgba(40,140,255,${0.22 + e * 0.18})`);
-      gr.addColorStop(0.5, `rgba(60,170,255,${0.08 + e * 0.08})`);
-      gr.addColorStop(1,   'rgba(0,0,0,0)');
+      const gr = ctx.createRadialGradient(cx, cy, drawR * 0.65, cx, cy, drawR * 1.6);
+      const glowIntensity = 0.12 + e * 0.10;
+      gr.addColorStop(0,   `rgba(30, 100, 180, ${glowIntensity})`);
+      gr.addColorStop(0.4, `rgba(20, 70, 140, ${glowIntensity * 0.4})`);
+      gr.addColorStop(1,   'rgba(0, 0, 0, 0)');
       ctx.fillStyle = gr;
       ctx.fillRect(0, 0, W, H);
     }
-
-    // Clip to circle
     ctx.save();
     ctx.beginPath();
     ctx.arc(cx, cy, drawR, 0, Math.PI * 2);
     ctx.clip();
-
-    // Dark base (deep navy, not black — so blue layers pop through)
-    const base = ctx.createRadialGradient(cx, cy*0.8, 0, cx, cy, drawR);
-    base.addColorStop(0, 'rgba(5,20,80,1)');
-    base.addColorStop(1, 'rgba(2,8,35,1)');
+    const base = ctx.createRadialGradient(cx, cy * 0.85, 0, cx, cy, drawR);
+    base.addColorStop(0, 'rgba(6, 14, 35, 1)');
+    base.addColorStop(0.6, 'rgba(4, 10, 28, 1)');
+    base.addColorStop(1, 'rgba(2, 6, 18, 1)');
     ctx.fillStyle = base;
     ctx.fillRect(0, 0, W, H);
-
-    // Plasma blob layers — screen blend = additive vivid light
     ctx.globalCompositeOperation = 'screen';
-
     for (const lyr of this.layers) {
-      const n1  = this._noise(lyr.cx, lyr.cy, t * lyr.driftSpd, lyr.phaseX);
-      const n2  = this._noise(lyr.cy, lyr.cx, t * lyr.driftSpd, lyr.phaseY);
-      const amp = 0.24 + e * 0.28;
-      const bx  = cx + (lyr.cx - 0.5) * W * 1.1 + n1 * W * amp;
-      const by  = cy + (lyr.cy - 0.5) * H * 1.1 + n2 * H * amp;
-      const br  = drawR * lyr.r * (1 + Math.abs(n1) * 0.18 + e * 0.12);
-      const alpha = 0.82 + e * 0.16;
-
+      const n1 = this._noise(lyr.cx, lyr.cy, t * lyr.driftSpd, lyr.phaseX);
+      const n2 = this._noise(lyr.cy, lyr.cx, t * lyr.driftSpd, lyr.phaseY);
+      const layerEnergy = e * (lyr.driftSpd > 0.3 ? 1.2 : 0.7);
+      const amp = 0.18 + layerEnergy * 0.22;
+      const bx = cx + (lyr.cx - 0.5) * W * 1.0 + n1 * W * amp;
+      const by = cy + (lyr.cy - 0.5) * H * 1.0 + n2 * H * amp;
+      const br = drawR * lyr.r * (1 + Math.abs(n1) * 0.12 + layerEnergy * 0.08);
+      const alphaBreath = 0.5 + 0.5 * Math.sin(t * 0.00031 + lyr.phaseX * 2);
+      const alpha = lyr.alphaBase * (0.85 + alphaBreath * 0.15 + layerEnergy * 0.25);
       const g = ctx.createRadialGradient(bx, by, 0, bx, by, br);
-      g.addColorStop(0,    `rgba(${lyr.color},${alpha})`);
-      g.addColorStop(0.45, `rgba(${lyr.color},${alpha * 0.48})`);
-      g.addColorStop(1,    `rgba(${lyr.color},0)`);
+      g.addColorStop(0,    `rgba(${lyr.color}, ${alpha})`);
+      g.addColorStop(0.5,  `rgba(${lyr.color}, ${alpha * 0.35})`);
+      g.addColorStop(1,    `rgba(${lyr.color}, 0)`);
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, W, H);
     }
-
-    // Diagonal light band — the SS3 swept diagonal white/cyan streak
     {
-      const ang   = -0.55 + Math.sin(t * 0.00028) * 0.08;
-      const sweep = Math.sin(t * 0.00032 + 1.2) * 0.12;
+      const angBase = -0.50;
+      const angDrift = Math.sin(t * 0.00018 + this.noiseSeeds[1]) * 0.06;
+      const sweepPos = Math.sin(t * 0.00024 + this.noiseSeeds[2]) * 0.15;
       ctx.save();
       ctx.translate(cx, cy);
-      ctx.rotate(ang + sweep);
-      const band = ctx.createLinearGradient(-drawR, 0, drawR, 0);
-      band.addColorStop(0,   'rgba(200,235,255,0)');
-      band.addColorStop(0.35,'rgba(180,225,255,0)');
-      band.addColorStop(0.48,`rgba(220,242,255,${0.45 + e * 0.2})`);
-      band.addColorStop(0.55,`rgba(255,255,255,${0.30 + e * 0.15})`);
-      band.addColorStop(0.65,'rgba(140,210,255,0.08)');
-      band.addColorStop(1,   'rgba(200,235,255,0)');
+      ctx.rotate(angBase + angDrift);
+      ctx.translate(sweepPos * drawR, 0);
+      const band = ctx.createLinearGradient(-drawR * 1.3, 0, drawR * 1.3, 0);
+      const bandAlpha = 0.28 + e * 0.18;
+      band.addColorStop(0,   'rgba(200, 230, 255, 0)');
+      band.addColorStop(0.30, 'rgba(180, 220, 250, 0)');
+      band.addColorStop(0.45, `rgba(210, 235, 255, ${bandAlpha * 0.6})`);
+      band.addColorStop(0.52, `rgba(235, 245, 255, ${bandAlpha})`);
+      band.addColorStop(0.58, `rgba(200, 225, 255, ${bandAlpha * 0.5})`);
+      band.addColorStop(0.75, 'rgba(160, 210, 255, 0)');
+      band.addColorStop(1,   'rgba(200, 230, 255, 0)');
       ctx.fillStyle = band;
-      ctx.fillRect(-drawR * 1.2, -drawR * 1.2, drawR * 2.4, drawR * 2.4);
+      ctx.fillRect(-drawR * 1.5, -drawR * 1.5, drawR * 3, drawR * 3);
       ctx.restore();
     }
-
-    // Pressure ripples when active
-    if (e > 0.06) {
-      for (let i = 0; i < 3; i++) {
-        const ph  = t * 0.0016 + i * (Math.PI * 2 / 3);
-        const rr  = drawR * (0.3 + 0.45 * ((Math.sin(ph) + 1) / 2));
-        const ra  = e * 0.14 * Math.max(0, Math.sin(ph));
-        if (ra < 0.01) continue;
-        const rg = ctx.createRadialGradient(cx, cy, rr * 0.5, cx, cy, rr);
-        rg.addColorStop(0,   'rgba(120,200,255,0)');
-        rg.addColorStop(0.7, `rgba(120,200,255,${ra})`);
-        rg.addColorStop(1,   'rgba(180,230,255,0)');
+    if (e > 0.08) {
+      for (let i = 0; i < 2; i++) {
+        const ph = t * 0.0011 + i * Math.PI + this.noiseSeeds[0];
+        const rr = drawR * (0.25 + 0.55 * ((Math.sin(ph) + 1) / 2));
+        const ra = e * 0.06 * Math.max(0, Math.sin(ph));
+        if (ra < 0.005) continue;
+        const rg = ctx.createRadialGradient(cx, cy, rr * 0.4, cx, cy, rr);
+        rg.addColorStop(0,   'rgba(80, 170, 240, 0)');
+        rg.addColorStop(0.7, `rgba(100, 190, 255, ${ra})`);
+        rg.addColorStop(1,   'rgba(140, 210, 255, 0)');
         ctx.fillStyle = rg;
         ctx.fillRect(0, 0, W, H);
       }
     }
-
-    // Glass specular — top-left white shine
     ctx.globalCompositeOperation = 'source-over';
-    const gx = cx - drawR * 0.25, gy = cy - drawR * 0.3;
-    const gl = ctx.createRadialGradient(gx, gy, 0, cx, cy, drawR * 0.88);
-    gl.addColorStop(0,    `rgba(255,255,255,${0.30 + e * 0.05})`);
-    gl.addColorStop(0.28, 'rgba(255,255,255,0.06)');
+    const gx = cx - drawR * 0.22;
+    const gy = cy - drawR * 0.28;
+    const gl = ctx.createRadialGradient(gx, gy, 0, cx, cy, drawR * 0.85);
+    const specAlpha = 0.22 + e * 0.04;
+    gl.addColorStop(0,    `rgba(255, 255, 255, ${specAlpha})`);
+    gl.addColorStop(0.18, `rgba(220, 235, 255, ${specAlpha * 0.35})`);
+    gl.addColorStop(0.45, 'rgba(200, 220, 255, 0.04)');
     gl.addColorStop(1,    'transparent');
     ctx.fillStyle = gl;
     ctx.fillRect(0, 0, W, H);
-
+    {
+      const edgeAlpha = 0.04 + e * 0.06;
+      const edgeN = this._noise(0.5, 0.5, t * 0.45, 7.3);
+      const edgeR = drawR * (1 + edgeN * 0.015);
+      ctx.beginPath();
+      ctx.arc(cx, cy, edgeR, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(60, 140, 220, ${edgeAlpha})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
     ctx.restore();
   }
 }
 
 function orbCanvasInit() {
-  const canvas = document.getElementById('talk-orb-canvas');
-  if (!canvas) return;
-
-  // Hide CSS fallback layers
-  document.querySelectorAll('#talk-orb .ol').forEach(el => el.style.display = 'none');
-
-  const resize = () => {
-    const orb = document.getElementById('talk-orb');
-    if (!orb) return;
-    const r   = orb.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width  = r.width  * dpr;
-    canvas.height = r.height * dpr;
-    canvas.style.width  = r.width  + 'px';
-    canvas.style.height = r.height + 'px';
-    const ctx = canvas.getContext('2d');
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  };
-  setTimeout(resize, 40);
-  window._orbResizeObs = new ResizeObserver(resize);
-  window._orbResizeObs.observe(document.getElementById('talk-orb'));
-
-  if (window._orbRenderer) window._orbRenderer.stop();
-  window._orbRenderer = new OrbRenderer(canvas);
-  window._orbRenderer.start();
-
-  // Audio reactivity loop
+  // MAIN ORB
+  const mainCanvas = document.getElementById('talk-orb-canvas');
+  if (mainCanvas) {
+    const mainResize = () => {
+      const orb = document.getElementById('talk-orb');
+      if (!orb) return;
+      const r = orb.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      mainCanvas.width  = r.width  * dpr;
+      mainCanvas.height = r.height * dpr;
+      mainCanvas.style.width  = r.width  + 'px';
+      mainCanvas.style.height = r.height + 'px';
+      const ctx = mainCanvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    setTimeout(mainResize, 40);
+    if (window._orbMainResizeObs) window._orbMainResizeObs.disconnect();
+    window._orbMainResizeObs = new ResizeObserver(mainResize);
+    window._orbMainResizeObs.observe(document.getElementById('talk-orb'));
+    if (window._orbRenderer) window._orbRenderer.stop();
+    window._orbRenderer = new OrbRenderer(mainCanvas, { scale: 1 });
+    window._orbRenderer.start();
+  }
+  // USER MINI-ORB
+  const userCanvas = document.getElementById('talk-user-orb-canvas');
+  if (userCanvas) {
+    const userResize = () => {
+      const btn = document.getElementById('talk-user-orb-btn');
+      if (!btn) return;
+      const r = btn.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      userCanvas.width  = r.width  * dpr;
+      userCanvas.height = r.height * dpr;
+      userCanvas.style.width  = r.width  + 'px';
+      userCanvas.style.height = r.height + 'px';
+      const ctx = userCanvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    setTimeout(userResize, 50);
+    if (window._orbUserResizeObs) window._orbUserResizeObs.disconnect();
+    window._orbUserResizeObs = new ResizeObserver(userResize);
+    window._orbUserResizeObs.observe(document.getElementById('talk-user-orb-btn'));
+    if (window._userOrbRenderer) window._userOrbRenderer.stop();
+    window._userOrbRenderer = new OrbRenderer(userCanvas, { scale: 0.38 });
+    window._userOrbRenderer.start();
+  }
+  // AUDIO REACTIVITY LOOP
   function orbAudioLoop() {
-    if (!window._orbRenderer) return;
     if (talkAnalyser) {
       const data = new Uint8Array(talkAnalyser.frequencyBinCount);
       talkAnalyser.getByteFrequencyData(data);
       let sum = 0;
       const half = Math.floor(data.length * 0.3);
       for (let i = 0; i < half; i++) sum += data[i] * data[i];
-      window._orbRenderer.setAudio(Math.sqrt(sum / half));
+      const rms = Math.sqrt(sum / half);
+      if (window._orbRenderer) window._orbRenderer.setAudio(rms);
+      if (window._userOrbRenderer) window._userOrbRenderer.setAudio(rms * 0.7);
     }
     window._orbAudioRaf = requestAnimationFrame(orbAudioLoop);
   }
   if (window._orbAudioRaf) cancelAnimationFrame(window._orbAudioRaf);
   window._orbAudioRaf = requestAnimationFrame(orbAudioLoop);
-}
-
-// ══════════════════════════════════════════════════════════════
+}// ══════════════════════════════════════════════════════════════
 // LIVE TALK
 // ══════════════════════════════════════════════════════════════
 
@@ -2422,6 +2407,7 @@ function talkShowState(st) {
         statusTxt.textContent = 'Ready';
         if (orbOrb) orbOrb.classList.remove('speaking','thinking','listening');
         if (window._orbRenderer) window._orbRenderer.setState('idle');
+      if (window._userOrbRenderer) window._userOrbRenderer.setState('idle');
       } else {
         idle.classList.remove('hidden');
         scene.classList.remove('show');
@@ -2437,6 +2423,7 @@ function talkShowState(st) {
         statusTxt.textContent = 'Listening';
         if (orbOrb) orbOrb.classList.add('listening');
         if (window._orbRenderer) window._orbRenderer.setState('listening');
+        if (window._userOrbRenderer) window._userOrbRenderer.setState('listening');
         if (expMic) expMic.classList.remove('listening');
         // User mini-orb calm when Ariana is listening (user speaking)
         const uOrb = document.getElementById('talk-user-orb-btn');
@@ -2459,6 +2446,7 @@ function talkShowState(st) {
       statusTxt.textContent = 'Thinking';
       if (orbOrb) orbOrb.classList.add('thinking');
       if (window._orbRenderer) window._orbRenderer.setState('thinking');
+        if (window._userOrbRenderer) window._userOrbRenderer.setState('thinking');
       // User mini-orb goes quiet
       { const uOrb = document.getElementById('talk-user-orb-btn'); if (uOrb) uOrb.classList.remove('speaking'); }
       if (talkExpanded && !talkOrbMode) {
@@ -2475,6 +2463,7 @@ function talkShowState(st) {
       statusTxt.textContent = 'Speaking';
       if (orbOrb) orbOrb.classList.add('speaking');
       if (window._orbRenderer) window._orbRenderer.setState('speaking');
+        if (window._userOrbRenderer) window._userOrbRenderer.setState('speaking');
       { const uOrb = document.getElementById('talk-user-orb-btn'); if (uOrb) uOrb.classList.remove('speaking'); }
       if (talkExpanded && !talkOrbMode) {
         if (pillTxt) { pillTxt.textContent='Speaking...'; pillTxt.classList.remove('hidden'); }
@@ -2743,6 +2732,7 @@ async function talkEnterOrbMode() {
   // Init canvas orb
   orbCanvasInit();
   if (window._orbRenderer) window._orbRenderer.setState('idle');
+      if (window._userOrbRenderer) window._userOrbRenderer.setState('idle');
 
   // Auto-start listening
   await talkStartListening();
@@ -2762,8 +2752,10 @@ function talkLeaveOrbMode() {
 
   // Stop canvas + audio loop
   if (window._orbRenderer) { window._orbRenderer.stop(); window._orbRenderer = null; }
+  if (window._userOrbRenderer) { window._userOrbRenderer.stop(); window._userOrbRenderer = null; }
   if (window._orbAudioRaf) { cancelAnimationFrame(window._orbAudioRaf); window._orbAudioRaf = null; }
-  if (window._orbResizeObs) { window._orbResizeObs.disconnect(); window._orbResizeObs = null; }
+  if (window._orbMainResizeObs) { window._orbMainResizeObs.disconnect(); window._orbMainResizeObs = null; }
+  if (window._orbUserResizeObs) { window._orbUserResizeObs.disconnect(); window._orbUserResizeObs = null; }
 
   // Reset UI
   const scene = document.getElementById('talk-orb-scene');
@@ -2902,6 +2894,7 @@ function talkStopListening(keep) {
   if (talkRecog) { try { talkRecog.abort(); } catch(e) {} talkRecog = null; }
   // Reset orb energy
   if (window._orbRenderer && !keep) window._orbRenderer.targetEnergy = 0;
+  if (window._userOrbRenderer && !keep) window._userOrbRenderer.targetEnergy = 0;
   if (!keep) talkShowState('idle');
 }
 
