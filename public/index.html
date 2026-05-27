@@ -411,7 +411,9 @@ input,textarea{font-family:inherit;color:inherit}
   pointer-events:none;
 }
 #talk-topbar-spacer{width:56px;flex-shrink:0}
-#talk-cam-controls{display:flex;gap:8px;align-items:center;pointer-events:all}
+#talk-cam-controls{display:none;gap:8px;align-items:center;pointer-events:all}
+#talk-orb-scene.orb-full ~ * #talk-cam-controls,
+.talk-orb-active #talk-cam-controls{display:flex}
 #talk-cam-on-btn,#talk-cam-flip-btn{
   height:34px;border-radius:20px;
   border:1px solid rgba(255,255,255,.22);
@@ -982,6 +984,9 @@ input,textarea{font-family:inherit;color:inherit}
 /* hide idle header when there are chat messages */
 #talk-chat-log:not(:empty) ~ #talk-idle,
 #talk-idle:has(~ #talk-chat-log:not(:empty)) { display:none; }
+
+/* force-hide fallback orb layers when canvas is rendering */
+#talk-orb.canvas-active .ol { display:none !important; }
 </style>
 </head>
 <body>
@@ -2374,13 +2379,16 @@ function orbCanvasInit() {
   const canvas = document.getElementById('talk-orb-canvas');
   if (!canvas) return;
 
-  // Hide CSS fallback layers
+  // Always hide CSS fallback layers — canvas paints over them
   document.querySelectorAll('#talk-orb .ol').forEach(el => el.style.display = 'none');
+  // Belt-and-suspenders: also hide via CSS class
+  document.getElementById('talk-orb')?.classList.add('canvas-active');
 
   const resize = () => {
     const orb = document.getElementById('talk-orb');
     if (!orb) return;
     const r   = orb.getBoundingClientRect();
+    if (r.width === 0) { requestAnimationFrame(resize); return; } // wait for layout
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width  = r.width  * dpr;
     canvas.height = r.height * dpr;
@@ -2389,7 +2397,7 @@ function orbCanvasInit() {
     const ctx = canvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   };
-  setTimeout(resize, 40);
+  requestAnimationFrame(resize);
   window._orbResizeObs = new ResizeObserver(resize);
   window._orbResizeObs.observe(document.getElementById('talk-orb'));
 
@@ -2451,6 +2459,13 @@ function talkInit() {
   // clear chat log on fresh init
   const log = document.getElementById('talk-chat-log');
   if (log) log.innerHTML = '';
+  // Stop mic stream entirely when leaving talk view — removes orange dot from status bar
+  window._forceStopMic = true;
+  if (window._talkMicStream) {
+    window._talkMicStream.getTracks().forEach(t => t.stop());
+    window._talkMicStream = null;
+    window._talkMicGranted = false;
+  }
 
   // build waveform bars (large, unused in listening — kept for thinking/speaking)
   const wf = document.getElementById('talk-waveform');
@@ -2671,9 +2686,13 @@ function talkFullMicCleanup() {
   if (talkRecog) { try { talkRecog.abort(); } catch(e){} talkRecog = null; }
 
   // Stop MediaStream tracks (removes iOS red indicator)
-  if (window._talkMicStream) {
+  // Keep mic stream alive for orange indicator + fast re-listen
+  // Only actually stop it when view is closed (talkInit handles that)
+  if (window._talkMicStream && window._forceStopMic) {
     window._talkMicStream.getTracks().forEach(t => { t.stop(); });
     window._talkMicStream = null;
+    window._talkMicGranted = false;
+    window._forceStopMic = false;
   }
   window._talkMicGranted  = false;
   window._talkMicAnalyser = null;
@@ -2789,9 +2808,13 @@ async function talkElevenLabsDirect(text) {
     const arrayBuffer = await res.arrayBuffer();
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const decoded  = await audioCtx.decodeAudioData(arrayBuffer);
+    // GainNode: boost volume like ChatGPT/Gemini (1.8x), duck when user talks
+    const gainNode  = audioCtx.createGain();
+    gainNode.gain.value = 1.8;
     const source   = audioCtx.createBufferSource();
     source.buffer  = decoded;
-    source.connect(audioCtx.destination);
+    source.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
 
     source.onended = () => {
       talkWatchdogClear();
@@ -3026,6 +3049,9 @@ async function talkEnterOrbMode() {
   // Show orb bottom controls
   document.getElementById('talk-orb-btm').classList.add('show');
 
+  // Show camera button (only in orb/live mode)
+  document.getElementById('talk-cam-controls').style.display = 'flex';
+
   // Init canvas orb
   orbCanvasInit();
   if (window._orbRenderer) window._orbRenderer.setState('idle');
@@ -3050,6 +3076,7 @@ function talkLeaveOrbMode() {
   const scene = document.getElementById('talk-orb-scene');
   scene.classList.remove('show','orb-full','speaking','thinking','listening');
   document.getElementById('talk-orb-btm').classList.remove('show');
+  document.getElementById('talk-cam-controls').style.display = 'none'; // hide camera outside orb mode
   document.getElementById('talk-bottom').style.display = '';
   document.getElementById('talk-bar-std').style.display = 'flex';
   document.getElementById('talk-idle').classList.remove('hidden');
