@@ -824,6 +824,82 @@ app.get("/signal-setup-webhook", async (req, res) => {
   }
 });
 
+app.get("/signal-link", async (req, res) => {
+  const deviceName = req.query.name || "Ariana";
+  try {
+    const response = await axios.get(
+      `${SIGNAL_CLI_URL}/v1/qrcodelink?device_name=${encodeURIComponent(deviceName)}`,
+      { responseType: "arraybuffer", timeout: 15000 }
+    );
+    const base64 = Buffer.from(response.data).toString("base64");
+    res.send(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Link Signal Device</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0d0d0d; color: #fff; font-family: -apple-system, sans-serif;
+           display: flex; flex-direction: column; align-items: center;
+           justify-content: center; min-height: 100vh; padding: 24px; }
+    .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 20px;
+            padding: 32px 28px; max-width: 360px; width: 100%; text-align: center; }
+    h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 6px; color: #fff; }
+    p  { font-size: 0.82rem; color: #888; margin-bottom: 24px; line-height: 1.5; }
+    img { width: 220px; height: 220px; border-radius: 12px; background: #fff; padding: 8px; }
+    .steps { margin-top: 24px; text-align: left; }
+    .steps li { font-size: 0.8rem; color: #aaa; margin-bottom: 8px; padding-left: 4px; }
+    .steps li span { color: #3a86ff; font-weight: 600; }
+    .refresh { display: inline-block; margin-top: 20px; font-size: 0.78rem;
+               color: #3a86ff; cursor: pointer; text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>📶 Link Signal Device</h2>
+    <p>Scan this QR code in the Signal app to link <strong>${deviceName}</strong> as a linked device.</p>
+    <img src="data:image/png;base64,${base64}" alt="Signal Link QR Code">
+    <ol class="steps">
+      <li>Open <span>Signal</span> on your phone</li>
+      <li>Go to <span>Settings → Linked Devices</span></li>
+      <li>Tap the <span>+</span> button and scan this code</li>
+    </ol>
+    <a class="refresh" onclick="location.reload()">↻ Regenerate QR Code</a>
+  </div>
+</body>
+</html>`);
+  } catch (e) {
+    const hint = e.response?.status === 400
+      ? "Number already registered — linking is for adding a secondary device to an existing Signal account."
+      : e.message;
+    res.send(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Signal Link Error</title>
+  <style>
+    body { background:#111; color:#fff; font-family:-apple-system,sans-serif;
+           display:flex; align-items:center; justify-content:center; min-height:100vh; padding:24px; }
+    .card { background:#1a1a1a; border:1px solid #2a2a2a; border-radius:20px;
+            padding:32px 28px; max-width:360px; width:100%; text-align:center; }
+    h2 { color:#ff6b6b; font-size:1.1rem; margin-bottom:12px; }
+    p  { color:#aaa; font-size:0.82rem; line-height:1.5; }
+    code { display:block; margin-top:12px; background:#222; padding:10px; border-radius:8px;
+           font-size:0.75rem; color:#ffd166; word-break:break-all; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>❌ Could not generate QR code</h2>
+    <p>${hint}</p>
+    <code>${e.message}</code>
+  </div>
+</body>
+</html>`);
+  }
+});
+
 // ── SMS / MMS WEBHOOK (Twilio) ────────────────────────────────
 app.post("/sms", async (req, res) => {
   res.set("Content-Type", "text/xml");
