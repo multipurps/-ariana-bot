@@ -301,6 +301,7 @@ async function generateVoiceNote(text) {
 
 // ── MODEL CALLERS ─────────────────────────────────────────────
 async function callGemini(history, sys, webContext) {
+  if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not set");
   const systemText = webContext ? `${sys}\n\nCURRENT WEB INFO:\n${webContext}` : sys;
   const res = await axios.post(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
@@ -311,7 +312,8 @@ async function callGemini(history, sys, webContext) {
         parts: [{ text: m.content }]
       })),
       generationConfig: { temperature: 0.92, maxOutputTokens: 200 }
-    }
+    },
+    { timeout: 18000 }
   );
   return res.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? null;
 }
@@ -1205,12 +1207,19 @@ async function ttsBase64(text) {
   const voiceId = process.env.ELEVENLABS_VOICE_ID
                || process.env.ELEVENLABS_VOICE
                || process.env.ELEVEN_VOICE_ID
-               || process.env.VOICE_ID;
-  if (!apiKey || !voiceId) {
-    console.warn("[TTS] ElevenLabs env missing — ELEVENLABS_API_KEY:", !!apiKey, "| voiceId found:", !!voiceId);
-    console.warn("[TTS] Checked: ELEVENLABS_VOICE_ID, ELEVENLABS_VOICE, ELEVEN_VOICE_ID, VOICE_ID");
+               || process.env.VOICE_ID
+               || process.env.XI_VOICE_ID;
+  if (!apiKey) {
+    console.warn("[TTS] ❌ ELEVENLABS_API_KEY not set — voice disabled");
     return null;
   }
+  if (!voiceId) {
+    console.warn("[TTS] ❌ No voice ID found. Set ELEVENLABS_VOICE_ID in env. Voice disabled.");
+    console.warn("[TTS] Checked: ELEVENLABS_VOICE_ID, ELEVENLABS_VOICE, ELEVEN_VOICE_ID, VOICE_ID, XI_VOICE_ID");
+    return null;
+  }
+  console.log(`[TTS] Using voice ID: ${voiceId.slice(0,8)}... (key: ${apiKey.slice(0,8)}...)`);
+
   try {
     const res = await axios.post(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
@@ -1275,18 +1284,43 @@ app.post("/api/talk", async (req, res) => {
         reply = await callGeminiWithVision(msgs, sysPrompt, imageBase64);
         console.log("[talk] Vision reply:", reply?.slice(0,60));
       } catch(e) {
-        console.warn("[talk] Vision failed, falling back to text:", e.message);
-        reply = await callGemini(msgs, sysPrompt, false);
+        console.warn("[talk] Vision failed:", e.message);
       }
-    } else {
-      reply = await callGemini(msgs, sysPrompt, false);
     }
 
-    // Fallback chain if Gemini fails
+    // Standard Gemini (with timeout protection)
     if (!reply) {
-      try { reply = await callGroq(msgs, sysPrompt, false); } catch(e) {}
+      try {
+        reply = await Promise.race([
+          callGemini(msgs, sysPrompt, false),
+          new Promise((_, rej) => setTimeout(() => rej(new Error("Gemini timeout")), 18000))
+        ]);
+        if (reply) console.log("[talk] Gemini reply:", reply.slice(0,60));
+      } catch(e) {
+        console.warn("[talk] Gemini failed, trying Groq:", e.message);
+      }
     }
-    if (!reply) return res.status(500).json({ error: "All AI calls failed" });
+
+    // Fallback: Groq (fast & reliable)
+    if (!reply) {
+      try {
+        reply = await callGroq(msgs, sysPrompt, false);
+        if (reply) console.log("[talk] Groq fallback reply:", reply.slice(0,60));
+      } catch(e) {
+        console.warn("[talk] Groq also failed:", e.message);
+      }
+    }
+
+    // Final fallback: Groq backup key
+    if (!reply && groq2) {
+      try {
+        reply = await callGroq(msgs, sysPrompt, true);
+      } catch(e) {
+        console.warn("[talk] Groq2 also failed:", e.message);
+      }
+    }
+
+    if (!reply) return res.status(500).json({ error: "All AI providers failed — check your API keys" });
 
     // Generate voice — always attempt
     const audioBase64 = await ttsBase64(reply);
