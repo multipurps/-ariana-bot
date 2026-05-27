@@ -287,8 +287,9 @@ async function uploadToCloudinary(buffer) {
 
 async function generateVoiceNote(text) {
   const apiKey  = process.env.ELEVENLABS_API_KEY;
-  const voiceId = process.env.ELEVENLABS_VOICE_ID;
-  if (!apiKey || !voiceId) return null;
+  const voiceId = process.env.ELEVENLABS_VOICE_ID || process.env.ELEVENLABS_VOICE || process.env.ELEVEN_VOICE_ID || process.env.VOICE_ID || process.env.XI_VOICE_ID;
+  if (!apiKey)   { console.warn("[VoiceNote] Missing ELEVENLABS_API_KEY"); return null; }
+  if (!voiceId)  { console.warn("[VoiceNote] No voice ID set — checked ELEVENLABS_VOICE_ID, ELEVENLABS_VOICE, ELEVEN_VOICE_ID, VOICE_ID, XI_VOICE_ID"); return null; }
   try {
     const res = await axios.post(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
@@ -944,6 +945,52 @@ async function loadBrain() {
 
 app.get('/api/brain', (_req, res) => res.json(brainCache));
 
+// ── TTS diagnostic endpoint — visit /api/debug/tts in browser to test ──
+app.get('/api/debug/tts', async (req, res) => {
+  const apiKey   = process.env.ELEVENLABS_API_KEY;
+  const voiceId  = process.env.ELEVENLABS_VOICE_ID || process.env.ELEVENLABS_VOICE
+                 || process.env.ELEVEN_VOICE_ID    || process.env.VOICE_ID
+                 || process.env.XI_VOICE_ID;
+
+  const report = {
+    ELEVENLABS_API_KEY_set:   !!apiKey,
+    ELEVENLABS_API_KEY_prefix: apiKey ? apiKey.slice(0,12) + '...' : null,
+    voiceId_found:  !!voiceId,
+    voiceId_value:  voiceId ? voiceId.slice(0,12) + '...' : null,
+    env_vars_checked: ['ELEVENLABS_VOICE_ID','ELEVENLABS_VOICE','ELEVEN_VOICE_ID','VOICE_ID','XI_VOICE_ID'],
+    which_var_matched: voiceId
+      ? ['ELEVENLABS_VOICE_ID','ELEVENLABS_VOICE','ELEVEN_VOICE_ID','VOICE_ID','XI_VOICE_ID'].find(k => process.env[k] === voiceId)
+      : null
+  };
+
+  if (!apiKey || !voiceId) {
+    return res.json({ ok: false, stage: 'env', report, error: !apiKey ? 'No API key' : 'No voice ID — set ELEVENLABS_VOICE_ID in your env vars' });
+  }
+
+  // Try a real TTS call with a short test phrase
+  try {
+    const axios = require('axios');
+    const ttsRes = await axios.post(
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+      { text: 'Hello, this is a test.', model_id: 'eleven_multilingual_v2', voice_settings: { stability: 0.5, similarity_boost: 0.75 } },
+      { headers: { 'xi-api-key': apiKey, 'Content-Type': 'application/json', Accept: 'audio/mpeg' }, responseType: 'arraybuffer', timeout: 20000 }
+    );
+    const kb = Math.round(ttsRes.data.byteLength / 1024);
+    return res.json({ ok: true, report, audioBytes: ttsRes.data.byteLength, audioKB: kb, message: `✅ TTS working! Got ${kb}KB of audio` });
+  } catch(e) {
+    const status = e.response?.status;
+    const body   = e.response?.data
+      ? Buffer.isBuffer(e.response.data) ? e.response.data.toString('utf8').slice(0,400) : JSON.stringify(e.response.data).slice(0,400)
+      : e.message;
+    const hint = status === 401 ? 'API key rejected — wrong or expired key'
+               : status === 404 ? 'Voice ID not found — this ID does not exist on your ElevenLabs account'
+               : status === 429 ? 'Quota exceeded — check your ElevenLabs usage/plan'
+               : status === 422 ? 'Unprocessable — bad voice settings or text'
+               : 'Network or unknown error';
+    return res.json({ ok: false, stage: 'api_call', report, httpStatus: status, hint, rawError: body });
+  }
+});
+
 app.post('/api/brain/:key', async (req, res) => {
   const { key } = req.params;
   const { data } = req.body;
@@ -1243,7 +1290,17 @@ async function ttsBase64(text) {
     console.log(`[TTS] Generated ${Math.round(b64.length / 1024)}KB audio`);
     return b64;
   } catch(e) {
-    console.error("[TTS] ElevenLabs failed:", e.response?.status, e.message);
+    const status = e.response?.status;
+    const body   = e.response?.data
+      ? Buffer.isBuffer(e.response.data)
+        ? e.response.data.toString('utf8').slice(0, 300)
+        : JSON.stringify(e.response.data).slice(0, 300)
+      : e.message;
+    console.error(`[TTS] ElevenLabs FAILED — HTTP ${status || 'no-response'}: ${body}`);
+    if (status === 401) console.error('[TTS] 401 = API key is wrong or expired. Check ELEVENLABS_API_KEY.');
+    if (status === 404) console.error('[TTS] 404 = Voice ID not found. Check ELEVENLABS_VOICE_ID — current value:', voiceId);
+    if (status === 422) console.error('[TTS] 422 = Bad request (text too long or voice settings invalid).');
+    if (status === 429) console.error('[TTS] 429 = Quota exceeded. Check your ElevenLabs plan usage.');
     return null;
   }
 }
@@ -1433,7 +1490,11 @@ server.listen(PORT, async () => {
   console.log(`🔮 DeepSeek:    ${process.env.DEEPSEEK_API_KEY    ? "✅" : "—"}`);
   console.log(`🌬️  Mistral:     ${process.env.MISTRAL_API_KEY     ? "✅" : "—"}`);
   console.log(`🤝 Together:    ${process.env.TOGETHER_API_KEY    ? "✅" : "—"}`);
-  console.log(`🎙️  ElevenLabs:  ${process.env.ELEVENLABS_API_KEY  ? "✅" : "❌ voice notes disabled"}`);
+  const _elevenKey   = process.env.ELEVENLABS_API_KEY;
+  const _elevenVoice = process.env.ELEVENLABS_VOICE_ID || process.env.ELEVENLABS_VOICE || process.env.ELEVEN_VOICE_ID || process.env.VOICE_ID || process.env.XI_VOICE_ID;
+  if (!_elevenKey)   console.log(`🎙️  ElevenLabs:  ❌ ELEVENLABS_API_KEY missing — voice disabled`);
+  else if (!_elevenVoice) console.log(`🎙️  ElevenLabs:  ⚠️  API key ✅ but NO VOICE ID found! Set ELEVENLABS_VOICE_ID in env vars`);
+  else               console.log(`🎙️  ElevenLabs:  ✅ (key: ${_elevenKey.slice(0,10)}... voice: ${_elevenVoice.slice(0,8)}...)`);
   console.log(`☁️  Cloudinary:  ${process.env.CLOUDINARY_CLOUD_NAME ? "✅" : "❌ voice notes disabled"}`);
   console.log(`📸 Unsplash:    ${process.env.UNSPLASH_ACCESS_KEY ? "✅" : "—"}`);
   console.log(`🔍 Serper:      ${process.env.SERPER_API_KEY      ? "✅" : "—"}`);
