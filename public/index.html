@@ -2758,6 +2758,124 @@ function talkPlayAudio(b64, transcript) {
   });
 }
 
+/* ── ElevenLabs Direct (called from browser — uses phone IP, not Render) ── */
+async function talkElevenLabsDirect(text) {
+  const ELEVEN_KEY      = "sk_ce3baf0035e207baf49c35219a9dcd6ab681e9160e0184c0";
+  const ELEVEN_VOICE_ID = "Uuc6s41mqYjIaMyXWGxL";
+
+  try {
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}`, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': ELEVEN_KEY,
+        'Content-Type': 'application/json',
+        'Accept': 'audio/mpeg'
+      },
+      body: JSON.stringify({
+        text,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: { stability: 0.50, similarity_boost: 0.75, style: 0.35, use_speaker_boost: true }
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      console.warn('[ElevenDirect] HTTP', res.status, err.slice(0,200));
+      // Fall back to Web Speech
+      talkSpeakWebSpeech(text);
+      return;
+    }
+
+    const arrayBuffer = await res.arrayBuffer();
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const decoded  = await audioCtx.decodeAudioData(arrayBuffer);
+    const source   = audioCtx.createBufferSource();
+    source.buffer  = decoded;
+    source.connect(audioCtx.destination);
+
+    source.onended = () => {
+      talkWatchdogClear();
+      talkProcessing = false;
+      const el = document.getElementById(talkOrbMode ? 'talk-orb-transcript' : 'talk-transcript');
+      if (el) el.textContent = '';
+      if (talkOrbMode) {
+        talkShowState('listening');
+        setTimeout(() => { if (talkOrbMode) talkStartListening(); }, 300);
+      } else {
+        talkShowState('idle');
+      }
+    };
+
+    source.start(0);
+    talkWatchdogClear(); // clear 35s watchdog once audio starts
+
+  } catch(e) {
+    console.warn('[ElevenDirect] error:', e.message);
+    // Fall back to Web Speech
+    talkSpeakWebSpeech(text);
+  }
+}
+
+/* ── Web Speech API fallback TTS (used when ElevenLabs is unavailable) ── */
+function talkSpeakWebSpeech(text) {
+  if (!window.speechSynthesis) {
+    // No Web Speech support — just use timed fallback
+    const dur = Math.min(7000, 2200 + text.length * 40);
+    talkTypeTimer = setTimeout(() => {
+      talkProcessing = false;
+      if (talkOrbMode) { talkShowState('listening'); talkStartListening(); }
+      else talkShowState('idle');
+      const el = document.getElementById(talkOrbMode ? 'talk-orb-transcript' : 'talk-transcript');
+      if (el) el.textContent = '';
+    }, dur);
+    return;
+  }
+
+  // Cancel any ongoing speech
+  window.speechSynthesis.cancel();
+
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.rate  = 0.95;   // slightly slower, more natural
+  utter.pitch = 1.05;   // slightly higher, feminine
+  utter.volume = 1;
+
+  // Pick the best available female voice
+  const voices = window.speechSynthesis.getVoices();
+  const preferred = [
+    'Samantha','Karen','Moira','Tessa',          // iOS/macOS female
+    'Google UK English Female',
+    'Microsoft Aria Online (Natural)',
+    'Microsoft Jenny Online (Natural)',
+    'en-GB','en-AU','en-US'
+  ];
+  let chosen = null;
+  for (const name of preferred) {
+    chosen = voices.find(v => v.name.includes(name) || v.lang === name);
+    if (chosen) break;
+  }
+  // Fallback: any English female voice
+  if (!chosen) chosen = voices.find(v => v.lang.startsWith('en') && /female|woman/i.test(v.name));
+  // Fallback: any English voice
+  if (!chosen) chosen = voices.find(v => v.lang.startsWith('en'));
+  if (chosen) utter.voice = chosen;
+
+  utter.onend = () => {
+    talkWatchdogClear();
+    talkProcessing = false;
+    const el = document.getElementById(talkOrbMode ? 'talk-orb-transcript' : 'talk-transcript');
+    if (el) el.textContent = '';
+    if (talkOrbMode) { talkShowState('listening'); setTimeout(() => { if(talkOrbMode) talkStartListening(); }, 300); }
+    else talkShowState('idle');
+  };
+  utter.onerror = (e) => {
+    console.warn('[WebSpeech] error:', e.error);
+    utter.onend();
+  };
+
+  // iOS Safari needs a small delay after cancel()
+  setTimeout(() => window.speechSynthesis.speak(utter), 80);
+}
+
 /* ── mic analyser ── */
 async function talkStartMicAnalyser() {
   try {
@@ -3148,26 +3266,10 @@ async function talkProcess(text) {
     // Always append Ariana reply to chat log
     talkAppendMsg('ariana', data.reply);
 
-    if (data.audioBase64) {
-      talkPlayAudio(data.audioBase64, data.reply);
-    } else {
-      talkWatchdogClear();
-      talkShowState('speaking');
-      talkTypeText(data.reply);
-      // short display then return to ready
-      const dur = Math.min(6000, 2000 + data.reply.length * 38);
-      talkTypeTimer = setTimeout(() => {
-        talkProcessing = false;
-        if (talkOrbMode) {
-          talkShowState('listening');
-          talkStartListening();
-        } else {
-          talkShowState('idle');
-        }
-        const el2 = document.getElementById(talkOrbMode ? 'talk-orb-transcript' : 'talk-transcript');
-        if (el2) el2.textContent = '';
-      }, dur);
-    }
+    // Always call ElevenLabs directly from browser (bypasses Render IP block)
+    talkShowState('speaking');
+    talkTypeText(data.reply);
+    await talkElevenLabsDirect(data.reply);
   } catch(e) {
     console.error('[talk] process error:', e);
     talkWatchdogClear();
