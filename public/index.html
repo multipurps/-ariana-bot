@@ -11,6 +11,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icons/icon-180.png">
 <script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
@@ -159,7 +160,16 @@ input,textarea{font-family:inherit;color:inherit}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
 #no-chat h2{font-size:20px;font-weight:400;color:rgba(255,255,255,.6);letter-spacing:-.2px}
 #chat-header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(0,0,0,0.85);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-bottom:1px solid var(--b1);min-height:56px;z-index:2;flex-shrink:0}
-#chat-back{font-size:28px;padding:0 6px;display:flex;align-items:center;color:rgba(255,255,255,.7);font-weight:300;line-height:1;flex-shrink:0}
+#chat-back{
+  display:flex;align-items:center;gap:3px;
+  padding:6px 8px 6px 4px;
+  color:#3a9df8;font-size:17px;font-weight:400;line-height:1;
+  flex-shrink:0;border-radius:8px;
+  -webkit-tap-highlight-color:transparent;
+  transition:opacity .15s;
+}
+#chat-back:active{opacity:.5}
+#chat-back svg{width:11px;height:18px;flex-shrink:0}
 #chat-avatar{width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;cursor:pointer;overflow:hidden;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.12)}
 #chat-avatar img{width:100%;height:100%;object-fit:cover}
 #chat-info{flex:1;min-width:0;cursor:pointer}
@@ -462,21 +472,131 @@ input,textarea{font-family:inherit;color:inherit}
 #talk-idle-sub{font-size:14px;color:rgba(255,255,255,.38);text-align:center}
 
 /* ── orb (speaking / thinking) ── */
+/* ══════════════════════════════════════════════════════════════
+   ARIANA ORB — exact spec, no deviations
+   Container: 280×280, border-radius 50%, overflow hidden
+   Inner div: 100% fill, exact gradient, blur(2px)
+   Box-shadow on container only
+   Animation: scale 1.0→1.07, 4s ease-in-out infinite alternate
+   NOTHING else moves
+══════════════════════════════════════════════════════════════ */
+#talk-orb{
+  width:280px;height:280px;
+  border-radius:50%;
+  overflow:hidden;
+  flex-shrink:0;
+  position:relative;
+  box-shadow:0 0 100px 35px rgba(147,51,234,0.45);
+  animation:arianaOrbBreathe 4s ease-in-out infinite alternate;
+}
+#talk-orb-inner{
+  width:100%;height:100%;
+  background:radial-gradient(circle at 60% 40%,
+    #f97316 0%,
+    #e11d48 28%,
+    #9333ea 58%,
+    #3730a3 85%,
+    #0f0a1e 100%);
+  filter:blur(2px);
+}
+@keyframes arianaOrbBreathe{
+  from { transform:scale(1.0); }
+  to   { transform:scale(1.07); }
+}
+
+/* ── call view layout ── */
 #talk-orb-scene{
-  position:absolute;inset:0;z-index:10;
+  position:absolute;inset:0;z-index:50;
   display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:32px;
+  align-items:center;
   opacity:0;pointer-events:none;
   transition:opacity .4s;
+  background:#000;
 }
-#talk-orb-scene.show{opacity:1;pointer-events:all}
-
-/* Fullscreen orb mode — Ariana orb top, controls bottom */
+#talk-orb-scene.show,
 #talk-orb-scene.orb-full{
-  z-index:50;background:#000;
-  justify-content:flex-start;
-  padding-top:10vh;
+  opacity:1;pointer-events:all;
 }
+/* call header: ARIANA / calling... */
+#talk-call-header{
+  display:none;flex-direction:column;align-items:center;
+  padding-top:calc(52px + env(safe-area-inset-top));
+  gap:6px;
+}
+#talk-orb-scene.orb-full #talk-call-header{ display:flex; }
+#talk-orb-name{
+  font-size:13px;font-weight:500;
+  letter-spacing:.18em;color:rgba(255,255,255,.92);
+  text-transform:uppercase;
+}
+#talk-call-sub{
+  font-size:13px;color:rgba(255,255,255,.38);
+  letter-spacing:.04em;
+}
+/* orb centered in remaining space */
+#talk-orb-wrap{
+  flex:1;display:flex;align-items:center;justify-content:center;
+}
+/* non-full orb scene: small status pill stays */
+#talk-status-pill{
+  padding:9px 22px;border-radius:30px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.38);backdrop-filter:blur(14px);
+  font-size:13px;color:rgba(255,255,255,.75);
+  display:flex;align-items:center;gap:8px;
+}
+#talk-orb-scene.orb-full #talk-status-pill{ display:none; }
+#talk-status-dot{
+  width:7px;height:7px;border-radius:50%;background:var(--accent);
+  animation:sdot 1.4s ease-in-out infinite;
+}
+@keyframes sdot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.65)}}
+#talk-transcript{
+  font-size:17px;font-weight:300;letter-spacing:.01em;
+  color:rgba(255,255,255,.75);
+  text-align:center;padding:0 36px;line-height:1.5;
+  min-height:52px;
+}
+
+/* ── three call buttons ── */
+#talk-orb-btm{
+  position:absolute;bottom:0;left:0;right:0;z-index:60;
+  display:none;
+  flex-direction:column;align-items:center;
+  padding-bottom:calc(36px + env(safe-area-inset-bottom));
+  pointer-events:none;
+}
+#talk-orb-btm.show{ display:flex; }
+#talk-orb-btm-row{
+  display:flex;align-items:center;justify-content:center;
+  gap:32px;pointer-events:all;
+}
+/* small control buttons (mute + speaker) */
+.orb-ctrl-btn{
+  width:60px;height:60px;border-radius:50%;
+  background:rgba(58,58,64,0.92);
+  border:none;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:#fff;
+  -webkit-tap-highlight-color:transparent;
+  transition:background .15s,transform .1s;
+}
+.orb-ctrl-btn:active{ transform:scale(0.88); }
+.orb-ctrl-btn svg{ width:24px;height:24px; }
+.orb-ctrl-btn.muted{ background:rgba(255,255,255,0.22); }
+/* end-call button — larger, red */
+#talk-end-call-btn{
+  width:72px;height:72px;border-radius:50%;
+  background:#e11d48;
+  border:none;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:#fff;
+  -webkit-tap-highlight-color:transparent;
+  transition:background .15s,transform .1s;
+  box-shadow:0 4px 24px rgba(225,29,72,0.5);
+}
+#talk-end-call-btn:active{ transform:scale(0.88);background:#be123c; }
+#talk-end-call-btn svg{ width:28px;height:28px;transform:rotate(135deg); }
 #talk-transcript{
   font-size:17px;font-weight:300;letter-spacing:.01em;
   color:rgba(255,255,255,.75);
@@ -488,7 +608,8 @@ input,textarea{font-family:inherit;color:inherit}
 #talk-chat-log{
   flex:1;overflow-y:auto;overflow-x:hidden;
   display:flex;flex-direction:column;gap:4px;
-  padding:14px 14px 10px;
+  /* padding-bottom must clear the absolutely-positioned #talk-bottom bar + safe area */
+  padding:14px 14px calc(160px + env(safe-area-inset-bottom));
   scrollbar-width:none;
 }
 #talk-chat-log::-webkit-scrollbar{display:none}
@@ -566,175 +687,6 @@ input,textarea{font-family:inherit;color:inherit}
   cursor:pointer;transition:color .15s,background .15s;
 }
 #talk-clear-btn:active{background:rgba(239,68,68,.15);color:#f87171}
-#talk-orb{
-  width:260px;height:260px;border-radius:50%;
-  position:relative;flex-shrink:0;
-  overflow:hidden;
-  transition:box-shadow .5s;
-}
-#talk-orb-canvas{
-  position:absolute;inset:0;
-  width:100%;height:100%;border-radius:50%;
-}
-/* fallback CSS layers — only visible if canvas fails */
-.ol{position:absolute;inset:0;border-radius:50%}
-#ol-base{
-  background:radial-gradient(circle at 42% 38%,
-    rgba(245,80,150,.95) 0%,
-    rgba(210,45,115,.90) 38%,
-    rgba(150,12,72,.85)  70%,
-    rgba(38,2,18,.95)   100%
-  );
-}
-#ol-warm{background:radial-gradient(circle at 28% 22%,rgba(255,200,228,.82) 0%,transparent 50%);animation:bw 4s ease-in-out infinite}
-#ol-cool{background:radial-gradient(circle at 68% 72%,rgba(195,28,100,.68) 0%,transparent 52%);animation:bc 3.5s ease-in-out infinite .6s}
-#ol-red{background:radial-gradient(circle at 65% 28%,rgba(255,105,170,.58) 0%,transparent 44%);animation:br 5.2s ease-in-out infinite 1.2s}
-#ol-glass{background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.28) 0%,rgba(255,255,255,.05) 44%,transparent 62%)}
-#ol-logo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2}
-#ol-logo img{width:50px;height:50px;border-radius:12px;object-fit:cover;filter:drop-shadow(0 2px 14px rgba(0,0,0,.5))}
-@keyframes bw{0%,100%{transform:translate(0,0) scale(1);opacity:.72}50%{transform:translate(18px,-13px) scale(1.14);opacity:.92}}
-@keyframes bc{0%,100%{transform:translate(0,0) scale(1);opacity:.65}50%{transform:translate(-13px,10px) scale(1.11);opacity:.82}}
-@keyframes br{0%,100%{transform:translate(0,0) scale(1);opacity:.52}50%{transform:translate(8px,15px) scale(1.09);opacity:.72}}
-
-/* orb outer glow — Ariana rose/pink palette */
-#talk-orb.speaking{box-shadow:0 0 0 1px rgba(255,90,155,.35),0 0 80px rgba(230,55,120,.60),0 0 160px rgba(190,20,90,.25)}
-#talk-orb.thinking{box-shadow:0 0 0 1px rgba(255,110,165,.22),0 0 55px rgba(225,70,135,.35)}
-#talk-orb.listening{box-shadow:0 0 0 1px rgba(255,130,185,.28),0 0 60px rgba(230,85,145,.42),0 0 110px rgba(210,45,115,.16)}
-
-/* orb size in fullscreen mode */
-#talk-orb-scene.orb-full #talk-orb{
-  width:min(75vw,340px);
-  height:min(75vw,340px);
-}
-
-/* Ariana name label */
-#talk-orb-name{
-  font-size:15px;font-weight:500;letter-spacing:.04em;
-  color:rgba(255,255,255,.5);margin-top:-8px;
-  display:none;
-}
-#talk-orb-scene.orb-full #talk-orb-name{display:block}
-
-#talk-status-pill{
-  padding:9px 22px;border-radius:30px;
-  border:1px solid rgba(255,255,255,.14);
-  background:rgba(0,0,0,.38);backdrop-filter:blur(14px);
-  font-size:13px;color:rgba(255,255,255,.75);
-  display:flex;align-items:center;gap:8px;
-}
-#talk-orb-scene.orb-full #talk-status-pill{display:none}
-#talk-status-dot{
-  width:7px;height:7px;border-radius:50%;background:var(--accent);
-  animation:sdot 1.4s ease-in-out infinite;
-}
-@keyframes sdot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.65)}}
-
-/* ── SS2-style bottom controls for orb mode ── */
-#talk-orb-btm{
-  position:absolute;bottom:0;left:0;right:0;z-index:60;
-  display:none;
-  flex-direction:column;align-items:center;
-  padding-bottom:calc(28px + env(safe-area-inset-bottom));
-  background:linear-gradient(to top,rgba(0,0,0,0.92) 0%,transparent 100%);
-  pointer-events:none;
-}
-#talk-orb-btm.show{display:flex}
-#talk-orb-btm-row{
-  display:flex;align-items:center;justify-content:center;
-  gap:18px;pointer-events:all;
-}
-/* small round control buttons */
-.orb-ctrl-btn{
-  width:56px;height:56px;border-radius:50%;
-  background:rgba(255,255,255,0.10);
-  border:1px solid rgba(255,255,255,0.14);
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;color:rgba(255,255,255,.85);
-  -webkit-tap-highlight-color:transparent;
-  transition:background .15s,transform .1s;
-}
-.orb-ctrl-btn:active{transform:scale(0.9);background:rgba(255,255,255,.18)}
-.orb-ctrl-btn svg{width:22px;height:22px}
-
-/* user orb — wide flat dark liquid lens/blob, breathing */
-#talk-user-orb-btn{
-  width:96px;height:58px;
-  border-radius:50% 50% 50% 50% / 55% 55% 45% 45%;
-  position:relative;overflow:hidden;
-  background:
-    radial-gradient(ellipse 80% 55% at 48% 30%,
-      rgba(90,105,175,.70) 0%,
-      rgba(28,34,80,.92)   45%,
-      rgba(4,5,18,1)       100%);
-  box-shadow:
-    0 2px 18px rgba(0,0,0,.75),
-    0 0 0 1px rgba(120,130,210,.18),
-    inset 0 1px 0 rgba(255,255,255,.10);
-  border:none;cursor:pointer;
-  -webkit-tap-highlight-color:transparent;
-  animation: userOrbBreathe 3.4s ease-in-out infinite;
-  flex-shrink:0;
-}
-@keyframes userOrbBreathe{
-  0%,100%{
-    transform:scaleX(1) scaleY(1);
-    box-shadow:
-      0 2px 18px rgba(0,0,0,.75),
-      0 0 0 1px rgba(120,130,210,.18),
-      0 0 14px rgba(80,100,200,.14),
-      inset 0 1px 0 rgba(255,255,255,.10);
-  }
-  40%{
-    transform:scaleX(1.08) scaleY(1.06);
-    box-shadow:
-      0 4px 30px rgba(0,0,0,.65),
-      0 0 0 1.5px rgba(120,150,255,.32),
-      0 0 36px rgba(70,105,240,.26),
-      inset 0 1px 0 rgba(255,255,255,.16);
-  }
-  70%{
-    transform:scaleX(1.04) scaleY(1.03);
-    box-shadow:
-      0 3px 22px rgba(0,0,0,.7),
-      0 0 0 1px rgba(120,140,220,.22),
-      0 0 20px rgba(75,102,220,.18),
-      inset 0 1px 0 rgba(255,255,255,.12);
-  }
-}
-#talk-user-orb-btn:active{transform:scale(.92)!important;animation:none}
-#talk-user-orb-btn.speaking{
-  animation:userOrbSpeak 0.9s ease-in-out infinite;
-}
-@keyframes userOrbSpeak{
-  0%,100%{
-    transform:scaleX(1) scaleY(1);
-    box-shadow:0 2px 24px rgba(0,0,0,.7),0 0 0 1px rgba(100,140,255,.30),0 0 28px rgba(80,120,255,.28),inset 0 1px 0 rgba(255,255,255,.12);
-  }
-  50%{
-    transform:scaleX(1.13) scaleY(1.09);
-    box-shadow:0 4px 36px rgba(0,0,0,.6),0 0 0 2px rgba(100,150,255,.50),0 0 52px rgba(70,120,255,.42),inset 0 1px 0 rgba(255,255,255,.18);
-  }
-}
-/* top highlight — thin bright crescent like the screenshot */
-#talk-user-orb-btn-shine{
-  position:absolute;
-  top:0;left:10%;width:80%;height:45%;
-  border-radius:50%;
-  background:radial-gradient(ellipse 70% 60% at 50% 10%,
-    rgba(255,255,255,.18) 0%,
-    rgba(160,180,255,.08) 50%,
-    transparent 100%);
-  animation:uorbShine 4s ease-in-out infinite;
-}
-#talk-user-orb-btn-glow{
-  position:absolute;inset:0;
-  background:radial-gradient(ellipse 55% 40% at 55% 75%,
-    rgba(80,110,220,.18) 0%, transparent 70%);
-  animation:uorbGlow 5s ease-in-out infinite 1.5s;
-}
-@keyframes uorbShine{0%,100%{opacity:.85}50%{opacity:1}}
-@keyframes uorbGlow{0%,100%{opacity:.4}50%{opacity:.7}}
-
 /* transcript shown above controls in orb mode */
 #talk-orb-transcript{
   font-size:15px;font-weight:300;color:rgba(255,255,255,.65);
@@ -806,20 +758,16 @@ input,textarea{font-family:inherit;color:inherit}
 #talk-mic-inline-btn:hover{color:#fff}
 #talk-mic-inline-btn svg{width:20px;height:20px}
 #talk-voice-btn{
-  width:46px;height:46px;border-radius:50%;flex-shrink:0;
-  background:radial-gradient(circle at 38% 34%,
-    rgba(80,100,230,.95) 0%,
-    rgba(38,52,175,.96)  42%,
-    rgba(12,16,60,.98)   100%);
-  border:1px solid rgba(90,120,255,.22);padding:0;
+  width:34px;height:34px;flex-shrink:0;
+  background:none;border:none;padding:0;
   display:flex;align-items:center;justify-content:center;
-  cursor:pointer;
-  box-shadow:0 0 0 1px rgba(70,100,240,.18),0 2px 18px rgba(40,70,200,.35);
-  transition:transform .12s,box-shadow .2s;
+  cursor:pointer;color:rgba(255,255,255,.5);
+  transition:color .15s;
   -webkit-tap-highlight-color:transparent;
 }
 #talk-voice-btn:active{transform:scale(0.91)}
-#talk-voice-btn svg{width:22px;height:22px;color:rgba(255,255,255,.9)}
+#talk-voice-btn:hover{color:#fff}
+#talk-voice-btn svg{width:22px;height:22px}
 
 /* expanded bar — mic listening mode ONLY, no orb */
 #talk-bar-exp{
@@ -1192,7 +1140,12 @@ input,textarea{font-family:inherit;color:inherit}
           <h2>Select a conversation</h2>
         </div>
         <div id="chat-header" style="display:none">
-          <button id="chat-back" onclick="closeChat()">&#8249;</button>
+          <button id="chat-back" onclick="closeChat()">
+            <svg viewBox="0 0 11 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.5 1L1.5 9L9.5 17" stroke="#3a9df8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Back
+          </button>
           <div id="chat-avatar" onclick="openDrawer()"></div>
           <div id="chat-info" onclick="openDrawer()"><div id="chat-name">—</div><div id="chat-sub"></div></div>
           <div id="chat-header-actions">
@@ -1433,59 +1386,63 @@ input,textarea{font-family:inherit;color:inherit}
       <!-- CHAT LOG — always visible in text mode -->
       <div id="talk-chat-log"></div>
 
-      <!-- ORB SCENE (fullscreen + thinking/speaking when not in orb mode) -->
+      <!-- ORB SCENE — full screen call view -->
       <div id="talk-orb-scene">
-        <div id="talk-transcript"></div>
-        <div id="talk-orb">
-          <canvas id="talk-orb-canvas"></canvas>
-          <div class="ol" id="ol-base"></div>
-          <div class="ol" id="ol-warm"></div>
-          <div class="ol" id="ol-cool"></div>
-          <div class="ol" id="ol-red"></div>
-          <div class="ol" id="ol-glass"></div>
+
+        <!-- Top: ARIANA / calling... (only in orb-full mode) -->
+        <div id="talk-call-header">
+          <div id="talk-orb-name">ARIANA</div>
+          <div id="talk-call-sub">calling...</div>
         </div>
-        <div id="talk-orb-name">ARIANA</div>
+
+        <!-- status pill (non-full mode only) -->
         <div id="talk-status-pill">
           <div id="talk-status-dot"></div>
           <span id="talk-status-txt">Thinking</span>
         </div>
+
+        <!-- Orb: centered in flex:1 wrapper -->
+        <div id="talk-orb-wrap">
+          <div id="talk-orb">
+            <div id="talk-orb-inner"></div>
+          </div>
+        </div>
+
+        <div id="talk-transcript"></div>
+
       </div>
 
-      <!-- ORB MODE BOTTOM — transcript + SS2-style controls -->
+      <!-- ORB MODE BOTTOM — transcript + 3 call controls -->
       <div id="talk-orb-btm">
         <div id="talk-orb-transcript"></div>
         <div id="talk-orb-btm-row">
-          <!-- Camera -->
-          <button class="orb-ctrl-btn" onclick="talkToggleCamera()" title="Camera">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-              <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>
-            </svg>
-          </button>
-          <!-- Screen share (disabled) -->
-          <button class="orb-ctrl-btn" style="opacity:.4" title="Screen share">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-              <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
-            </svg>
-          </button>
-          <!-- User mini-orb (center, SS2 circled button) -->
-          <button id="talk-user-orb-btn">
-            <div id="talk-user-orb-btn-shine"></div>
-            <div id="talk-user-orb-btn-glow"></div>
-          </button>
-          <!-- Mic mute toggle -->
+
+          <!-- Mute / unmute mic -->
           <button class="orb-ctrl-btn" id="talk-orb-mic-btn" onclick="talkOrbMicToggle()" title="Mute">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
               <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-              <line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
             </svg>
           </button>
-          <!-- Exit -->
-          <button class="orb-ctrl-btn" onclick="talkLeaveOrbMode()" title="End">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+
+          <!-- End call — red, larger, phone rotated 135° -->
+          <button id="talk-end-call-btn" onclick="talkLeaveOrbMode()" title="End call">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C9.6 21 3 14.4 3 6c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/>
             </svg>
           </button>
+
+          <!-- Speaker toggle -->
+          <button class="orb-ctrl-btn" id="talk-speaker-btn" onclick="talkToggleSpeaker()" title="Speaker">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            </svg>
+          </button>
+
         </div>
       </div>
 
@@ -1522,7 +1479,7 @@ input,textarea{font-family:inherit;color:inherit}
           </button>
           <button id="talk-voice-btn" onclick="talkEnterOrbMode()">
             <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-              <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.32.57 3.58.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C9.61 21 3 14.39 3 6c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.27.2 2.48.57 3.61.1.34.02.72-.24.99l-2.23 2.2z"/>
+              <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.58.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C9.61 21 3 14.39 3 6c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.46.57 3.58.11.35.03.74-.24 1.02L6.6 10.8z"/>
             </svg>
           </button>
         </div>
@@ -1661,6 +1618,20 @@ input,textarea{font-family:inherit;color:inherit}
 const WALLPAPERS=[{id:"w0",label:"Black",bg:"#000"},{id:"w1",label:"Deep",bg:"linear-gradient(135deg,#050510,#0a0520)"},{id:"w2",label:"Night",bg:"linear-gradient(135deg,#0d0d0d,#1a1a2e)"},{id:"w3",label:"Dots",bg:"radial-gradient(circle,#1a1a2a 1px,#000 1px) 0 0/20px 20px"},{id:"w4",label:"Warm",bg:"linear-gradient(135deg,#0d0800,#1a1000)"},{id:"w5",label:"Ocean",bg:"linear-gradient(135deg,#000d1a,#001428)"}];
 const EMOJIS={smileys:['😀','😂','🥰','😍','🤩','😎','🥺','😭','😤','😏','🙄','😴','🤔','😅','😆','🤣','😊','🥲','😇','🤗','😌','😋','🤤','🤫','🫢','🤐','🥱','😶','😑','😬','🙃','😈','💀','👻','🥳','😻'],hearts:['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💕','💞','💓','💗','💖','💝','💘','💟','❣️','💔','💋','💌'],hands:['👍','👎','✌️','🤞','🤙','💪','🙏','👏','🤝','✊','👊','🤚','👋','🖐️','✋','👌','🤌','☝️','👆','👇','👈','👉'],fire:['🔥','✨','💯','🎉','🎊','🎈','🏆','⭐','🌟','💫','⚡','🌈','🍕','🍔','🌮','🍣','🍰','🎵','🎶','💎','🚀','👑','🦋']};
 const VAPID="BC73tPCUnIe2lzYWl_cpB3hp2R4CN5F3PM9Z6_kRIX7gC91pxowUlxdijQCM7X1mTxo7qrA9h32Rw3XgwBFWvjc";
+
+// ── Supabase Live Talk Chat ──
+// Fill in your Supabase project URL and anon key below
+const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';  // ← replace
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';               // ← replace
+// Required table (run in your Supabase SQL editor):
+// CREATE TABLE talk_history (id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+//   role text, text text, media_url text, media_type text,
+//   ts bigint, created_at timestamptz DEFAULT now());
+// ALTER TABLE talk_history ENABLE ROW LEVEL SECURITY;
+// CREATE POLICY "allow all" ON talk_history FOR ALL USING (true) WITH CHECK (true);
+const _sbTalk = (typeof supabase !== 'undefined' && SUPABASE_URL.includes('.supabase.co') && !SUPABASE_URL.includes('YOUR_PROJECT'))
+  ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
 const BRAIN_FILES=[
   {key:"core_identity",   label:"Identity",        hint:"Name, age, appearance, career"},
   {key:"personality",     label:"Personality",      hint:"Traits, insecurities, humor style"},
@@ -1752,7 +1723,7 @@ function navTo(el){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.getElementById(`view-${view}`).classList.add("active");
   currentView=view;
-  if(filter){activePlatFilter=filter;renderList()}
+  if(filter){activePlatFilter=filter;renderList();updateChatBackLabel()}
   closeSidebar();
   if(view==="brain")initBrainView();
   if(view==="media")initMediaView();
@@ -1835,6 +1806,15 @@ function renderList(){
     </div>`;
   }).join("");
 }
+function updateChatBackLabel() {
+  const btn = document.getElementById('chat-back');
+  if (!btn) return;
+  const labels = { wa:'WhatsApp', tg:'Telegram', sg:'Signal', sms:'SMS', all:'Back' };
+  const label = labels[activePlatFilter] || 'Back';
+  btn.innerHTML = `<svg viewBox="0 0 11 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M9.5 1L1.5 9L9.5 17" stroke="#3a9df8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>${label}`;
+}
 function openChat(phone){
   if(!phone)return;currentPhone=phone;
   const c=convos[phone]||{phone,messages:[],name:""};c._unread=0;
@@ -1847,7 +1827,7 @@ function openChat(phone){
   document.getElementById("chat-sub").textContent=c.tgUsername?"@"+c.tgUsername:c.name?phone:"";
   const msgs=document.getElementById("messages");msgs.innerHTML="";let lastDate="";
   (Array.isArray(c.messages)?c.messages:[]).forEach(m=>{const d=new Date(m.time||Date.now()).toDateString();if(d!==lastDate){msgs.innerHTML+=`<div class="date-div">${fmtDate(m.time)}</div>`;lastDate=d}msgs.innerHTML+=bubble(m)});
-  scrollBottom();updateTakeoverUI();applyWallpaper();renderList();
+  scrollBottom();updateTakeoverUI();applyWallpaper();renderList();updateChatBackLabel();
   if(emojiOpen){emojiOpen=false;document.getElementById("emoji-picker").classList.remove("open")}
   if(window.innerWidth<=700)document.getElementById("chat-list-pane").classList.add("hidden");
 }
@@ -2292,222 +2272,14 @@ async function genSaveToLibrary(index){
 // ORB CANVAS RENDERER — vivid blue/cyan/white plasma sphere
 // ══════════════════════════════════════════════════════════════
 
-class OrbRenderer {
-  constructor(canvas) {
-    this.canvas    = canvas;
-    this.ctx       = canvas.getContext('2d');
-    this.raf       = null;
-    this.state     = 'idle';
-    this.energy    = 0;
-    this.targetEnergy = 0;
-    this.startTime = performance.now();
-
-    // Plasma blobs — Ariana rose/pink/magenta palette
-    this.layers = [
-      // base: deep rose/crimson anchor
-      { cx:0.50, cy:0.55, r:0.72, color:'215,48,120',   driftSpd:0.55, phaseX:0.0, phaseY:1.1 },
-      // soft pink highlight top-left
-      { cx:0.28, cy:0.22, r:0.52, color:'255,125,178',  driftSpd:0.80, phaseX:2.2, phaseY:0.5 },
-      // warm blush/petal center
-      { cx:0.50, cy:0.38, r:0.36, color:'255,198,222',  driftSpd:0.65, phaseX:4.1, phaseY:2.9 },
-      // dark wine bottom
-      { cx:0.60, cy:0.72, r:0.48, color:'158,12,72',    driftSpd:0.42, phaseX:1.5, phaseY:3.8 },
-      // magenta accent
-      { cx:0.72, cy:0.30, r:0.30, color:'248,88,162',   driftSpd:1.05, phaseX:3.4, phaseY:1.7 },
-    ];
-  }
-
-  _noise(px, py, t, seed) {
-    const s = seed;
-    return (
-      Math.sin(px * 3.8 + t * 0.00058 + s)              * 0.28 +
-      Math.sin(py * 2.7 + t * 0.00044 + s * 1.4)        * 0.26 +
-      Math.sin((px+py)*2.3 + t * 0.00087 + s * 2.0)     * 0.24 +
-      Math.sin(Math.sqrt(px*px+py*py)*5.9 + t*0.00105 + s*0.8) * 0.22
-    );
-  }
-
-  setAudio(rms) {
-    this.targetEnergy = Math.min(1, rms / 130);
-  }
-
-  setState(st) {
-    this.state = st;
-    if (st === 'thinking')  this.targetEnergy = Math.max(this.targetEnergy, 0.18);
-    if (st === 'speaking')  this.targetEnergy = Math.max(this.targetEnergy, 0.30);
-    if (st === 'idle')      this.targetEnergy = 0;
-  }
-
-  start() {
-    if (this.raf) return;
-    const loop = (now) => { this._draw(now); this.raf = requestAnimationFrame(loop); };
-    this.raf = requestAnimationFrame(loop);
-  }
-
-  stop() {
-    if (this.raf) { cancelAnimationFrame(this.raf); this.raf = null; }
-  }
-
-  _draw(now) {
-    const { canvas, ctx } = this;
-    const W = canvas.width, H = canvas.height;
-    if (!W || !H) return;
-    const cx = W * 0.5, cy = H * 0.5;
-    const R  = Math.min(W, H) * 0.48;
-    const t  = now - this.startTime;
-
-    // Smooth energy
-    const eSmooth = this.state === 'speaking' ? 0.10 : 0.05;
-    this.energy += (this.targetEnergy - this.energy) * eSmooth;
-    let e = this.energy;
-    if (this.state === 'speaking') {
-      e = Math.max(e, 0.28 + 0.18 * Math.abs(Math.sin(t * 0.0022)));
-    }
-
-    // Gentle breath — never stops
-    const breath   = 1 + 0.022 * Math.sin(t * 0.00052) + e * 0.04;
-    const drawR    = R * breath;
-
-    ctx.clearRect(0, 0, W, H);
-
-    // Outer atmospheric glow (rose halo)
-    {
-      const gr = ctx.createRadialGradient(cx, cy, drawR * 0.7, cx, cy, drawR * 1.7);
-      gr.addColorStop(0,   `rgba(225,55,125,${0.22 + e * 0.18})`);
-      gr.addColorStop(0.5, `rgba(245,80,148,${0.08 + e * 0.08})`);
-      gr.addColorStop(1,   'rgba(0,0,0,0)');
-      ctx.fillStyle = gr;
-      ctx.fillRect(0, 0, W, H);
-    }
-
-    // Clip to circle
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(cx, cy, drawR, 0, Math.PI * 2);
-    ctx.clip();
-
-    // Dark base (deep wine, so rose layers glow through)
-    const base = ctx.createRadialGradient(cx, cy*0.8, 0, cx, cy, drawR);
-    base.addColorStop(0, 'rgba(48,4,22,1)');
-    base.addColorStop(1, 'rgba(18,1,8,1)');
-    ctx.fillStyle = base;
-    ctx.fillRect(0, 0, W, H);
-
-    // Plasma blob layers — screen blend = additive vivid light
-    ctx.globalCompositeOperation = 'screen';
-
-    for (const lyr of this.layers) {
-      const n1  = this._noise(lyr.cx, lyr.cy, t * lyr.driftSpd, lyr.phaseX);
-      const n2  = this._noise(lyr.cy, lyr.cx, t * lyr.driftSpd, lyr.phaseY);
-      const amp = 0.24 + e * 0.28;
-      const bx  = cx + (lyr.cx - 0.5) * W * 1.1 + n1 * W * amp;
-      const by  = cy + (lyr.cy - 0.5) * H * 1.1 + n2 * H * amp;
-      const br  = drawR * lyr.r * (1 + Math.abs(n1) * 0.18 + e * 0.12);
-      const alpha = 0.82 + e * 0.16;
-
-      const g = ctx.createRadialGradient(bx, by, 0, bx, by, br);
-      g.addColorStop(0,    `rgba(${lyr.color},${alpha})`);
-      g.addColorStop(0.45, `rgba(${lyr.color},${alpha * 0.48})`);
-      g.addColorStop(1,    `rgba(${lyr.color},0)`);
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, W, H);
-    }
-
-    // Diagonal light band — the SS3 swept diagonal white/cyan streak
-    {
-      const ang   = -0.55 + Math.sin(t * 0.00028) * 0.08;
-      const sweep = Math.sin(t * 0.00032 + 1.2) * 0.12;
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(ang + sweep);
-      const band = ctx.createLinearGradient(-drawR, 0, drawR, 0);
-      band.addColorStop(0,   'rgba(255,175,210,0)');
-      band.addColorStop(0.35,'rgba(255,155,200,0)');
-      band.addColorStop(0.48,`rgba(255,215,232,${0.45 + e * 0.2})`);
-      band.addColorStop(0.55,`rgba(255,242,250,${0.30 + e * 0.15})`);
-      band.addColorStop(0.65,'rgba(255,140,195,0.08)');
-      band.addColorStop(1,   'rgba(255,175,210,0)');
-      ctx.fillStyle = band;
-      ctx.fillRect(-drawR * 1.2, -drawR * 1.2, drawR * 2.4, drawR * 2.4);
-      ctx.restore();
-    }
-
-    // Pressure ripples when active
-    if (e > 0.06) {
-      for (let i = 0; i < 3; i++) {
-        const ph  = t * 0.0016 + i * (Math.PI * 2 / 3);
-        const rr  = drawR * (0.3 + 0.45 * ((Math.sin(ph) + 1) / 2));
-        const ra  = e * 0.14 * Math.max(0, Math.sin(ph));
-        if (ra < 0.01) continue;
-        const rg = ctx.createRadialGradient(cx, cy, rr * 0.5, cx, cy, rr);
-        rg.addColorStop(0,   'rgba(255,100,168,0)');
-        rg.addColorStop(0.7, `rgba(255,100,168,${ra})`);
-        rg.addColorStop(1,   'rgba(255,162,210,0)');
-        ctx.fillStyle = rg;
-        ctx.fillRect(0, 0, W, H);
-      }
-    }
-
-    // Glass specular — top-left warm shine
-    ctx.globalCompositeOperation = 'source-over';
-    const gx = cx - drawR * 0.25, gy = cy - drawR * 0.3;
-    const gl = ctx.createRadialGradient(gx, gy, 0, cx, cy, drawR * 0.88);
-    gl.addColorStop(0,    `rgba(255,238,248,${0.28 + e * 0.05})`);
-    gl.addColorStop(0.28, 'rgba(255,220,240,0.05)');
-    gl.addColorStop(1,    'transparent');
-    ctx.fillStyle = gl;
-    ctx.fillRect(0, 0, W, H);
-
-    ctx.restore();
-  }
-}
-
+/* OrbRenderer replaced by pure-CSS orb (#talk-orb-inner gradient).
+   Stub kept so existing setState/setAudio call-sites don't throw. */
 function orbCanvasInit() {
-  const canvas = document.getElementById('talk-orb-canvas');
-  if (!canvas) return;
-
-  // Always hide CSS fallback layers — canvas paints over them
-  document.querySelectorAll('#talk-orb .ol').forEach(el => el.style.display = 'none');
-  // Belt-and-suspenders: also hide via CSS class
-  document.getElementById('talk-orb')?.classList.add('canvas-active');
-
-  const resize = () => {
-    const orb = document.getElementById('talk-orb');
-    if (!orb) return;
-    const r   = orb.getBoundingClientRect();
-    if (r.width === 0) { requestAnimationFrame(resize); return; } // wait for layout
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width  = r.width  * dpr;
-    canvas.height = r.height * dpr;
-    canvas.style.width  = r.width  + 'px';
-    canvas.style.height = r.height + 'px';
-    const ctx = canvas.getContext('2d');
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  };
-  requestAnimationFrame(resize);
-  window._orbResizeObs = new ResizeObserver(resize);
-  window._orbResizeObs.observe(document.getElementById('talk-orb'));
-
-  if (window._orbRenderer) window._orbRenderer.stop();
-  window._orbRenderer = new OrbRenderer(canvas);
-  window._orbRenderer.start();
-
-  // Audio reactivity loop
-  function orbAudioLoop() {
-    if (!window._orbRenderer) return;
-    if (talkAnalyser) {
-      const data = new Uint8Array(talkAnalyser.frequencyBinCount);
-      talkAnalyser.getByteFrequencyData(data);
-      let sum = 0;
-      const half = Math.floor(data.length * 0.3);
-      for (let i = 0; i < half; i++) sum += data[i] * data[i];
-      window._orbRenderer.setAudio(Math.sqrt(sum / half));
-    }
-    window._orbAudioRaf = requestAnimationFrame(orbAudioLoop);
-  }
-  if (window._orbAudioRaf) cancelAnimationFrame(window._orbAudioRaf);
-  window._orbAudioRaf = requestAnimationFrame(orbAudioLoop);
+  window._orbRenderer = { setState:()=>{}, setAudio:()=>{}, start:()=>{}, stop:()=>{} };
 }
+// ══════════════════════════════════════════════════════════════
+// LIVE TALK
+// ══════════════════════════════════════════════════════════════
 
 // ══════════════════════════════════════════════════════════════
 // LIVE TALK
@@ -2523,6 +2295,19 @@ function talkSaveChatLog() {
       log: window._talkDisplayLog || []
     }));
   } catch(e) {}
+  // Async Supabase save — doesn't block UI
+  if (_sbTalk && window._talkDisplayLog?.length) {
+    const newest = window._talkDisplayLog[window._talkDisplayLog.length - 1];
+    if (newest) {
+      _sbTalk.from('talk_history').insert({
+        role: newest.role,
+        text: newest.text || null,
+        media_url: newest.mediaUrl || null,
+        media_type: newest.mediaType || null,
+        ts: newest.ts
+      }).then(({ error }) => { if (error) console.warn('[sb] save:', error.message); });
+    }
+  }
 }
 
 function talkLoadChatLog() {
@@ -2532,9 +2317,10 @@ function talkLoadChatLog() {
     const data = JSON.parse(raw);
     if (Array.isArray(data.history)) talkHistory = data.history;
     if (Array.isArray(data.log) && data.log.length) {
-      // MUST assign the full array FIRST — talkAppendMsg calls talkSaveChatLog
-      // which reads _talkDisplayLog. If it's still [] when the first message is
-      // appended, it overwrites the saved log with an empty array immediately.
+      // CRITICAL: assign the full log BEFORE calling talkAppendMsg.
+      // talkAppendMsg → talkSaveChatLog → reads window._talkDisplayLog.
+      // If _talkDisplayLog is still [] when the first append runs, it overwrites
+      // the saved data with an empty array and the chat disappears on reload.
       window._talkDisplayLog = [...data.log];
 
       const log = document.getElementById('talk-chat-log');
@@ -2550,13 +2336,51 @@ function talkLoadChatLog() {
           div.textContent = day === new Date().toDateString() ? 'Today' : day;
           log.appendChild(div);
         }
-        // Render-only: does NOT push to _talkDisplayLog or re-save
+        // Use _renderMsg (no save) so we don't re-trigger saves during load
         _talkRenderBubble(log, m.role, m.text, m.mediaUrl, m.mediaType, m.ts);
       });
       log.scrollTop = log.scrollHeight;
       document.getElementById('talk-chat-header')?.classList.add('show');
     }
-  } catch(e) { console.warn('[chat load]', e); }
+  } catch(e) { console.warn('[chat] load failed:', e); }
+
+  // Background load from Supabase — updates display if server has more
+  if (_sbTalk) {
+    _sbTalk.from('talk_history').select('*').order('ts', { ascending: true }).limit(300)
+      .then(({ data, error }) => {
+        if (error || !data?.length) return;
+        const sbLog = data.map(r => ({
+          role: r.role, text: r.text || '', mediaUrl: r.media_url || null,
+          mediaType: r.media_type || null, ts: r.ts
+        }));
+        if (sbLog.length <= (window._talkDisplayLog?.length || 0)) return;
+        // Supabase has more — re-render from it
+        talkHistory = [];
+        window._talkDisplayLog = sbLog;
+        sbLog.forEach(m => {
+          talkHistory.push({ role: m.role === 'ariana' ? 'assistant' : 'user', content: m.text || '' });
+        });
+        // Cache locally
+        try { localStorage.setItem(TALK_STORAGE_KEY, JSON.stringify({ history: talkHistory, log: sbLog })); } catch(e) {}
+        const log = document.getElementById('talk-chat-log');
+        if (!log) return;
+        log.innerHTML = '';
+        let lastDay = '';
+        sbLog.forEach(m => {
+          const day = new Date(m.ts || Date.now()).toDateString();
+          if (day !== lastDay) {
+            lastDay = day;
+            const div = document.createElement('div');
+            div.className = 'talk-date-div';
+            div.textContent = day === new Date().toDateString() ? 'Today' : day;
+            log.appendChild(div);
+          }
+          _talkRenderBubble(log, m.role, m.text, m.mediaUrl, m.mediaType, m.ts);
+        });
+        log.scrollTop = log.scrollHeight;
+        if (sbLog.length) document.getElementById('talk-chat-header')?.classList.add('show');
+      }).catch(() => {});
+  }
 }
 
 function talkClearChat() {
@@ -2564,6 +2388,11 @@ function talkClearChat() {
   talkHistory = [];
   window._talkDisplayLog = [];
   try { localStorage.removeItem(TALK_STORAGE_KEY); } catch(e) {}
+  // Also wipe Supabase rows
+  if (_sbTalk) {
+    _sbTalk.from('talk_history').delete().gt('ts', 0)
+      .then(({ error }) => { if (error) console.warn('[sb] clear:', error.message); });
+  }
   const log = document.getElementById('talk-chat-log');
   if (log) log.innerHTML = '';
   document.getElementById('talk-chat-header')?.classList.remove('show');
@@ -2683,7 +2512,6 @@ function talkShowState(st) {
     case 'idle':
       wf.classList.remove('show');
       talkStopWave();
-      { const uOrb = document.getElementById('talk-user-orb-btn'); if (uOrb) uOrb.classList.remove('speaking'); }
       if (talkOrbMode) {
         idle.classList.add('hidden');
         scene.classList.add('show');
@@ -2707,8 +2535,6 @@ function talkShowState(st) {
         statusTxt.textContent = 'Listening';
         if (orbOrb) orbOrb.classList.add('listening');
         if (window._orbRenderer) window._orbRenderer.setState('listening');
-        const uOrb = document.getElementById('talk-user-orb-btn');
-        if (uOrb) uOrb.classList.add('speaking');
       } else {
         // Mic bar mode: inline waveform only, NO orb, NO fullscreen
         talkStartInlineWave();
@@ -2719,7 +2545,6 @@ function talkShowState(st) {
       idle.classList.add('hidden');
       wf.classList.remove('show');
       talkStopWave();
-      { const uOrb = document.getElementById('talk-user-orb-btn'); if (uOrb) uOrb.classList.remove('speaking'); }
       if (talkOrbMode) {
         // ORB MODE ONLY: materialize the fullscreen orb
         scene.classList.add('show','thinking');
@@ -2738,7 +2563,6 @@ function talkShowState(st) {
       idle.classList.add('hidden');
       wf.classList.remove('show');
       talkStopWave();
-      { const uOrb = document.getElementById('talk-user-orb-btn'); if (uOrb) uOrb.classList.remove('speaking'); }
       if (talkOrbMode) {
         // ORB MODE ONLY: orb animates as Ariana speaks
         scene.classList.add('show','speaking');
@@ -2919,6 +2743,9 @@ function talkPlayAudio(b64, transcript) {
       const blob = new Blob([arr], { type: 'audio/mpeg' });
       const url  = URL.createObjectURL(blob);
       talkAudio  = new Audio(url);
+      talkAudio.volume = 1.0;
+      talkAudio.setAttribute('playsinline', '');
+      talkAudio.setAttribute('webkit-playsinline', '');
       talkAudio.play().catch(e => console.warn('[talk] play blocked:', e));
       talkAudio.onended = () => {
         URL.revokeObjectURL(url);
@@ -2938,7 +2765,8 @@ async function talkElevenLabsDirect(text) {
   const ELEVEN_KEY      = "sk_ce3baf0035e207baf49c35219a9dcd6ab681e9160e0184c0";
   const ELEVEN_VOICE_ID = "Uuc6s41mqYjIaMyXWGxL";
 
-  // Disconnect mic analyser during playback to prevent AGC ducking
+  // Disconnect mic source from analyser during playback — prevents browser echo
+  // cancellation / AGC from ducking Ariana's voice output
   if (window._talkMicSrc) {
     try { window._talkMicSrc.disconnect(); } catch(e) {}
   }
@@ -2961,6 +2789,7 @@ async function talkElevenLabsDirect(text) {
     if (!res.ok) {
       const err = await res.text();
       console.warn('[ElevenDirect] HTTP', res.status, err.slice(0,200));
+      // Reconnect mic before fallback
       if (window._talkMicSrc && window._talkMicAnalyser) {
         try { window._talkMicSrc.connect(window._talkMicAnalyser); } catch(e) {}
       }
@@ -2969,30 +2798,18 @@ async function talkElevenLabsDirect(text) {
     }
 
     const arrayBuffer = await res.arrayBuffer();
-
-    // ── iOS audio fix: reuse the pre-unlocked context created during user gesture ──
-    // A fresh AudioContext starts suspended on iOS and audio never plays.
-    // We pre-create _talkPlayCtx in talkEnterOrbMode / talkExpandVoice (user gestures)
-    // so it is already resumed by the time we get here.
-    let audioCtx = window._talkPlayCtx;
-    if (!audioCtx || audioCtx.state === 'closed') {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      window._talkPlayCtx = audioCtx;
-    }
-    // Always resume — safe to call on already-running context
-    if (audioCtx.state !== 'running') {
-      try { await audioCtx.resume(); } catch(e) {}
-    }
-
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    await audioCtx.resume();  // iOS requires explicit resume even for new contexts
     const decoded  = await audioCtx.decodeAudioData(arrayBuffer);
-    const gainNode = audioCtx.createGain();
-    gainNode.gain.value = 2.0;
+    const gainNode  = audioCtx.createGain();
+    gainNode.gain.value = 2.0;  // Full speaker volume (iOS may still apply system limit)
     const source   = audioCtx.createBufferSource();
     source.buffer  = decoded;
     source.connect(gainNode);
     gainNode.connect(audioCtx.destination);
 
     source.onended = () => {
+      // Reconnect mic analyser for next listen cycle
       if (window._talkMicSrc && window._talkMicAnalyser) {
         try { window._talkMicSrc.connect(window._talkMicAnalyser); } catch(e) {}
       }
@@ -3009,10 +2826,11 @@ async function talkElevenLabsDirect(text) {
     };
 
     source.start(0);
-    talkWatchdogClear();
+    talkWatchdogClear(); // clear 35s watchdog once audio starts
 
   } catch(e) {
     console.warn('[ElevenDirect] error:', e.message);
+    // Reconnect mic before fallback
     if (window._talkMicSrc && window._talkMicAnalyser) {
       try { window._talkMicSrc.connect(window._talkMicAnalyser); } catch(e2) {}
     }
@@ -3078,6 +2896,20 @@ function talkSpeakWebSpeech(text) {
 
   // iOS Safari needs a small delay after cancel()
   setTimeout(() => window.speechSynthesis.speak(utter), 80);
+}
+
+/* ── speaker toggle ── */
+let _speakerOn = true;
+function talkToggleSpeaker() {
+  _speakerOn = !_speakerOn;
+  const btn = document.getElementById('talk-speaker-btn');
+  if (btn) btn.classList.toggle('muted', !_speakerOn);
+  // On iOS, programmatic audio routing is not available via JS.
+  // setSinkId works on desktop Chrome/Edge.
+  if (talkAudio && talkAudio.setSinkId) {
+    talkAudio.setSinkId(_speakerOn ? '' : 'default').catch(() => {});
+  }
+  showToast(_speakerOn ? 'Speaker on' : 'Speaker off');
 }
 
 /* ── mic analyser ── */
@@ -3180,13 +3012,6 @@ async function talkSendText() {
 /* ── voice bar expand/collapse ── */
 async function talkExpandVoice() {
   talkExpanded = true;
-  // Pre-unlock AudioContext during this user gesture
-  try {
-    if (!window._talkPlayCtx || window._talkPlayCtx.state === 'closed') {
-      window._talkPlayCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    await window._talkPlayCtx.resume();
-  } catch(e) {}
   // Show expanded bar (inline waveform), keep orb hidden
   document.getElementById('talk-bar-std').style.display = 'none';
   document.getElementById('talk-bar-exp').classList.add('show');
@@ -3217,18 +3042,46 @@ function talkCollapseVoice() {
   talkShowState('idle');
 }
 
-/* ── orb mode: orb button → fullscreen glowing orb, auto-listens ── */
+/* ── ring tone via Web Audio API ── */
+let _ringCtx = null, _ringStop = false;
+function talkPlayRingTone() {
+  _ringStop = false;
+  try {
+    _ringCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const schedule = (startAt) => {
+      if (_ringStop || !_ringCtx) return;
+      // Two short pulses — classic phone ring
+      [0, 0.38].forEach(offset => {
+        const osc  = _ringCtx.createOscillator();
+        const gain = _ringCtx.createGain();
+        osc.connect(gain);
+        gain.connect(_ringCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = 480;
+        const t0 = startAt + offset;
+        gain.gain.setValueAtTime(0, t0);
+        gain.gain.linearRampToValueAtTime(0.28, t0 + 0.04);
+        gain.gain.setValueAtTime(0.28, t0 + 0.32);
+        gain.gain.linearRampToValueAtTime(0, t0 + 0.36);
+        osc.start(t0);
+        osc.stop(t0 + 0.38);
+      });
+    };
+    const now = _ringCtx.currentTime;
+    schedule(now + 0.1);
+    schedule(now + 1.2);
+    schedule(now + 2.3);
+  } catch(e) {}
+}
+function talkStopRingTone() {
+  _ringStop = true;
+  if (_ringCtx) { try { _ringCtx.close(); } catch(e) {} _ringCtx = null; }
+}
+
+/* ── orb mode: phone icon → ringing → Ariana answers → fullscreen orb ── */
 async function talkEnterOrbMode() {
   talkOrbMode  = true;
   talkExpanded = false;
-
-  // ── Pre-unlock AudioContext during user gesture so iOS plays at speaker volume ──
-  try {
-    if (!window._talkPlayCtx || window._talkPlayCtx.state === 'closed') {
-      window._talkPlayCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    await window._talkPlayCtx.resume();
-  } catch(e) { console.warn('[audio] pre-unlock:', e.message); }
 
   // Hide idle and std bar
   document.getElementById('talk-idle').classList.add('hidden');
@@ -3236,19 +3089,48 @@ async function talkEnterOrbMode() {
   document.getElementById('talk-bar-exp').classList.remove('show');
   document.getElementById('talk-bottom').style.display = 'none';
 
-  // Show fullscreen orb
+  // Show fullscreen orb immediately
   const scene = document.getElementById('talk-orb-scene');
   scene.classList.add('show', 'orb-full');
   scene.classList.remove('speaking','thinking','listening');
-  document.getElementById('talk-status-txt').textContent = 'Ready';
 
-  // Show orb bottom controls
+  // Show orb bottom row
   document.getElementById('talk-orb-btm').classList.add('show');
 
-  // Show camera button (only in orb/live mode)
+  // ── Pre-unlock AudioContext while still inside user-gesture handler ──
+  // iOS requires AudioContext.resume() to happen synchronously in the gesture.
+  if (!talkAudioCtx) talkAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (talkAudioCtx.state === 'suspended') { try { await talkAudioCtx.resume(); } catch(e) {} }
+
+  // ── Unlock Web Speech synthesis (iOS blocks it unless called in a gesture) ──
+  if (window.speechSynthesis) {
+    try {
+      const unlock = new SpeechSynthesisUtterance('');
+      unlock.volume = 0;
+      window.speechSynthesis.speak(unlock);
+    } catch(e) {}
+  }
+
+  // ── RINGING phase ──
+  const subEl  = document.getElementById('talk-call-sub');
+  const statEl = document.getElementById('talk-status-txt');
+  if (subEl)  subEl.textContent  = 'ringing...';
+  if (statEl) statEl.textContent = 'Calling';
+
+  talkPlayRingTone();
+  await new Promise(r => setTimeout(r, 2800));
+  talkStopRingTone();
+
+  if (!talkOrbMode) return; // user hung up during ring
+
+  // ── Ariana picks up ──
+  if (subEl)  subEl.textContent  = 'connected';
+  if (statEl) statEl.textContent = 'Ready';
+
+  // Show camera controls (only in orb/live mode)
   document.getElementById('talk-cam-controls').style.display = 'flex';
 
-  // Init canvas orb
+  // Init orb canvas
   orbCanvasInit();
   if (window._orbRenderer) window._orbRenderer.setState('idle');
 
@@ -3281,8 +3163,6 @@ function talkLeaveOrbMode() {
   if (trEl) trEl.textContent = '';
   const trEl2 = document.getElementById('talk-transcript');
   if (trEl2) trEl2.textContent = '';
-  const uOrb = document.getElementById('talk-user-orb-btn');
-  if (uOrb) uOrb.classList.remove('speaking');
 }
 
 function talkOrbMicToggle() {
@@ -3322,6 +3202,42 @@ async function talkStartListening() {
       });
       window._talkMicStream = stream;
       window._talkMicGranted = true;
+
+      // ── iOS audio session fix ──────────────────────────────────────────
+      // When getUserMedia is active, iOS switches to "VoiceChat" audio session
+      // which routes audio to the earpiece and reduces volume. Fix: create an
+      // AudioContext with a MediaStreamSource NOT connected to destination —
+      // this keeps the audio session in "media playback" mode (speaker, full vol).
+      if (!window._iosAudioSessionFixed) {
+        try {
+          // 1. Silent buffer played once in a user-gesture context to unlock AudioContext
+          const unlockCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const silentBuf = unlockCtx.createBuffer(1, 1, 22050);
+          const silentSrc = unlockCtx.createBufferSource();
+          silentSrc.buffer = silentBuf;
+          // Do NOT connect to destination — just start and let it complete
+          silentSrc.start(0);
+
+          // 2. Keep a looping near-silent <audio> element alive.
+          // This anchors the audio session in "media" mode on iOS Safari.
+          if (!window._iosKeepAliveAudio) {
+            const a = document.createElement('audio');
+            a.volume = 0.001;
+            a.loop   = true;
+            a.setAttribute('playsinline', '');
+            a.setAttribute('webkit-playsinline', '');
+            // Minimal silent WAV (44 bytes)
+            a.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+            document.body.appendChild(a);
+            a.play().catch(() => {});
+            window._iosKeepAliveAudio = a;
+          }
+          window._iosAudioSessionFixed = true;
+        } catch(iosErr) {
+          console.warn('[ios-audio] session fix failed:', iosErr.message);
+        }
+      }
+      // ─────────────────────────────────────────────────────────────────
       // Build analyser once from the persistent stream
       if (!talkAudioCtx) talkAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (talkAudioCtx.state === 'suspended') await talkAudioCtx.resume();
@@ -3418,12 +3334,12 @@ function talkStopListening(keep) {
   if (!keep) talkShowState('idle');
 }
 
-/* ── append a bubble to the chat log ── */
-/* ── render a bubble DOM-only, no side-effects (used during chat load) ── */
+/* ── render a bubble into a log element (no side-effects, used by load) ── */
 function _talkRenderBubble(log, role, text, mediaUrl, mediaType, ts) {
   const timeStr = new Date(ts || Date.now()).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
   const row = document.createElement('div');
   row.className = 'talk-msg-row ' + (role === 'user' ? 'user' : 'ariana');
+
   if (mediaUrl) {
     const mb = document.createElement('div');
     mb.className = 'talk-msg-media ' + (role === 'user' ? 'user' : 'ariana');
@@ -3432,27 +3348,38 @@ function _talkRenderBubble(log, role, text, mediaUrl, mediaType, ts) {
       : `<img src="${mediaUrl}" alt="media" loading="lazy">`;
     row.appendChild(mb);
   }
+
   if (text) {
     const bub = document.createElement('div');
     bub.className = 'talk-msg ' + (role === 'user' ? 'user' : 'ariana');
     bub.textContent = text;
     row.appendChild(bub);
   }
+
   const tEl = document.createElement('div');
   tEl.className = 'talk-msg-time';
   tEl.textContent = timeStr;
   row.appendChild(tEl);
+
   log.appendChild(row);
 }
 
+/* ── append a bubble to the chat log (adds to log and saves) ── */
 function talkAppendMsg(role, text, mediaUrl, mediaType, ts) {
   const log = document.getElementById('talk-chat-log');
   if (!log) return;
-  const typing = log.querySelector('.typing-indicator')?.closest('.talk-msg-row') || log.querySelector('.typing-indicator');
+  // remove typing indicator
+  const typing = log.querySelector('.typing-indicator')?.closest('.talk-msg-row')
+               || log.querySelector('.typing-indicator');
   if (typing) typing.remove();
+
   _talkRenderBubble(log, role, text, mediaUrl, mediaType, ts);
   log.scrollTop = log.scrollHeight;
+
+  // show clear button
   document.getElementById('talk-chat-header')?.classList.add('show');
+
+  // persist
   talkSaveChatLog();
 }
 
@@ -3508,23 +3435,21 @@ async function talkProcess(text) {
   talkShowState('thinking');
   const now = Date.now();
 
-  // Build a natural user message for the AI
-  // When media is attached: tell Ariana explicitly to look at it
-  const displayText = text === '[image]' ? '' : text;
-  const aiText = imageBase64
-    ? (text === '[image]' || !text
-        ? 'I just sent you an image. Look at it and tell me what you see.'
-        : text)
-    : text;
-
   // Record in display log
   if (!window._talkDisplayLog) window._talkDisplayLog = [];
-  window._talkDisplayLog.push({ role:'user', text: displayText, mediaUrl: pendingMediaUrl, mediaType: pendingMediaType, ts: now });
-  // History for AI: clean natural text, no [image attached] noise that confuses Groq fallback
-  talkHistory.push({ role: 'user', content: aiText });
+  const alreadyShown = window._talkMediaAlreadyShown;
+  window._talkMediaAlreadyShown = false; // reset flag
 
-  // Show user message bubble in chat log
-  talkAppendMsg('user', text === '[image]' ? '' : text, pendingMediaUrl, pendingMediaType, now);
+  if (!alreadyShown) {
+    window._talkDisplayLog.push({ role:'user', text: text === '[image]' ? '' : text, mediaUrl: pendingMediaUrl, mediaType: pendingMediaType, ts: now });
+    // Show user message bubble in chat log
+    talkAppendMsg('user', text === '[image]' ? '' : text, pendingMediaUrl, pendingMediaType, now);
+  } else if (text && text !== '[image]') {
+    // Media already shown, but if there is accompanying text, push + show just the text
+    window._talkDisplayLog.push({ role:'user', text, ts: now });
+    talkAppendMsg('user', text, null, null, now);
+  }
+  talkHistory.push({ role: 'user', content: text + (imageBase64 ? ' [image attached]' : '') });
   // Show typing indicator
   talkShowTyping();
 
@@ -3546,27 +3471,22 @@ async function talkProcess(text) {
     if (!data.reply) throw new Error('Empty reply');
     const replyTs = Date.now();
     talkHistory.push({ role: 'assistant', content: data.reply });
-
-    // If an image was sent, add a visual memory note so Ariana remembers what she saw
-    // in subsequent messages (prevents her from later saying "I can't see images")
-    if (imageBase64) {
-      talkHistory.push({
-        role: 'user',
-        content: `[Note for context: you just saw and described my image. Your response was: "${data.reply.slice(0, 120)}". Please remember this for the rest of our conversation.]`
-      });
-      talkHistory.push({ role: 'assistant', content: "I remember — I can see the image you shared." });
-    }
-
     window._talkDisplayLog.push({ role:'ariana', text: data.reply, ts: replyTs });
 
     // Append Ariana reply to chat log
     talkAppendMsg('ariana', data.reply, null, null, replyTs);
     talkSaveChatLog();
 
-    // Speak
-    talkShowState('speaking');
-    talkTypeText(data.reply);
-    await talkElevenLabsDirect(data.reply);
+    // Speak only in call/orb mode — text chat stays silent
+    if (talkOrbMode) {
+      talkShowState('speaking');
+      talkTypeText(data.reply);
+      await talkElevenLabsDirect(data.reply);
+    } else {
+      talkWatchdogClear();
+      talkProcessing = false;
+      talkShowState('idle');
+    }
   } catch(e) {
     console.error('[talk] process error:', e);
     talkWatchdogClear();
@@ -3611,6 +3531,9 @@ async function talkHandleMediaUpload(e) {
         window._talkDisplayLog.push({ role:'user', text:'', mediaUrl: dataUrl, mediaType: mtype, ts: now });
         talkAppendMsg('user', '', dataUrl, mtype, now);
 
+        // Mark as already shown so talkProcess won't add a second bubble
+        window._talkMediaAlreadyShown = true;
+
         // 2. Queue for Ariana to see on next talkProcess
         //    Only images are passed as imageBase64 (Gemini supports images, not video)
         if (mtype === 'image') {
@@ -3620,18 +3543,11 @@ async function talkHandleMediaUpload(e) {
         window._talkPendingMediaUrl  = dataUrl;
         window._talkPendingMediaType = mtype;
 
-        // 3. Also save to media library in background
-        try {
-          await fetch('/api/media/upload', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filename: f.name, mediaType: mtype, data: dataUrl, tags: mtype === 'video' ? ['video'] : [] })
-          });
-        } catch(err) {}
+        // NOTE: media is NOT saved to the library here — use Media Library tab manually if needed.
 
         // 4. Auto-trigger Ariana response to the media
         if (!talkProcessing) {
-          const prompt = mtype === 'video' ? 'I sent you a video' : '';
+          const prompt = mtype === 'video' ? 'I sent you a video' : 'I just shared a photo with you';
           setTimeout(() => talkProcess(prompt), 300);
         }
 
