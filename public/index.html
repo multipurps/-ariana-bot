@@ -570,7 +570,27 @@ input,textarea{font-family:inherit;color:inherit}
   width:260px;height:260px;border-radius:50%;
   position:relative;flex-shrink:0;
   overflow:hidden;
-  transition:box-shadow .5s;
+  /* CSS breathing — 4s gentle scale, exactly as requested */
+  animation: arianaOrbBreathe 4s ease-in-out infinite;
+  /* warm nebula ambient behind the orb */
+  filter: drop-shadow(0 0 60px rgba(140,70,255,0.35)) drop-shadow(0 0 120px rgba(200,100,50,0.18));
+}
+@keyframes arianaOrbBreathe {
+  0%,100% { transform: scale(1.0); }
+  50%      { transform: scale(1.08); }
+}
+/* state glow overrides */
+#talk-orb.speaking {
+  filter: drop-shadow(0 0 80px rgba(160,90,255,0.60)) drop-shadow(0 0 140px rgba(220,120,60,0.28));
+  animation-duration: 1.6s;
+}
+#talk-orb.thinking {
+  filter: drop-shadow(0 0 50px rgba(150,80,255,0.40)) drop-shadow(0 0 90px rgba(200,110,50,0.18));
+  animation-duration: 2.8s;
+}
+#talk-orb.listening {
+  filter: drop-shadow(0 0 70px rgba(155,85,255,0.50)) drop-shadow(0 0 120px rgba(210,115,55,0.22));
+  animation-duration: 2.2s;
 }
 #talk-orb-canvas{
   position:absolute;inset:0;
@@ -580,26 +600,21 @@ input,textarea{font-family:inherit;color:inherit}
 .ol{position:absolute;inset:0;border-radius:50%}
 #ol-base{
   background:radial-gradient(circle at 42% 38%,
-    rgba(245,80,150,.95) 0%,
-    rgba(210,45,115,.90) 38%,
-    rgba(150,12,72,.85)  70%,
-    rgba(38,2,18,.95)   100%
+    rgba(167,100,255,.95) 0%,
+    rgba(120,55,240,.90)  30%,
+    rgba(200,90,40,.80)   55%,
+    rgba(30,10,60,.95)    100%
   );
 }
-#ol-warm{background:radial-gradient(circle at 28% 22%,rgba(255,200,228,.82) 0%,transparent 50%);animation:bw 4s ease-in-out infinite}
-#ol-cool{background:radial-gradient(circle at 68% 72%,rgba(195,28,100,.68) 0%,transparent 52%);animation:bc 3.5s ease-in-out infinite .6s}
-#ol-red{background:radial-gradient(circle at 65% 28%,rgba(255,105,170,.58) 0%,transparent 44%);animation:br 5.2s ease-in-out infinite 1.2s}
-#ol-glass{background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.28) 0%,rgba(255,255,255,.05) 44%,transparent 62%)}
+#ol-warm{background:radial-gradient(circle at 60% 35%,rgba(255,180,80,.75) 0%,transparent 50%);animation:bw 4s ease-in-out infinite}
+#ol-cool{background:radial-gradient(circle at 30% 65%,rgba(220,60,60,.65) 0%,transparent 52%);animation:bc 3.5s ease-in-out infinite .6s}
+#ol-red{background:radial-gradient(circle at 65% 28%,rgba(200,140,255,.55) 0%,transparent 44%);animation:br 5.2s ease-in-out infinite 1.2s}
+#ol-glass{background:radial-gradient(circle at 30% 22%,rgba(255,255,255,.22) 0%,rgba(255,255,255,.04) 40%,transparent 60%)}
 #ol-logo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2}
 #ol-logo img{width:50px;height:50px;border-radius:12px;object-fit:cover;filter:drop-shadow(0 2px 14px rgba(0,0,0,.5))}
-@keyframes bw{0%,100%{transform:translate(0,0) scale(1);opacity:.72}50%{transform:translate(18px,-13px) scale(1.14);opacity:.92}}
-@keyframes bc{0%,100%{transform:translate(0,0) scale(1);opacity:.65}50%{transform:translate(-13px,10px) scale(1.11);opacity:.82}}
-@keyframes br{0%,100%{transform:translate(0,0) scale(1);opacity:.52}50%{transform:translate(8px,15px) scale(1.09);opacity:.72}}
-
-/* orb outer glow — Ariana rose/pink palette */
-#talk-orb.speaking{box-shadow:0 0 0 1px rgba(255,90,155,.35),0 0 80px rgba(230,55,120,.60),0 0 160px rgba(190,20,90,.25)}
-#talk-orb.thinking{box-shadow:0 0 0 1px rgba(255,110,165,.22),0 0 55px rgba(225,70,135,.35)}
-#talk-orb.listening{box-shadow:0 0 0 1px rgba(255,130,185,.28),0 0 60px rgba(230,85,145,.42),0 0 110px rgba(210,45,115,.16)}
+@keyframes bw{0%,100%{transform:translate(0,0) scale(1);opacity:.70}50%{transform:translate(16px,-12px) scale(1.12);opacity:.90}}
+@keyframes bc{0%,100%{transform:translate(0,0) scale(1);opacity:.60}50%{transform:translate(-12px,10px) scale(1.10);opacity:.80}}
+@keyframes br{0%,100%{transform:translate(0,0) scale(1);opacity:.50}50%{transform:translate(8px,14px) scale(1.08);opacity:.70}}
 
 /* orb size in fullscreen mode */
 #talk-orb-scene.orb-full #talk-orb{
@@ -656,84 +671,47 @@ input,textarea{font-family:inherit;color:inherit}
 .orb-ctrl-btn:active{transform:scale(0.9);background:rgba(255,255,255,.18)}
 .orb-ctrl-btn svg{width:22px;height:22px}
 
-/* user orb — wide flat dark liquid lens/blob, breathing */
+/* ── user orb — dark navy/indigo glowing sphere, amplitude-reactive ── */
 #talk-user-orb-btn{
-  width:96px;height:58px;
-  border-radius:50% 50% 50% 50% / 55% 55% 45% 45%;
+  width:80px;height:80px;
+  border-radius:50%;
   position:relative;overflow:hidden;
   background:
-    radial-gradient(ellipse 80% 55% at 48% 30%,
-      rgba(90,105,175,.70) 0%,
-      rgba(28,34,80,.92)   45%,
-      rgba(4,5,18,1)       100%);
+    radial-gradient(circle at 36% 32%,
+      rgba(130,150,255,0.85) 0%,
+      rgba(60,70,220,0.90)   28%,
+      rgba(25,30,110,0.95)   55%,
+      rgba(8,10,40,1)        100%);
   box-shadow:
-    0 2px 18px rgba(0,0,0,.75),
-    0 0 0 1px rgba(120,130,210,.18),
-    inset 0 1px 0 rgba(255,255,255,.10);
+    0 0 0 1px rgba(100,120,255,0.22),
+    0 0 24px rgba(80,100,240,0.28),
+    0 0 48px rgba(60,80,220,0.14),
+    inset 0 1px 0 rgba(200,210,255,0.18);
   border:none;cursor:pointer;
   -webkit-tap-highlight-color:transparent;
-  animation: userOrbBreathe 3.4s ease-in-out infinite;
+  /* JS RAF drives scale/brightness — no CSS animation here */
+  will-change:transform,filter;
   flex-shrink:0;
 }
-@keyframes userOrbBreathe{
-  0%,100%{
-    transform:scaleX(1) scaleY(1);
-    box-shadow:
-      0 2px 18px rgba(0,0,0,.75),
-      0 0 0 1px rgba(120,130,210,.18),
-      0 0 14px rgba(80,100,200,.14),
-      inset 0 1px 0 rgba(255,255,255,.10);
-  }
-  40%{
-    transform:scaleX(1.08) scaleY(1.06);
-    box-shadow:
-      0 4px 30px rgba(0,0,0,.65),
-      0 0 0 1.5px rgba(120,150,255,.32),
-      0 0 36px rgba(70,105,240,.26),
-      inset 0 1px 0 rgba(255,255,255,.16);
-  }
-  70%{
-    transform:scaleX(1.04) scaleY(1.03);
-    box-shadow:
-      0 3px 22px rgba(0,0,0,.7),
-      0 0 0 1px rgba(120,140,220,.22),
-      0 0 20px rgba(75,102,220,.18),
-      inset 0 1px 0 rgba(255,255,255,.12);
-  }
-}
-#talk-user-orb-btn:active{transform:scale(.92)!important;animation:none}
-#talk-user-orb-btn.speaking{
-  animation:userOrbSpeak 0.9s ease-in-out infinite;
-}
-@keyframes userOrbSpeak{
-  0%,100%{
-    transform:scaleX(1) scaleY(1);
-    box-shadow:0 2px 24px rgba(0,0,0,.7),0 0 0 1px rgba(100,140,255,.30),0 0 28px rgba(80,120,255,.28),inset 0 1px 0 rgba(255,255,255,.12);
-  }
-  50%{
-    transform:scaleX(1.13) scaleY(1.09);
-    box-shadow:0 4px 36px rgba(0,0,0,.6),0 0 0 2px rgba(100,150,255,.50),0 0 52px rgba(70,120,255,.42),inset 0 1px 0 rgba(255,255,255,.18);
-  }
-}
-/* top highlight — thin bright crescent like the screenshot */
-#talk-user-orb-btn-shine{
-  position:absolute;
-  top:0;left:10%;width:80%;height:45%;
+/* top specular shine */
+#talk-user-orb-btn::before{
+  content:'';position:absolute;
+  top:8%;left:15%;width:65%;height:45%;
   border-radius:50%;
-  background:radial-gradient(ellipse 70% 60% at 50% 10%,
-    rgba(255,255,255,.18) 0%,
-    rgba(160,180,255,.08) 50%,
+  background:radial-gradient(ellipse 65% 55% at 50% 15%,
+    rgba(220,225,255,0.22) 0%,
+    rgba(160,175,255,0.08) 50%,
     transparent 100%);
-  animation:uorbShine 4s ease-in-out infinite;
+  pointer-events:none;
 }
-#talk-user-orb-btn-glow{
-  position:absolute;inset:0;
-  background:radial-gradient(ellipse 55% 40% at 55% 75%,
-    rgba(80,110,220,.18) 0%, transparent 70%);
-  animation:uorbGlow 5s ease-in-out infinite 1.5s;
+/* inner indigo depth glow */
+#talk-user-orb-btn::after{
+  content:'';position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 60% 70%,
+    rgba(50,60,200,0.20) 0%, transparent 65%);
+  pointer-events:none;
 }
-@keyframes uorbShine{0%,100%{opacity:.85}50%{opacity:1}}
-@keyframes uorbGlow{0%,100%{opacity:.4}50%{opacity:.7}}
+#talk-user-orb-btn:active{transform:scale(0.90)!important;}
 
 /* transcript shown above controls in orb mode */
 #talk-orb-transcript{
@@ -1468,10 +1446,7 @@ input,textarea{font-family:inherit;color:inherit}
             </svg>
           </button>
           <!-- User mini-orb (center, SS2 circled button) -->
-          <button id="talk-user-orb-btn">
-            <div id="talk-user-orb-btn-shine"></div>
-            <div id="talk-user-orb-btn-glow"></div>
-          </button>
+          <button id="talk-user-orb-btn" onclick="talkOrbMicToggle()" title="Tap to mute"></button>
           <!-- Mic mute toggle -->
           <button class="orb-ctrl-btn" id="talk-orb-mic-btn" onclick="talkOrbMicToggle()" title="Mute">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
@@ -2304,28 +2279,31 @@ class OrbRenderer {
     this.targetEnergy = 0;
     this.startTime = performance.now();
 
-    // Plasma blobs — Ariana rose/pink/magenta palette
+    // Nebula palette: purple/lavender → amber/orange → coral/red
+    // Each layer is a soft radial gradient blob — "painted with light"
     this.layers = [
-      // base: deep rose/crimson anchor
-      { cx:0.50, cy:0.55, r:0.72, color:'215,48,120',   driftSpd:0.55, phaseX:0.0, phaseY:1.1 },
-      // soft pink highlight top-left
-      { cx:0.28, cy:0.22, r:0.52, color:'255,125,178',  driftSpd:0.80, phaseX:2.2, phaseY:0.5 },
-      // warm blush/petal center
-      { cx:0.50, cy:0.38, r:0.36, color:'255,198,222',  driftSpd:0.65, phaseX:4.1, phaseY:2.9 },
-      // dark wine bottom
-      { cx:0.60, cy:0.72, r:0.48, color:'158,12,72',    driftSpd:0.42, phaseX:1.5, phaseY:3.8 },
-      // magenta accent
-      { cx:0.72, cy:0.30, r:0.30, color:'248,88,162',   driftSpd:1.05, phaseX:3.4, phaseY:1.7 },
+      // deep violet foundation
+      { cx:0.50, cy:0.55, r:0.74, color:'100,40,220',   driftSpd:0.48, phaseX:0.0, phaseY:1.1 },
+      // lavender highlight (top-left)
+      { cx:0.30, cy:0.24, r:0.54, color:'180,140,255',  driftSpd:0.72, phaseX:2.2, phaseY:0.5 },
+      // warm amber/orange center core
+      { cx:0.52, cy:0.42, r:0.38, color:'240,140,40',   driftSpd:0.60, phaseX:4.1, phaseY:2.9 },
+      // deep coral / red-orange (bottom right)
+      { cx:0.65, cy:0.70, r:0.50, color:'210,55,55',    driftSpd:0.38, phaseX:1.5, phaseY:3.8 },
+      // soft gold accent (top right)
+      { cx:0.74, cy:0.28, r:0.32, color:'245,165,30',   driftSpd:0.95, phaseX:3.4, phaseY:1.7 },
+      // indigo deep shadow (bottom left)
+      { cx:0.20, cy:0.70, r:0.38, color:'60,20,160',    driftSpd:0.30, phaseX:5.0, phaseY:2.4 },
     ];
   }
 
   _noise(px, py, t, seed) {
     const s = seed;
     return (
-      Math.sin(px * 3.8 + t * 0.00058 + s)              * 0.28 +
-      Math.sin(py * 2.7 + t * 0.00044 + s * 1.4)        * 0.26 +
-      Math.sin((px+py)*2.3 + t * 0.00087 + s * 2.0)     * 0.24 +
-      Math.sin(Math.sqrt(px*px+py*py)*5.9 + t*0.00105 + s*0.8) * 0.22
+      Math.sin(px * 3.8 + t * 0.00048 + s)              * 0.26 +
+      Math.sin(py * 2.7 + t * 0.00038 + s * 1.4)        * 0.24 +
+      Math.sin((px+py)*2.3 + t * 0.00072 + s * 2.0)     * 0.22 +
+      Math.sin(Math.sqrt(px*px+py*py)*5.2 + t*0.00088 + s*0.8) * 0.18
     );
   }
 
@@ -2366,96 +2344,95 @@ class OrbRenderer {
       e = Math.max(e, 0.28 + 0.18 * Math.abs(Math.sin(t * 0.0022)));
     }
 
-    // Gentle breath — never stops
-    const breath   = 1 + 0.022 * Math.sin(t * 0.00052) + e * 0.04;
-    const drawR    = R * breath;
+    // No scale breathing here — CSS handles that on the container.
+    // Canvas just fills the circle faithfully.
+    const drawR = R;
 
     ctx.clearRect(0, 0, W, H);
 
-    // Outer atmospheric glow (rose halo)
+    // Outer nebula atmospheric halo
     {
-      const gr = ctx.createRadialGradient(cx, cy, drawR * 0.7, cx, cy, drawR * 1.7);
-      gr.addColorStop(0,   `rgba(225,55,125,${0.22 + e * 0.18})`);
-      gr.addColorStop(0.5, `rgba(245,80,148,${0.08 + e * 0.08})`);
+      const gr = ctx.createRadialGradient(cx, cy, drawR * 0.7, cx, cy, drawR * 1.75);
+      gr.addColorStop(0,   `rgba(140,70,255,${0.18 + e * 0.20})`);
+      gr.addColorStop(0.4, `rgba(210,100,50,${0.06 + e * 0.08})`);
       gr.addColorStop(1,   'rgba(0,0,0,0)');
       ctx.fillStyle = gr;
       ctx.fillRect(0, 0, W, H);
     }
 
-    // Clip to circle
+    // Clip to perfect circle
     ctx.save();
     ctx.beginPath();
     ctx.arc(cx, cy, drawR, 0, Math.PI * 2);
     ctx.clip();
 
-    // Dark base (deep wine, so rose layers glow through)
-    const base = ctx.createRadialGradient(cx, cy*0.8, 0, cx, cy, drawR);
-    base.addColorStop(0, 'rgba(48,4,22,1)');
-    base.addColorStop(1, 'rgba(18,1,8,1)');
+    // Dark deep-space base (purple-black so nebula layers glow through)
+    const base = ctx.createRadialGradient(cx, cy * 0.85, 0, cx, cy, drawR);
+    base.addColorStop(0, 'rgba(28,10,55,1)');
+    base.addColorStop(1, 'rgba(8,4,18,1)');
     ctx.fillStyle = base;
     ctx.fillRect(0, 0, W, H);
 
-    // Plasma blob layers — screen blend = additive vivid light
+    // Nebula plasma blobs — screen blend = additive vivid light, no hard edges
     ctx.globalCompositeOperation = 'screen';
 
     for (const lyr of this.layers) {
       const n1  = this._noise(lyr.cx, lyr.cy, t * lyr.driftSpd, lyr.phaseX);
       const n2  = this._noise(lyr.cy, lyr.cx, t * lyr.driftSpd, lyr.phaseY);
-      const amp = 0.24 + e * 0.28;
-      const bx  = cx + (lyr.cx - 0.5) * W * 1.1 + n1 * W * amp;
-      const by  = cy + (lyr.cy - 0.5) * H * 1.1 + n2 * H * amp;
-      const br  = drawR * lyr.r * (1 + Math.abs(n1) * 0.18 + e * 0.12);
-      const alpha = 0.82 + e * 0.16;
+      const amp = 0.22 + e * 0.26;
+      const bx  = cx + (lyr.cx - 0.5) * W * 1.05 + n1 * W * amp;
+      const by  = cy + (lyr.cy - 0.5) * H * 1.05 + n2 * H * amp;
+      const br  = drawR * lyr.r * (1 + Math.abs(n1) * 0.16 + e * 0.10);
+      const alpha = 0.80 + e * 0.18;
 
       const g = ctx.createRadialGradient(bx, by, 0, bx, by, br);
       g.addColorStop(0,    `rgba(${lyr.color},${alpha})`);
-      g.addColorStop(0.45, `rgba(${lyr.color},${alpha * 0.48})`);
+      g.addColorStop(0.42, `rgba(${lyr.color},${alpha * 0.44})`);
       g.addColorStop(1,    `rgba(${lyr.color},0)`);
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, W, H);
     }
 
-    // Diagonal light band — the SS3 swept diagonal white/cyan streak
+    // Subtle swept light band (diagonal shimmer)
     {
-      const ang   = -0.55 + Math.sin(t * 0.00028) * 0.08;
-      const sweep = Math.sin(t * 0.00032 + 1.2) * 0.12;
+      const ang   = -0.48 + Math.sin(t * 0.00022) * 0.06;
       ctx.save();
       ctx.translate(cx, cy);
-      ctx.rotate(ang + sweep);
+      ctx.rotate(ang);
       const band = ctx.createLinearGradient(-drawR, 0, drawR, 0);
-      band.addColorStop(0,   'rgba(255,175,210,0)');
-      band.addColorStop(0.35,'rgba(255,155,200,0)');
-      band.addColorStop(0.48,`rgba(255,215,232,${0.45 + e * 0.2})`);
-      band.addColorStop(0.55,`rgba(255,242,250,${0.30 + e * 0.15})`);
-      band.addColorStop(0.65,'rgba(255,140,195,0.08)');
-      band.addColorStop(1,   'rgba(255,175,210,0)');
+      band.addColorStop(0,   'rgba(255,210,140,0)');
+      band.addColorStop(0.40,'rgba(255,210,140,0)');
+      band.addColorStop(0.50,`rgba(255,230,180,${0.35 + e * 0.18})`);
+      band.addColorStop(0.58,`rgba(240,210,255,${0.20 + e * 0.12})`);
+      band.addColorStop(0.68,'rgba(220,180,255,0.05)');
+      band.addColorStop(1,   'rgba(255,210,140,0)');
       ctx.fillStyle = band;
       ctx.fillRect(-drawR * 1.2, -drawR * 1.2, drawR * 2.4, drawR * 2.4);
       ctx.restore();
     }
 
-    // Pressure ripples when active
+    // Pressure ripples during activity
     if (e > 0.06) {
       for (let i = 0; i < 3; i++) {
-        const ph  = t * 0.0016 + i * (Math.PI * 2 / 3);
-        const rr  = drawR * (0.3 + 0.45 * ((Math.sin(ph) + 1) / 2));
-        const ra  = e * 0.14 * Math.max(0, Math.sin(ph));
+        const ph  = t * 0.0015 + i * (Math.PI * 2 / 3);
+        const rr  = drawR * (0.28 + 0.44 * ((Math.sin(ph) + 1) / 2));
+        const ra  = e * 0.13 * Math.max(0, Math.sin(ph));
         if (ra < 0.01) continue;
         const rg = ctx.createRadialGradient(cx, cy, rr * 0.5, cx, cy, rr);
-        rg.addColorStop(0,   'rgba(255,100,168,0)');
-        rg.addColorStop(0.7, `rgba(255,100,168,${ra})`);
-        rg.addColorStop(1,   'rgba(255,162,210,0)');
+        rg.addColorStop(0,   'rgba(200,120,255,0)');
+        rg.addColorStop(0.7, `rgba(200,120,255,${ra})`);
+        rg.addColorStop(1,   'rgba(230,160,80,0)');
         ctx.fillStyle = rg;
         ctx.fillRect(0, 0, W, H);
       }
     }
 
-    // Glass specular — top-left warm shine
+    // Glass specular — top-left cool lavender shine
     ctx.globalCompositeOperation = 'source-over';
-    const gx = cx - drawR * 0.25, gy = cy - drawR * 0.3;
-    const gl = ctx.createRadialGradient(gx, gy, 0, cx, cy, drawR * 0.88);
-    gl.addColorStop(0,    `rgba(255,238,248,${0.28 + e * 0.05})`);
-    gl.addColorStop(0.28, 'rgba(255,220,240,0.05)');
+    const gx = cx - drawR * 0.28, gy = cy - drawR * 0.32;
+    const gl = ctx.createRadialGradient(gx, gy, 0, cx, cy, drawR * 0.85);
+    gl.addColorStop(0,    `rgba(220,200,255,${0.26 + e * 0.04})`);
+    gl.addColorStop(0.25, 'rgba(210,190,255,0.05)');
     gl.addColorStop(1,    'transparent');
     ctx.fillStyle = gl;
     ctx.fillRect(0, 0, W, H);
@@ -2914,6 +2891,8 @@ function talkPlayAudio(b64, transcript) {
       const blob = new Blob([arr], { type: 'audio/mpeg' });
       const url  = URL.createObjectURL(blob);
       talkAudio  = new Audio(url);
+      talkAudio.volume = 1.0;
+      talkAudio.setAttribute('playsinline', '');
       talkAudio.play().catch(e => console.warn('[talk] play blocked:', e));
       talkAudio.onended = () => {
         URL.revokeObjectURL(url);
@@ -2967,10 +2946,10 @@ async function talkElevenLabsDirect(text) {
 
     const arrayBuffer = await res.arrayBuffer();
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    await audioCtx.resume();  // iOS requires explicit resume even for new contexts
     const decoded  = await audioCtx.decodeAudioData(arrayBuffer);
-    // GainNode: boost volume like ChatGPT/Gemini (1.8x), duck when user talks
     const gainNode  = audioCtx.createGain();
-    gainNode.gain.value = 1.8;
+    gainNode.gain.value = 2.0;  // Full speaker volume (iOS may still apply system limit)
     const source   = audioCtx.createBufferSource();
     source.buffer  = decoded;
     source.connect(gainNode);
@@ -3064,6 +3043,53 @@ function talkSpeakWebSpeech(text) {
 
   // iOS Safari needs a small delay after cancel()
   setTimeout(() => window.speechSynthesis.speak(utter), 80);
+}
+
+/* ── user orb: amplitude-reactive animation via Web Audio AnalyserNode ── */
+let _userOrbRAF = null;
+let _userOrbAmp  = 0;  // smoothed amplitude 0..1
+
+function talkUserOrbStart() {
+  if (_userOrbRAF) return;
+  const orb = document.getElementById('talk-user-orb-btn');
+  if (!orb) return;
+  const buf = new Uint8Array(128);
+
+  function loop(now) {
+    _userOrbRAF = requestAnimationFrame(loop);
+    // Read mic amplitude from the shared analyser
+    let raw = 0;
+    const an = window._talkMicAnalyser;
+    if (an) {
+      an.getByteFrequencyData(buf);
+      let sum = 0;
+      for (let i = 0; i < buf.length; i++) sum += buf[i];
+      raw = sum / buf.length / 255; // 0..1
+    }
+    // Smooth: fast attack, slow decay
+    _userOrbAmp += raw > _userOrbAmp
+      ? (raw - _userOrbAmp) * 0.35   // attack
+      : (raw - _userOrbAmp) * 0.08;  // decay
+
+    // Idle breathing: slow sine
+    const idleBreath  = 1 + 0.06 * Math.sin(now * 0.00210);  // ~3s period
+    // Voice response: scale 1..1.20 proportional to amplitude
+    const voiceScale  = 1 + _userOrbAmp * 1.20;
+    const finalScale  = Math.min(1.28, idleBreath * voiceScale);
+    // Brightness: 1..2.5 with voice
+    const brightness  = 1 + _userOrbAmp * 2.0;
+
+    orb.style.transform = `scale(${finalScale.toFixed(3)})`;
+    orb.style.filter    = `brightness(${brightness.toFixed(3)})`;
+  }
+  _userOrbRAF = requestAnimationFrame(loop);
+}
+
+function talkUserOrbStop() {
+  if (_userOrbRAF) { cancelAnimationFrame(_userOrbRAF); _userOrbRAF = null; }
+  _userOrbAmp = 0;
+  const orb = document.getElementById('talk-user-orb-btn');
+  if (orb) { orb.style.transform = ''; orb.style.filter = ''; }
 }
 
 /* ── mic analyser ── */
@@ -3223,6 +3249,9 @@ async function talkEnterOrbMode() {
   orbCanvasInit();
   if (window._orbRenderer) window._orbRenderer.setState('idle');
 
+  // Start user orb amplitude loop
+  talkUserOrbStart();
+
   // Auto-start listening
   await talkStartListening();
 }
@@ -3230,6 +3259,7 @@ async function talkEnterOrbMode() {
 function talkLeaveOrbMode() {
   talkFullMicCleanup();
   talkOrbMode = false;
+  talkUserOrbStop();
 
   // Stop audio playback
   if (talkAudio) { talkAudio.pause(); talkAudio = null; }
@@ -3293,6 +3323,41 @@ async function talkStartListening() {
       });
       window._talkMicStream = stream;
       window._talkMicGranted = true;
+
+      // ── iOS audio session fix ──────────────────────────────────────────
+      // When getUserMedia is active, iOS switches to "VoiceChat" audio session
+      // which routes audio to the earpiece and reduces volume. Fix: create an
+      // AudioContext with a MediaStreamSource NOT connected to destination —
+      // this keeps the audio session in "media playback" mode (speaker, full vol).
+      if (!window._iosAudioSessionFixed) {
+        try {
+          // 1. Silent buffer played once in a user-gesture context to unlock AudioContext
+          const unlockCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const silentBuf = unlockCtx.createBuffer(1, 1, 22050);
+          const silentSrc = unlockCtx.createBufferSource();
+          silentSrc.buffer = silentBuf;
+          // Do NOT connect to destination — just start and let it complete
+          silentSrc.start(0);
+
+          // 2. Keep a looping near-silent <audio> element alive.
+          // This anchors the audio session in "media" mode on iOS Safari.
+          if (!window._iosKeepAliveAudio) {
+            const a = document.createElement('audio');
+            a.volume = 0.001;
+            a.loop   = true;
+            a.setAttribute('playsinline', '');
+            // Minimal silent WAV (44 bytes)
+            a.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+            document.body.appendChild(a);
+            a.play().catch(() => {});
+            window._iosKeepAliveAudio = a;
+          }
+          window._iosAudioSessionFixed = true;
+        } catch(iosErr) {
+          console.warn('[ios-audio] session fix failed:', iosErr.message);
+        }
+      }
+      // ─────────────────────────────────────────────────────────────────
       // Build analyser once from the persistent stream
       if (!talkAudioCtx) talkAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (talkAudioCtx.state === 'suspended') await talkAudioCtx.resume();
