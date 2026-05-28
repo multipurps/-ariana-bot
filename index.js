@@ -1542,6 +1542,18 @@ async function loadExtras() {
 // ── KEEP-ALIVE ────────────────────────────────────────────────
 app.get("/ping", (_req, res) => res.send("pong"));
 
+// ── BAILEYS PAIRING ───────────────────────────────────────────
+app.get("/pair", async (req, res) => {
+  try {
+    const r = await axios.get("http://localhost:3001/pair?phone=" + (process.env.PHONE_NUMBER || ""));
+    res.send(r.data);
+  } catch (e) {
+    res.send(`<html><body style="background:#111;color:white;padding:30px;font-family:sans-serif">
+    <p>Baileys not ready yet — check Render logs for pairing code</p>
+    <p style="color:#555">${e.message}</p></body></html>`);
+  }
+});
+
 function startKeepAlive() {
   if (!RENDER_URL) return;
   setInterval(() => {
