@@ -776,6 +776,31 @@ app.get("/webhook", (req, res) => {
   res.send("Ariana WhatsApp ✅");
 });
 
+// ── SIGNAL TRUST HELPER ───────────────────────────────────────
+async function trustSignalContact(number) {
+  try {
+    // Get identity keys for this number and trust them all
+    const res = await axios.get(
+      `${SIGNAL_CLI_URL}/v1/identities/${SIGNAL_NUMBER}`,
+      { timeout: 8000 }
+    );
+    const identities = res.data || [];
+    const forNumber  = identities.filter(i => i.number === number);
+    for (const id of forNumber) {
+      if (id.safetyNumber && id.status !== "TRUSTED") {
+        await axios.put(
+          `${SIGNAL_CLI_URL}/v1/identities/${SIGNAL_NUMBER}/${encodeURIComponent(number)}`,
+          { trust: "TRUSTED_UNVERIFIED", safetyNumber: id.safetyNumber },
+          { timeout: 8000 }
+        ).catch(() => {});
+      }
+    }
+  } catch (e) {
+    // Non-fatal — log and continue so Ariana still replies
+    console.log(`[Signal] Trust step skipped for ${number}:`, e.message);
+  }
+}
+
 // ── SIGNAL WEBHOOK ────────────────────────────────────────────
 app.post("/signal", async (req, res) => {
   res.status(200).json({ ok: true });
@@ -787,6 +812,8 @@ app.post("/signal", async (req, res) => {
     if (!from || !text) return;
     const name = envelope.sourceName || from;
     console.log(`📶 Signal ${name}: "${text}"`);
+    // Trust new contact before replying (handles message requests)
+    await trustSignalContact(from);
     await handleMessage({ id: `sg_${from}`, platform: "signal", from, text, chatId: null, phoneNumberId: null, name });
   } catch (e) { console.error("❌ Signal:", e.message); }
 });
@@ -1539,6 +1566,55 @@ async function loadExtras() {
   } catch(e) { console.warn("Extras load failed:", e.message); }
 }
 
+// ── SIGNAL WEBHOOK AUTO-SETUP ────────────────────────────────
+async function setupSignalWebhook() {
+  if (!RENDER_URL || !SIGNAL_NUMBER) return;
+  try {
+    await axios.post(
+      `${SIGNAL_CLI_URL}/v1/configuration/${SIGNAL_NUMBER}/webhook`,
+      { url: `${RENDER_URL}/signal` },
+      { timeout: 10000 }
+    );
+    console.log(`📶 Signal webhook registered → ${RENDER_URL}/signal`);
+  } catch (e) {
+    console.warn("⚠️  Signal webhook setup failed:", e.message);
+  }
+}
+
+// ── SIGNAL POLLING FALLBACK ──────────────────────────────────
+// Polls signal-cli every 20s in case webhook misses messages
+function startSignalPolling() {
+  if (!SIGNAL_NUMBER) return;
+  setInterval(async () => {
+    try {
+      const res = await axios.get(
+        `${SIGNAL_CLI_URL}/v1/receive/${SIGNAL_NUMBER}`,
+        { timeout: 10000 }
+      );
+      const messages = Array.isArray(res.data) ? res.data : [];
+      for (const item of messages) {
+        const envelope = item?.envelope;
+        if (!envelope) continue;
+        const from = envelope.source || envelope.sourceNumber;
+        const text = envelope.dataMessage?.message;
+        if (!from || !text) continue;
+        const id = `sg_${from}`;
+        // Skip if already handled recently (within 30s) to avoid duplicate replies
+        const convo = conversations[id];
+        if (convo?.messages?.length) {
+          const last = convo.messages[convo.messages.length - 1];
+          if (last.role === "user" && last.text === text && Date.now() - new Date(last.time).getTime() < 30000) continue;
+        }
+        const name = envelope.sourceName || from;
+        console.log(`📶 Signal [poll] ${name}: "${text}"`);
+        await trustSignalContact(from);
+        await handleMessage({ id, platform: "signal", from, text, chatId: null, phoneNumberId: null, name });
+      }
+    } catch { /* silent — signal-cli may be sleeping */ }
+  }, 20000);
+  console.log("📶 Signal polling started (every 20s fallback)");
+}
+
 // ── KEEP-ALIVE ────────────────────────────────────────────────
 app.get("/ping", (_req, res) => res.send("pong"));
 
@@ -1590,5 +1666,7 @@ server.listen(PORT, async () => {
   console.log(`💬 Telegram:    ${TG_SESSION                      ? "✅ session found" : "❌ run gen-session.js"}`);
   console.log(`📶 Signal:      ${SIGNAL_NUMBER                   ? "✅ " + SIGNAL_NUMBER : "❌"}`);
   await initTelegram();
+  await setupSignalWebhook();
+  startSignalPolling();
   startKeepAlive();
 });
