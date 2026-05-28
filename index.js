@@ -799,6 +799,10 @@ async function trustSignalContact(number) {
     // Non-fatal — log and continue so Ariana still replies
     console.log(`[Signal] Trust step skipped for ${number}:`, e.message);
   }
+
+  // Auto-accept message request — Signal requires replying to accept unknown contacts.
+  // Sending ANY message to them accepts the request automatically in Signal protocol.
+  // No extra API call needed — the reply from handleMessage IS the acceptance.
 }
 
 // ── SIGNAL WEBHOOK ────────────────────────────────────────────
@@ -1577,12 +1581,15 @@ async function setupSignalWebhook() {
     );
     console.log(`📶 Signal webhook registered → ${RENDER_URL}/signal`);
   } catch (e) {
-    console.warn("⚠️  Signal webhook setup failed:", e.message);
+    // 404 = this signal-cli instance doesn't support webhooks — polling fallback is active
+    if (e.response?.status !== 404) console.warn("⚠️  Signal webhook setup failed:", e.message);
+    else console.log("📶 Signal: webhook not supported — using 20s polling instead");
   }
 }
 
 // ── SIGNAL POLLING FALLBACK ──────────────────────────────────
 // Polls signal-cli every 20s in case webhook misses messages
+let signalPollErrors = 0;
 function startSignalPolling() {
   if (!SIGNAL_NUMBER) return;
   setInterval(async () => {
@@ -1591,15 +1598,26 @@ function startSignalPolling() {
         `${SIGNAL_CLI_URL}/v1/receive/${SIGNAL_NUMBER}`,
         { timeout: 10000 }
       );
+      signalPollErrors = 0; // reset on success
       const messages = Array.isArray(res.data) ? res.data : [];
       for (const item of messages) {
         const envelope = item?.envelope;
         if (!envelope) continue;
+
+        // Extract sender — message requests show source on envelope directly
         const from = envelope.source || envelope.sourceNumber;
-        const text = envelope.dataMessage?.message;
-        if (!from || !text) continue;
+        if (!from) continue;
+
+        // Regular messages
+        let text = envelope.dataMessage?.message;
+
+        // Message requests / synced messages also carry text here
+        if (!text) text = envelope.syncMessage?.sentMessage?.message;
+        if (!text) text = envelope.callMessage ? "[called you on Signal]" : null;
+        if (!text) continue;
+
         const id = `sg_${from}`;
-        // Skip if already handled recently (within 30s) to avoid duplicate replies
+        // Skip duplicates within 30s
         const convo = conversations[id];
         if (convo?.messages?.length) {
           const last = convo.messages[convo.messages.length - 1];
@@ -1610,13 +1628,42 @@ function startSignalPolling() {
         await trustSignalContact(from);
         await handleMessage({ id, platform: "signal", from, text, chatId: null, phoneNumberId: null, name });
       }
-    } catch { /* silent — signal-cli may be sleeping */ }
+    } catch (e) {
+      signalPollErrors++;
+      // Log every 5th error so we know signal-cli is down without spamming
+      if (signalPollErrors % 5 === 1) {
+        console.warn(`⚠️  Signal poll failed (${signalPollErrors}x): ${e.response?.status || e.message}`);
+      }
+    }
   }, 20000);
   console.log("📶 Signal polling started (every 20s fallback)");
 }
 
 // ── KEEP-ALIVE ────────────────────────────────────────────────
 app.get("/ping", (_req, res) => res.send("pong"));
+
+// ── SIGNAL DIAGNOSTIC ─────────────────────────────────────────
+app.get("/signal-status", async (req, res) => {
+  try {
+    const health   = await axios.get(`${SIGNAL_CLI_URL}/v1/health`, { timeout: 8000 });
+    const accounts = await axios.get(`${SIGNAL_CLI_URL}/v1/accounts`, { timeout: 8000 });
+    const msgs     = await axios.get(`${SIGNAL_CLI_URL}/v1/receive/${SIGNAL_NUMBER}`, { timeout: 8000 });
+    res.send(`<html><body style="background:#111;color:white;padding:24px;font-family:monospace">
+      <h2 style="color:#25D366">📶 Signal Status</h2>
+      <p>✅ signal-cli is <strong>alive</strong></p>
+      <p>Accounts: ${JSON.stringify(accounts.data)}</p>
+      <p>Pending messages: ${JSON.stringify(msgs.data)}</p>
+      <p>Poll errors since last success: ${signalPollErrors}</p>
+    </body></html>`);
+  } catch (e) {
+    res.send(`<html><body style="background:#111;color:white;padding:24px;font-family:monospace">
+      <h2 style="color:#ff6b6b">❌ Signal CLI unreachable</h2>
+      <p>${e.response?.status || ""} ${e.message}</p>
+      <p>Poll errors: ${signalPollErrors}</p>
+      <p>URL: ${SIGNAL_CLI_URL}</p>
+    </body></html>`);
+  }
+});
 
 // ── BAILEYS PAIRING ───────────────────────────────────────────
 app.get("/pair", async (req, res) => {
