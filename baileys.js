@@ -13,6 +13,7 @@ const pino = require("pino");
 const qrcode = require("qrcode");
 const http = require("http");
 const axios = require("axios");
+const ws    = require("ws");
 
 // ── PROXY ─────────────────────────────────────────────────────
 const PROXY_URL   = process.env.WA_PROXY || "http://kwolujui:jco3lxjq9tqo@38.154.203.95:5863";
@@ -26,7 +27,8 @@ const BAILEYS_PORT  = process.env.BAILEYS_PORT  || 3001;
 // ── SUPABASE ──────────────────────────────────────────────────
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY,
+  { auth: { persistSession: false }, realtime: { transport: ws } }
 );
 
 // ── STATE ─────────────────────────────────────────────────────
