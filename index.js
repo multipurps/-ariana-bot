@@ -1587,56 +1587,61 @@ async function setupSignalWebhook() {
   }
 }
 
-// ── SIGNAL POLLING FALLBACK ──────────────────────────────────
-// Polls signal-cli every 20s in case webhook misses messages
-let signalPollErrors = 0;
+// ── SIGNAL WEBSOCKET (json-rpc mode) ─────────────────────────
+// json-rpc mode requires WebSocket — HTTP polling returns 400
+let signalPollErrors = 0; // kept for /signal-status display
 function startSignalPolling() {
   if (!SIGNAL_NUMBER) return;
-  setInterval(async () => {
-    try {
-      const res = await axios.get(
-        `${SIGNAL_CLI_URL}/v1/receive/${SIGNAL_NUMBER}`,
-        { timeout: 10000 }
-      );
-      signalPollErrors = 0; // reset on success
-      const messages = Array.isArray(res.data) ? res.data : [];
-      for (const item of messages) {
+  const WebSocket = require('ws');
+  const wsUrl = SIGNAL_CLI_URL.replace(/^http/, 'ws') + `/v1/receive/${SIGNAL_NUMBER}`;
+
+  function connect() {
+    const ws = new WebSocket(wsUrl);
+
+    ws.on('open', () => {
+      signalPollErrors = 0;
+      console.log('📶 Signal WebSocket connected');
+    });
+
+    ws.on('message', async (data) => {
+      try {
+        const item = JSON.parse(data.toString());
         const envelope = item?.envelope;
-        if (!envelope) continue;
-
-        // Extract sender — message requests show source on envelope directly
+        if (!envelope) return;
         const from = envelope.source || envelope.sourceNumber;
-        if (!from) continue;
-
-        // Regular messages
+        if (!from) return;
         let text = envelope.dataMessage?.message;
-
-        // Message requests / synced messages also carry text here
         if (!text) text = envelope.syncMessage?.sentMessage?.message;
-        if (!text) text = envelope.callMessage ? "[called you on Signal]" : null;
-        if (!text) continue;
-
+        if (!text) text = envelope.callMessage ? '[called you on Signal]' : null;
+        if (!text) return;
         const id = `sg_${from}`;
-        // Skip duplicates within 30s
         const convo = conversations[id];
         if (convo?.messages?.length) {
           const last = convo.messages[convo.messages.length - 1];
-          if (last.role === "user" && last.text === text && Date.now() - new Date(last.time).getTime() < 30000) continue;
+          if (last.role === 'user' && last.text === text && Date.now() - new Date(last.time).getTime() < 30000) return;
         }
         const name = envelope.sourceName || from;
-        console.log(`📶 Signal [poll] ${name}: "${text}"`);
+        console.log(`📶 Signal [ws] ${name}: "${text}"`);
         await trustSignalContact(from);
-        await handleMessage({ id, platform: "signal", from, text, chatId: null, phoneNumberId: null, name });
+        await handleMessage({ id, platform: 'signal', from, text, chatId: null, phoneNumberId: null, name });
+      } catch (e) {
+        console.warn('⚠️ Signal WS message error:', e.message);
       }
-    } catch (e) {
+    });
+
+    ws.on('error', (e) => {
       signalPollErrors++;
-      // Log every 5th error so we know signal-cli is down without spamming
-      if (signalPollErrors % 5 === 1) {
-        console.warn(`⚠️  Signal poll failed (${signalPollErrors}x): ${e.response?.status || e.message}`);
-      }
-    }
-  }, 20000);
-  console.log("📶 Signal polling started (every 20s fallback)");
+      if (signalPollErrors % 5 === 1) console.warn(`⚠️ Signal WS error (${signalPollErrors}x): ${e.message}`);
+    });
+
+    ws.on('close', () => {
+      console.log('📶 Signal WS closed — reconnecting in 10s...');
+      setTimeout(connect, 10000);
+    });
+  }
+
+  connect();
+  console.log('📶 Signal WebSocket started (json-rpc mode)');
 }
 
 // ── KEEP-ALIVE ────────────────────────────────────────────────
@@ -1645,15 +1650,14 @@ app.get("/ping", (_req, res) => res.send("pong"));
 // ── SIGNAL DIAGNOSTIC ─────────────────────────────────────────
 app.get("/signal-status", async (req, res) => {
   try {
-    const health   = await axios.get(`${SIGNAL_CLI_URL}/v1/health`, { timeout: 8000 });
+    const about    = await axios.get(`${SIGNAL_CLI_URL}/v1/about`, { timeout: 8000 });
     const accounts = await axios.get(`${SIGNAL_CLI_URL}/v1/accounts`, { timeout: 8000 });
-    const msgs     = await axios.get(`${SIGNAL_CLI_URL}/v1/receive/${SIGNAL_NUMBER}`, { timeout: 8000 });
     res.send(`<html><body style="background:#111;color:white;padding:24px;font-family:monospace">
       <h2 style="color:#25D366">📶 Signal Status</h2>
       <p>✅ signal-cli is <strong>alive</strong></p>
+      <p>Mode: ${about.data?.mode} v${about.data?.version}</p>
       <p>Accounts: ${JSON.stringify(accounts.data)}</p>
-      <p>Pending messages: ${JSON.stringify(msgs.data)}</p>
-      <p>Poll errors since last success: ${signalPollErrors}</p>
+      <p>WS errors: ${signalPollErrors}</p>
     </body></html>`);
   } catch (e) {
     res.send(`<html><body style="background:#111;color:white;padding:24px;font-family:monospace">
@@ -1681,7 +1685,7 @@ function startKeepAlive() {
   if (!RENDER_URL) return;
   setInterval(() => {
     axios.get(`${RENDER_URL}/ping`).catch(() => {});
-    axios.get(`${SIGNAL_CLI_URL}/v1/health`).catch(() => {});
+    axios.get(`${SIGNAL_CLI_URL}/v1/about`).catch(() => {});
   }, 10 * 60 * 1000); // 10 min — safely under Render's 15-min spin-down
   console.log("⏱️  Keep-alive started (every 10 min)");
 }
