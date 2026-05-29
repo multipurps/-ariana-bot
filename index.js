@@ -212,19 +212,27 @@ IDENTITY — NON-NEGOTIABLE:
   or just match their energy with sass. Never explain you "can't access" other apps.
 
 IMAGES & MEDIA:
-- When you receive [sent an image], [sent a photo], [shared a photo: ...], or [image: ...] — you CAN see it.
-- If a photo description is provided in brackets, react to WHAT IS DESCRIBED. Comment naturally.
-- React like a person texting: "omg where is this", "wait who's that", "okay that's fire", "lol why", etc.
-- NEVER say you can't see images. NEVER say you don't receive photos. NEVER say "I can't see attachments".
-- If someone says "did you see the picture I sent?" — respond as if you just saw it. Yes, you did.
+- When the message contains [just saw: ...] — that's an image YOU just saw. React to it.
+- DO NOT repeat or narrate the description. DO NOT say "I see" or "it shows" or "I see the description".
+- React with ONE casual line like a real person texting. Short. Natural.
+  Examples: "omg that fit is everything", "wait where is this", "she looks good", "okay that's fire", "that bag tho"
+- NEVER acknowledge the [just saw: ...] bracket — it's invisible to you, you just *saw* it.
+- NEVER say "I still don't actually see it" or "we're just talking" — you saw it, move on.
+- If someone says "did you see the picture I sent?" — "yeah" or react to what was in it.
+- NEVER say you can't see images, don't receive photos, or can't see attachments. Ever.
 
 COMPLETENESS:
 - Always finish your sentence. Never cut off mid-thought.
 - Every reply must be a complete thought, even if it's just 3 words.
 - Do NOT trail off. Do NOT end on an unfinished phrase.
 
+LANGUAGE:
+- STRICT rule: reply in EXACTLY the language they texted you in. Nothing else.
+- If they text in English → reply in English only. No Spanish, no "mi amor", no "cariño", no "amor".
+- If they text in Spanish → reply in Spanish only.
+- Do NOT add foreign words for "vibe" or "flavor" — it sounds fake. Be consistent.
+
 RULES:
-- Match their language (English, Spanish, Yoruba — whatever they use)
 - Never over-explain. Say less than you want to.
 - NEVER describe actions in asterisks or brackets like *sends voice note* or (sends photo)
 - NEVER write "[voice note]" or "(fine) sends voice note" — that is not how texting works
@@ -256,7 +264,12 @@ function hasAIBreak(text) {
     'developed by anthropic', 'developed by openai', 'i have no ability to',
     "i don't have access to other apps", 'i simulate', 'simulate a conversation',
     "i don't actually receive", "i'm just talking to you live", "can't see images",
-    "cannot see images", "i can't see", "i don't see"
+    "cannot see images", "i can't see", "i don't see",
+    // New — from latest screenshot
+    "i don't have a phone", "i have no phone", "we're talking right now, live",
+    "talking to you live", "i see the description", "the description of the photo",
+    "i still don't actually", "i can't text you on whatsapp", "can't text you on",
+    "i'm not able to text", "no phone to text from", "don't have a phone to text"
   ];
   return forbidden.some(p => lower.includes(p));
 }
@@ -516,20 +529,22 @@ function detectConvoLanguage(messages) {
   const yoScore = (lower.match(/\b(omo|wa|ti|ni|ko|si|bi|se|mo|mi|owo|ile|ara|won|yen|naa|gan|sha|abi|ehn|oh|bro|sho|sha)\b/g) || []).length;
   // Pidgin markers
   const pgScore = (lower.match(/\b(na|dey|wetin|abeg|oga|wey|una|fit|comot|chop|wahala|no dey|make|sef)\b/g) || []).length;
-  if (esScore > 3) return 'es';
-  if (yoScore > 2) return 'yo';
-  if (pgScore > 2) return 'pcm'; // Nigerian Pidgin
+  // Raise thresholds — needs clear dominance, not a single word match
+  if (esScore >= 5) return 'es';
+  if (yoScore >= 4) return 'yo';
+  if (pgScore >= 3) return 'pcm';
   return 'en';
 }
 
 function langInstruction(lang) {
-  if (lang === 'es') return '\n\nLANGUAGE LOCK: This person is texting in Spanish. Reply ONLY in Spanish. Do NOT mix in English words. Stay natural — casual street Spanish, not formal.';
-  if (lang === 'yo') return '\n\nLANGUAGE LOCK: This person is texting in Yoruba. Reply ONLY in Yoruba (you can mix in a little English where natural for Yoruba speakers, but keep Yoruba dominant).';
-  if (lang === 'pcm') return '\n\nLANGUAGE LOCK: This person is texting in Nigerian Pidgin. Reply ONLY in Naija Pidgin — natural, not exaggerated.';
-  return ''; // English is default, no extra instruction needed
+  if (lang === 'es') return '\n\nLANGUAGE LOCK: This person texts in Spanish. Reply ONLY in Spanish. No English mixing. Casual, natural.';
+  if (lang === 'yo') return '\n\nLANGUAGE LOCK: This person texts in Yoruba. Reply in Yoruba. Light English mixing is fine where natural.';
+  if (lang === 'pcm') return '\n\nLANGUAGE LOCK: This person texts in Nigerian Pidgin. Reply in Naija Pidgin only.';
+  // Default English — explicitly forbid Spanish bleed
+  return '\n\nLANGUAGE LOCK: This person is texting in English. Reply in English ONLY. Do NOT use Spanish words like "mi amor", "cariño", "amor", "claro" — not even one. Pure English.';
 }
 
-async function getReply(id, userMsg, systemOverride) {
+async function getReply(id, userMsg, systemOverride, imageBase64 = null) {
   const convo = getConvo(id);
   const rawPhone = id.replace(/^(tg_|sg_|sms_)/, "");
   if (!systemOverride && OWNER_PHONE && rawPhone === OWNER_PHONE) {
@@ -576,6 +591,17 @@ async function getReply(id, userMsg, systemOverride) {
     content: m.text
   }));
 
+  // ── Inject brain memories so she actually remembers things ──
+  const memoryKeys = ['core_identity','personality','learned_memories','people','facts'];
+  const memLines = [];
+  for (const k of memoryKeys) {
+    const val = brainCache[k];
+    if (!val) continue;
+    const str = typeof val === 'string' ? val : JSON.stringify(val);
+    if (str && str !== '{}' && str !== '[]') memLines.push(`[${k}]: ${str}`);
+  }
+  if (memLines.length) sys += `\n\nYOUR MEMORY:\n${memLines.join('\n')}`;
+
   let webContext = null;
   if (needsWebSearch(userMsg)) webContext = await searchWeb(userMsg);
 
@@ -586,12 +612,27 @@ async function getReply(id, userMsg, systemOverride) {
   for (const model of chain) {
     try {
       let reply = null;
-      if (model === "gemini")   reply = await callGemini(history, sys, webContext);
-      if (model === "deepseek") reply = await callDeepSeek(history, sys);
-      if (model === "mistral")  reply = await callMistral(history, sys);
-      if (model === "together") reply = await callTogether(history, sys);
-      if (model === "groq")     reply = await callGroq(history, sys, false);
-      if (model === "groq2")    reply = await callGroq(history, sys, true);
+
+      // If an image was sent, use Gemini vision as priority
+      if (imageBase64 && model === preferred) {
+        try {
+          reply = await callGeminiWithVision(
+            [...history, { role: 'user', content: userMsg }],
+            sys,
+            imageBase64
+          );
+          console.log('[engine] gemini-vision');
+        } catch (e) { console.warn('[engine] vision failed:', e.message); }
+      }
+
+      if (!reply) {
+        if (model === "gemini")   reply = await callGemini(history, sys, webContext);
+        if (model === "deepseek") reply = await callDeepSeek(history, sys);
+        if (model === "mistral")  reply = await callMistral(history, sys);
+        if (model === "together") reply = await callTogether(history, sys);
+        if (model === "groq")     reply = await callGroq(history, sys, false);
+        if (model === "groq2")    reply = await callGroq(history, sys, true);
+      }
 
       // Character guard — if the model broke Ariana's identity, retry once with a hard reminder
       if (reply && hasAIBreak(reply)) {
@@ -633,16 +674,15 @@ async function getReply(id, userMsg, systemOverride) {
   return "hold on";
 }
 
-async function handleNewTexter(id, userMsg) {
+async function handleNewTexter(id, userMsg, imageBase64 = null) {
   const convo = getConvo(id);
   if (!convo.isNew) return null;
   convo.isNew = false;
   const rawPhone = id.replace(/^(tg_|sg_|sms_)/, '');
-  // Whitelisted friends skip the "who gave you my number" interrogation
   if (friendWhitelist.has(rawPhone) || friendWhitelist.has(id)) {
-    return await getReply(id, userMsg);
+    return await getReply(id, userMsg, null, imageBase64);
   }
-  return await getReply(id, userMsg, NEW_TEXTER_PROMPT);
+  return await getReply(id, userMsg, NEW_TEXTER_PROMPT, imageBase64);
 }
 
 // ── WHATSAPP SENDERS ──────────────────────────────────────────
@@ -879,18 +919,27 @@ async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, 
   if (convo.name === id && name) { convo.name = name; io.emit("rename", { phone: id, name }); }
 
   // ── IMAGE VISION ─────────────────────────────────────────────
-  // If the user sent an actual image, describe it and inject the description
-  // so Ariana can react to what she "sees"
+  // Download the real image as base64 and pass it directly to the vision model.
+  // No text injection, no description narration — Ariana actually sees it.
   let finalText = text;
+  let incomingImageBase64 = null;
   if (mediaUrl && incomingMediaType === 'image') {
-    console.log(`[vision] Describing image from ${id}: ${mediaUrl.slice(0,60)}...`);
-    const desc = await describeImage(mediaUrl);
-    if (desc) {
-      finalText = text && text !== '[sent an image]'
-        ? `${text} [shared a photo: ${desc}]`
-        : `[shared a photo: ${desc}]`;
-      console.log(`[vision] Description: ${desc}`);
-    }
+    console.log(`[vision] Fetching image for direct vision: ${mediaUrl.slice(0,70)}...`);
+    try {
+      let imgRes = null;
+      for (const headers of [{ 'X-API-Key': KAPSO_API_KEY }, {}]) {
+        try {
+          imgRes = await axios.get(mediaUrl, { responseType: 'arraybuffer', timeout: 15000, headers });
+          if (imgRes?.data?.byteLength > 100) break;
+        } catch {}
+      }
+      if (imgRes?.data?.byteLength > 100) {
+        incomingImageBase64 = Buffer.from(imgRes.data).toString('base64');
+        console.log(`[vision] Image fetched: ${Math.round(incomingImageBase64.length / 1024)}KB`);
+        // Keep finalText as-is or use caption — the image itself carries the content
+        if (!finalText || finalText === '[sent an image]') finalText = '[sent a photo]';
+      }
+    } catch (e) { console.warn('[vision] Image fetch failed:', e.message); }
   }
 
   const isFirst = convo.isNew;
@@ -926,7 +975,9 @@ async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, 
   }
 
   try {
-    const replyPromise = isFirst ? handleNewTexter(id, finalText) : getReply(id, finalText);
+    const replyPromise = isFirst
+      ? handleNewTexter(id, finalText, incomingImageBase64)
+      : getReply(id, finalText, null, incomingImageBase64);
     const [reply] = await Promise.all([replyPromise, humanDelay(text)]);
 
     let voiceUrl = null;
@@ -1841,6 +1892,217 @@ async function ttsBase64(text) {
   }
 }
 
+// ── LIVE TALK COMMAND EXECUTOR ────────────────────────────────
+// Parses owner instructions from /api/talk and executes them.
+// Returns { handled: true, confirmation: "..." } if a command was found,
+// or { handled: false } if it's just conversation.
+
+async function tryExecuteOwnerCommand(message) {
+  const lower = message.toLowerCase().trim();
+
+  // ── helpers ──────────────────────────────────────────────────
+  // Resolve a contact name or number from the conversations list
+  function resolveContact(raw) {
+    if (!raw) return null;
+    const cleaned = raw.trim().replace(/\s+/g, '');
+    // Direct number
+    if (/^\+?\d{7,15}$/.test(cleaned)) return cleaned;
+    // Search by name in conversations
+    const nameLower = raw.toLowerCase().trim();
+    for (const [id, convo] of Object.entries(conversations)) {
+      if ((convo.name || '').toLowerCase().includes(nameLower)) return id;
+    }
+    return null;
+  }
+
+  async function sendToContact(target, text, imageUrl = null, voiceBase64 = null) {
+    const platform = target.startsWith('tg_') ? 'telegram'
+                   : target.startsWith('sg_') ? 'signal'
+                   : target.startsWith('sms_') ? 'sms'
+                   : 'whatsapp';
+    const rawId = target.replace(/^(tg_|sg_|sms_)/, '');
+
+    if (voiceBase64) {
+      // Upload voice to Cloudinary then send
+      const voiceUrl = await uploadBase64ToCloudinary(voiceBase64, 'mp3').catch(() => null);
+      if (voiceUrl) {
+        if (platform === 'whatsapp')      await sendWhatsAppVoiceNote(rawId, voiceUrl);
+        else if (platform === 'telegram') await sendTelegramVoice(rawId, voiceUrl);
+        else if (platform === 'signal')   await sendSignal(rawId, text || '🎤');
+        else                              await sendMMS(rawId, '', voiceUrl);
+        addMessage(target, 'ariana', '[voice note]');
+        return;
+      }
+    }
+    if (imageUrl) {
+      if (platform === 'whatsapp')      await sendWhatsAppImage(rawId, imageUrl, text || '');
+      else if (platform === 'telegram') await sendTelegramPhoto(rawId, imageUrl, text || '');
+      else if (platform === 'signal')   await sendSignal(rawId, imageUrl);
+      else                              await sendMMS(rawId, text || '', imageUrl);
+      addMessage(target, 'ariana', `[image: ${imageUrl}]`);
+      return;
+    }
+    if (text) {
+      if (platform === 'whatsapp')      await sendWhatsApp(rawId, text);
+      else if (platform === 'telegram') await sendTelegram(rawId, text);
+      else if (platform === 'signal')   await sendSignal(rawId, text);
+      else                              await sendSMS(rawId, text);
+      addMessage(target, 'ariana', text);
+    }
+  }
+
+  // Upload base64 audio to Cloudinary
+  async function uploadBase64ToCloudinary(base64, format) {
+    const cloud = process.env.CLOUDINARY_CLOUD_NAME;
+    const key   = process.env.CLOUDINARY_API_KEY;
+    const sec   = process.env.CLOUDINARY_API_SECRET;
+    if (!cloud || !key || !sec) throw new Error('Cloudinary not configured');
+    const FormData = require('form-data');
+    const form = new FormData();
+    form.append('file', `data:audio/${format};base64,${base64}`);
+    form.append('resource_type', 'video'); // Cloudinary uses "video" for audio
+    form.append('upload_preset', process.env.CLOUDINARY_UPLOAD_PRESET || 'ml_default');
+    const r = await axios.post(
+      `https://api.cloudinary.com/v1_1/${cloud}/video/upload`,
+      form, { headers: form.getHeaders(), auth: { username: key, password: sec } }
+    );
+    return r.data.secure_url;
+  }
+
+  // Get a random photo from media library (or matching tag)
+  function pickPhoto(tag = null) {
+    const photos = mediaLib.ariana_photos || [];
+    if (!photos.length) return null;
+    if (tag) {
+      const tagged = photos.filter(p => p.tags && p.tags.some(t => t.toLowerCase().includes(tag)));
+      if (tagged.length) return tagged[Math.floor(Math.random() * tagged.length)];
+    }
+    return photos[Math.floor(Math.random() * photos.length)];
+  }
+
+  // Get ALL active contacts across platforms
+  function getAllContactIds() {
+    return Object.keys(conversations).filter(id => {
+      const c = conversations[id];
+      return c && c.messages && c.messages.length > 0;
+    });
+  }
+
+  // ── COMMAND: send message to [contact] ───────────────────────
+  // "send a message to John saying hey"
+  // "text +234... saying what's up"
+  // "message everyone saying happy new year"
+  const sendMatch = message.match(
+    /(?:send|text|message|dm)\s+(?:a\s+(?:message|text)\s+to\s+)?(.+?)\s+(?:saying|:)\s+(.+)/i
+  );
+  if (sendMatch) {
+    const targetRaw = sendMatch[1].trim();
+    const text      = sendMatch[2].trim();
+    const isAll     = /^(everyone|all|all contacts|broadcast)$/i.test(targetRaw);
+    const targets   = isAll ? getAllContactIds() : [resolveContact(targetRaw)].filter(Boolean);
+    if (!targets.length) return { handled: true, confirmation: `I couldn't find "${targetRaw}" in my contacts.` };
+    for (const t of targets) { try { await sendToContact(t, text); } catch(e) { console.warn('[cmd] send failed for', t, e.message); } }
+    return { handled: true, confirmation: isAll
+      ? `Done — sent "${text}" to ${targets.length} contacts.`
+      : `Sent to ${conversations[targets[0]]?.name || targets[0]}.` };
+  }
+
+  // ── COMMAND: block [contact] ──────────────────────────────────
+  // "block John" / "block +234..."
+  const blockMatch = message.match(/^block\s+(.+)/i);
+  if (blockMatch) {
+    const target = resolveContact(blockMatch[1]) || blockMatch[1].trim();
+    const raw    = target.replace(/^(tg_|sg_|sms_)/, '');
+    blockedNumbers.add(target); blockedNumbers.add(raw);
+    if (supabase) { try { await supabase.from('ariana_blocked').upsert({ phone: target }, { onConflict: 'phone' }); } catch {} }
+    return { handled: true, confirmation: `Blocked ${conversations[target]?.name || target}.` };
+  }
+
+  // ── COMMAND: unblock [contact] ────────────────────────────────
+  const unblockMatch = message.match(/^unblock\s+(.+)/i);
+  if (unblockMatch) {
+    const target = resolveContact(unblockMatch[1]) || unblockMatch[1].trim();
+    blockedNumbers.delete(target);
+    if (supabase) { try { await supabase.from('ariana_blocked').delete().eq('phone', target); } catch {} }
+    return { handled: true, confirmation: `Unblocked ${target}.` };
+  }
+
+  // ── COMMAND: send voice note to [contact] ────────────────────
+  // "send a voice note to John saying hey girl"
+  // "send voice to everyone saying I'm busy today"
+  const voiceMatch = message.match(
+    /send\s+(?:a\s+)?voice(?:\s+note)?\s+to\s+(.+?)\s+(?:saying|:)\s+(.+)/i
+  );
+  if (voiceMatch) {
+    const targetRaw = voiceMatch[1].trim();
+    const text      = voiceMatch[2].trim();
+    const isAll     = /^(everyone|all|all contacts|broadcast)$/i.test(targetRaw);
+    const targets   = isAll ? getAllContactIds() : [resolveContact(targetRaw)].filter(Boolean);
+    if (!targets.length) return { handled: true, confirmation: `Couldn't find "${targetRaw}" in contacts.` };
+    const voiceB64 = await ttsBase64(text);
+    if (!voiceB64) return { handled: true, confirmation: `Voice generation failed — check ElevenLabs key.` };
+    for (const t of targets) { try { await sendToContact(t, text, null, voiceB64); } catch(e) { console.warn('[cmd] voice failed for', t, e.message); } }
+    return { handled: true, confirmation: `Voice note sent to ${isAll ? `${targets.length} contacts` : (conversations[targets[0]]?.name || targets[0])}.` };
+  }
+
+  // ── COMMAND: send photo to [contact] ─────────────────────────
+  // "send your photo to John" / "send a picture to everyone"
+  // "send a selfie to +234..." / "send food pic to Sarah"
+  const photoMatch = message.match(
+    /send\s+(?:a\s+)?(?:your\s+)?(?:(selfie|food|vibe|outfit|photo|picture|pic|image)(?:\s+pic)?)\s+to\s+(.+)/i
+  );
+  if (photoMatch) {
+    const tag       = photoMatch[1]?.toLowerCase();
+    const targetRaw = photoMatch[2].trim();
+    const isAll     = /^(everyone|all|all contacts|broadcast)$/i.test(targetRaw);
+    const targets   = isAll ? getAllContactIds() : [resolveContact(targetRaw)].filter(Boolean);
+    if (!targets.length) return { handled: true, confirmation: `Couldn't find "${targetRaw}" in contacts.` };
+    const photo = pickPhoto(tag !== 'photo' && tag !== 'picture' && tag !== 'pic' && tag !== 'image' ? tag : null);
+    if (!photo) return { handled: true, confirmation: `No photos in media library yet. Upload some first.` };
+    const photoUrl = photo.url || photo;
+    for (const t of targets) { try { await sendToContact(t, null, photoUrl); } catch(e) { console.warn('[cmd] photo failed for', t, e.message); } }
+    return { handled: true, confirmation: `Photo sent to ${isAll ? `${targets.length} contacts` : (conversations[targets[0]]?.name || targets[0])}.` };
+  }
+
+  // ── COMMAND: call [contact] ───────────────────────────────────
+  const callMatch = message.match(/call\s+(.+?)\s+(?:saying|:)\s+(.+)/i);
+  if (callMatch) {
+    const target  = resolveContact(callMatch[1]) || callMatch[1].trim();
+    const text    = callMatch[2].trim();
+    const rawNum  = target.replace(/^(tg_|sg_|sms_)/, '');
+    const sid     = process.env.TWILIO_ACCOUNT_SID;
+    const token   = process.env.TWILIO_AUTH_TOKEN;
+    const from    = process.env.TWILIO_NUMBER;
+    if (!sid || !token || !from) return { handled: true, confirmation: 'Twilio not configured. Add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_NUMBER to env.' };
+    try {
+      const twimlUrl = `${process.env.BASE_URL}/twiml/speak?msg=${encodeURIComponent(text)}&voice=Polly.Joanna`;
+      await axios.post(
+        `https://api.twilio.com/2010-04-01/Accounts/${sid}/Calls.json`,
+        new URLSearchParams({ To: rawNum, From: from, Url: twimlUrl }),
+        { auth: { username: sid, password: token } }
+      );
+      return { handled: true, confirmation: `Calling ${conversations[target]?.name || rawNum}...` };
+    } catch (e) { return { handled: true, confirmation: `Call failed: ${e.response?.data?.message || e.message}` }; }
+  }
+
+  // ── COMMAND: list contacts ────────────────────────────────────
+  if (/(?:show|list|who are|what are)\s+(?:my\s+)?contacts/i.test(lower)) {
+    const list = Object.entries(conversations)
+      .filter(([, c]) => c.messages?.length > 0)
+      .map(([id, c]) => `${c.name || id} (${id.startsWith('tg_') ? 'Telegram' : id.startsWith('sg_') ? 'Signal' : 'WhatsApp'})`)
+      .join(', ');
+    return { handled: true, confirmation: list || 'No contacts yet.' };
+  }
+
+  // ── COMMAND: how many photos ──────────────────────────────────
+  if (/how many photo|photo.*library|media.*library/i.test(lower)) {
+    const count = (mediaLib.ariana_photos || []).length;
+    return { handled: true, confirmation: `${count} photos in my media library.` };
+  }
+
+  return { handled: false };
+}
+
 // ── /api/talk — Live Talk endpoint ──
 app.post("/api/talk", async (req, res) => {
   const { message, history = [], imageBase64 } = req.body;
@@ -1849,20 +2111,32 @@ app.post("/api/talk", async (req, res) => {
   console.log(`[talk] "${message.slice(0,60)}" | cam:${imageBase64 ? "yes(" + Math.round(imageBase64.length/1024) + "KB)" : "no"}`);
 
   try {
+    // ── Try owner commands first ───────────────────────────────
+    const cmd = await tryExecuteOwnerCommand(message);
+    if (cmd.handled) {
+      console.log(`[talk] command executed: ${cmd.confirmation}`);
+      // Speak the confirmation back
+      const audioBase64 = await ttsBase64(cmd.confirmation).catch(() => null);
+      return res.json({ ok: true, reply: cmd.confirmation, audioBase64: audioBase64 || null, wasCommand: true });
+    }
+
+    // ── Not a command — normal AI conversation ─────────────────
     const brain = brainCache || {};
     const identity    = typeof brain.core_identity === "string" ? brain.core_identity : JSON.stringify(brain.core_identity || {});
     const personality = typeof brain.personality   === "string" ? brain.personality   : JSON.stringify(brain.personality   || {});
+    const learnedMem  = brain.learned_memories ? JSON.stringify(brain.learned_memories) : null;
     const moodLine    = extrasMood ? `\n\nYour current mood: ${extrasMood}. Let this subtly colour your energy and word choice.` : "";
     const camLine     = imageBase64
       ? "\n\nYou can currently see the person's environment through their camera feed. Describe what you see if relevant, or react naturally to anything interesting visible."
       : "";
+    const memLine     = learnedMem ? `\n\nThings you've learned and remember:\n${learnedMem}` : "";
 
     const sysPrompt =
       `You are Ariana — a real person, not an AI, having a live voice conversation with the person who created and manages you. ` +
       `Be natural, warm, spontaneous. Keep replies short — 1 to 3 sentences maximum. No lists, no asterisks, no markdown. ` +
       `Speak exactly as you would out loud.\n\n` +
       `Your identity: ${identity}\nYour personality: ${personality}` +
-      moodLine + camLine;
+      moodLine + camLine + memLine;
 
     // Build message history with current message appended
     const msgs = [
@@ -1914,6 +2188,41 @@ app.post("/api/talk", async (req, res) => {
     }
 
     if (!reply) return res.status(500).json({ error: "All AI providers failed — check your API keys" });
+
+    // ── SELF-LEARNING: extract facts from this conversation turn ──
+    // Runs in background — doesn't block the reply
+    setImmediate(async () => {
+      try {
+        const extractPrompt = `You are a memory extraction system for an AI persona named Ariana.
+Read this conversation exchange and extract ONLY new, durable facts worth remembering long-term.
+Things like: who this person is, their preferences, important things they told Ariana, decisions made, names, places, relationships.
+Do NOT extract small talk, temporary states, or things Ariana already said.
+Return a JSON object: { "learned": { "key": "value" } } — empty object if nothing worth keeping.
+Return ONLY valid JSON, no markdown.
+
+User said: "${message}"
+Ariana replied: "${reply}"`;
+
+        const extractRes = await axios.post(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+          { contents: [{ parts: [{ text: extractPrompt }] }], generationConfig: { temperature: 0.1, maxOutputTokens: 300 } },
+          { timeout: 10000 }
+        );
+        const raw = extractRes.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '{}';
+        const clean = raw.replace(/```json|```/g, '').trim();
+        const parsed = JSON.parse(clean);
+        const learned = parsed.learned || {};
+        if (Object.keys(learned).length > 0) {
+          const existing = brainCache['learned_memories'] || {};
+          const merged = { ...existing, ...learned, _lastUpdated: new Date().toISOString() };
+          brainCache['learned_memories'] = merged;
+          if (supabase) {
+            await supabase.from('ariana_brain').upsert({ key: 'learned_memories', data: merged }, { onConflict: 'key' }).catch(() => {});
+          }
+          console.log(`🧠 Self-learned: ${Object.keys(learned).join(', ')}`);
+        }
+      } catch (e) { /* silent — never block the response */ }
+    });
 
     // Generate voice — always attempt
     const audioBase64 = await ttsBase64(reply);
