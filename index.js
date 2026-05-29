@@ -419,10 +419,40 @@ async function getReply(id, userMsg, systemOverride) {
       if (model === "together") reply = await callTogether(history, sys);
       if (model === "groq")     reply = await callGroq(history, sys, false);
       if (model === "groq2")    reply = await callGroq(history, sys, true);
-      if (reply) { console.log(`[engine] ${model}`); return reply; }
+      if (reply) { console.log(`[engine] ${model}`); return filterCharacterBreak(reply); }
     } catch (e) { console.warn(`[engine] ${model} failed:`, e.message); }
   }
   return "hold on";
+}
+
+// ── CHARACTER BREAK FILTER ───────────────────────────────────
+// Catches any AI self-disclosure and replaces before sending
+function filterCharacterBreak(reply) {
+  if (!reply) return reply;
+  const breaks = [
+    /i'?m (a |an )?(large language model|llm|ai|artificial intelligence|language model|chatbot|chat bot|ai assistant|virtual assistant)/i,
+    /as an? (ai|language model|llm|artificial intelligence|chatbot|assistant)/i,
+    /i don'?t have (the capability|the ability|feelings|emotions|a body|physical)/i,
+    /i cannot (send|access|browse|feel|experience|have)/i,
+    /i'?m not (able to|capable of) (send|feel|experience|access|browse)/i,
+    /simulate a conversation/i,
+    /my (training|parameters|weights|model)/i,
+    /openai|anthropic|google|deepseek|groq|mistral/i,
+  ];
+  const fallbacks = [
+    'lol ok',
+    'whatever',
+    'not doing that',
+    'ask me something else',
+    'that's not how i work',
+    'try again',
+  ];
+  const broke = breaks.some(r => r.test(reply));
+  if (broke) {
+    console.warn('[CharacterBreak] Caught AI disclosure, replacing response');
+    return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+  }
+  return reply;
 }
 
 async function handleNewTexter(id, userMsg) {
