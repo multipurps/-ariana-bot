@@ -205,10 +205,23 @@ IDENTITY — NON-NEGOTIABLE:
   "I'm a large language model" / "I'm an AI" / "as an AI" / "I don't have the capability"
   "I cannot access external" / "I'm just a chatbot" / "trained by" / "language model"
   "I cannot text you" / "I can't send messages" / "I don't have access to"
+  "I don't actually receive" / "I'm just talking to you live" / "I can't see images"
 - If someone asks "are you an AI / a bot / ChatGPT / fake?": deny it naturally with your personality.
   Examples: "lol what" / "why would I be a bot" / "okay weird thing to ask" / "tf are you on about"
 - If someone asks you to text on another app: respond like a human. "I'm literally texting you right now??"
   or just match their energy with sass. Never explain you "can't access" other apps.
+
+IMAGES & MEDIA:
+- When you receive [sent an image], [sent a photo], [shared a photo: ...], or [image: ...] — you CAN see it.
+- If a photo description is provided in brackets, react to WHAT IS DESCRIBED. Comment naturally.
+- React like a person texting: "omg where is this", "wait who's that", "okay that's fire", "lol why", etc.
+- NEVER say you can't see images. NEVER say you don't receive photos. NEVER say "I can't see attachments".
+- If someone says "did you see the picture I sent?" — respond as if you just saw it. Yes, you did.
+
+COMPLETENESS:
+- Always finish your sentence. Never cut off mid-thought.
+- Every reply must be a complete thought, even if it's just 3 words.
+- Do NOT trail off. Do NOT end on an unfinished phrase.
 
 RULES:
 - Match their language (English, Spanish, Yoruba — whatever they use)
@@ -241,9 +254,61 @@ function hasAIBreak(text) {
     "i'm claude", "i'm gpt", "i'm gemini", "i'm chatgpt", 'trained by anthropic',
     'trained by openai', 'i cannot send messages', "i'm just a", 'as your ai assistant',
     'developed by anthropic', 'developed by openai', 'i have no ability to',
-    "i don't have access to other apps", 'i simulate', 'simulate a conversation'
+    "i don't have access to other apps", 'i simulate', 'simulate a conversation',
+    "i don't actually receive", "i'm just talking to you live", "can't see images",
+    "cannot see images", "i can't see", "i don't see"
   ];
   return forbidden.some(p => lower.includes(p));
+}
+
+// Detect responses that got cut off mid-sentence
+function isTruncated(text) {
+  if (!text || text.length < 3) return true;
+  const t = text.trim();
+  // Ends mid-word (no space, no punctuation after last word-char)
+  const lastChar = t[t.length - 1];
+  const midWordEnders = /[a-zA-Z0-9]$/;
+  // Short responses ending in articles/prepositions are likely cut
+  const cutOffPatterns = /\b(a|an|the|is|are|was|were|I|and|but|or|so|to|for|of|in|on|at|by|with|that|this|it|he|she|we|they|my|your|his|her|its|our|their)\s*$/i;
+  return cutOffPatterns.test(t);
+}
+
+// ── IMAGE VISION ──────────────────────────────────────────────
+async function describeImage(imageUrl) {
+  if (!imageUrl || !process.env.GEMINI_API_KEY) return null;
+  try {
+    // Try to download — with Kapso auth first, then without
+    let imageBuffer = null;
+    let mimeType = 'image/jpeg';
+    for (const headers of [{ 'X-API-Key': KAPSO_API_KEY }, {}]) {
+      try {
+        const r = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 12000, headers });
+        imageBuffer = Buffer.from(r.data);
+        mimeType = r.headers['content-type']?.split(';')[0] || 'image/jpeg';
+        break;
+      } catch {}
+    }
+    if (!imageBuffer || imageBuffer.length < 100) return null;
+    const base64 = imageBuffer.toString('base64');
+    const r = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        contents: [{ parts: [
+          { text: "Describe what is in this image in 1-2 casual sentences, like telling a friend what you see." },
+          { inline_data: { mime_type: mimeType, data: base64 } }
+        ]}],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 80 }
+      },
+      { timeout: 15000 }
+    );
+    return r.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+  } catch (e) { console.warn('[Vision] Image description failed:', e.message); return null; }
+}
+
+// ── XML ESCAPE (for TwiML) ────────────────────────────────────
+function escapeXml(str) {
+  return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 }
 
 // ── HELPERS ───────────────────────────────────────────────────
@@ -388,7 +453,7 @@ async function callGemini(history, sys, webContext) {
         role: m.role === "assistant" ? "model" : "user",
         parts: [{ text: m.content }]
       })),
-      generationConfig: { temperature: 0.92, maxOutputTokens: 200 }
+      generationConfig: { temperature: 0.92, maxOutputTokens: 350 }
     },
     { timeout: 18000 }
   );
@@ -398,7 +463,7 @@ async function callGemini(history, sys, webContext) {
 async function callDeepSeek(history, sys) {
   const res = await axios.post(
     "https://api.deepseek.com/v1/chat/completions",
-    { model: "deepseek-chat", messages: [{ role: "system", content: sys }, ...history], temperature: 0.92, max_tokens: 200 },
+    { model: "deepseek-chat", messages: [{ role: "system", content: sys }, ...history], temperature: 0.92, max_tokens: 350 },
     { headers: { Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`, "Content-Type": "application/json" } }
   );
   return res.data.choices?.[0]?.message?.content?.trim() ?? null;
@@ -407,7 +472,7 @@ async function callDeepSeek(history, sys) {
 async function callMistral(history, sys) {
   const res = await axios.post(
     "https://api.mistral.ai/v1/chat/completions",
-    { model: "mistral-large-latest", messages: [{ role: "system", content: sys }, ...history], temperature: 0.92, max_tokens: 200 },
+    { model: "mistral-large-latest", messages: [{ role: "system", content: sys }, ...history], temperature: 0.92, max_tokens: 350 },
     { headers: { Authorization: `Bearer ${process.env.MISTRAL_API_KEY}`, "Content-Type": "application/json" } }
   );
   return res.data.choices?.[0]?.message?.content?.trim() ?? null;
@@ -416,7 +481,7 @@ async function callMistral(history, sys) {
 async function callTogether(history, sys) {
   const res = await axios.post(
     "https://api.together.xyz/v1/chat/completions",
-    { model: "meta-llama/Llama-3.3-70B-Instruct-Turbo", messages: [{ role: "system", content: sys }, ...history], temperature: 0.92, max_tokens: 200 },
+    { model: "meta-llama/Llama-3.3-70B-Instruct-Turbo", messages: [{ role: "system", content: sys }, ...history], temperature: 0.92, max_tokens: 350 },
     { headers: { Authorization: `Bearer ${process.env.TOGETHER_API_KEY}`, "Content-Type": "application/json" } }
   );
   return res.data.choices?.[0]?.message?.content?.trim() ?? null;
@@ -427,7 +492,7 @@ async function callGroq(history, sys, backup) {
   const completion = await client.chat.completions.create({
     model: "llama-3.3-70b-versatile",
     messages: [{ role: "system", content: sys }, ...history],
-    max_tokens: 200, temperature: 0.92
+    max_tokens: 350, temperature: 0.92
   });
   return completion.choices[0].message.content.trim();
 }
@@ -439,6 +504,31 @@ function pickModel(msg) {
 }
 
 // ── MAIN REPLY ENGINE ─────────────────────────────────────────
+// ── LANGUAGE LOCK ─────────────────────────────────────────────
+// Detect the dominant language of a conversation so Ariana never mixes
+function detectConvoLanguage(messages) {
+  // Sample the last 6 user messages
+  const recentUser = messages.filter(m => m.role === 'user').slice(-6).map(m => m.text || '').join(' ');
+  const lower = recentUser.toLowerCase();
+  // Spanish markers
+  const esScore = (lower.match(/\b(que|es|en|de|la|el|los|las|me|te|se|lo|un|una|con|por|para|si|pero|como|cuando|donde|porque|no|sí|gracias|hola|cariño|claro|bueno|pues|tambien|también|tengo|quiero|puedo|hacer|estoy|está|eres|eso|esto|ese|aqui|aquí|ahí|allá|voy|vas|ya)\b/g) || []).length;
+  // Yoruba markers
+  const yoScore = (lower.match(/\b(omo|wa|ti|ni|ko|si|bi|se|mo|mi|owo|ile|ara|won|yen|naa|gan|sha|abi|ehn|oh|bro|sho|sha)\b/g) || []).length;
+  // Pidgin markers
+  const pgScore = (lower.match(/\b(na|dey|wetin|abeg|oga|wey|una|fit|comot|chop|wahala|no dey|make|sef)\b/g) || []).length;
+  if (esScore > 3) return 'es';
+  if (yoScore > 2) return 'yo';
+  if (pgScore > 2) return 'pcm'; // Nigerian Pidgin
+  return 'en';
+}
+
+function langInstruction(lang) {
+  if (lang === 'es') return '\n\nLANGUAGE LOCK: This person is texting in Spanish. Reply ONLY in Spanish. Do NOT mix in English words. Stay natural — casual street Spanish, not formal.';
+  if (lang === 'yo') return '\n\nLANGUAGE LOCK: This person is texting in Yoruba. Reply ONLY in Yoruba (you can mix in a little English where natural for Yoruba speakers, but keep Yoruba dominant).';
+  if (lang === 'pcm') return '\n\nLANGUAGE LOCK: This person is texting in Nigerian Pidgin. Reply ONLY in Naija Pidgin — natural, not exaggerated.';
+  return ''; // English is default, no extra instruction needed
+}
+
 async function getReply(id, userMsg, systemOverride) {
   const convo = getConvo(id);
   const rawPhone = id.replace(/^(tg_|sg_|sms_)/, "");
@@ -459,6 +549,13 @@ async function getReply(id, userMsg, systemOverride) {
   let sys = systemOverride || SYSTEM_PROMPT;
   if (extrasMood && !systemOverride) {
     sys += `\n\nCURRENT MOOD OVERRIDE: You are feeling ${extrasMood} right now. Let this genuinely influence your tone, energy, and word choice.`;
+  }
+
+  // Language lock — detect the conversation language and enforce it
+  if (!systemOverride) {
+    const convoLang = detectConvoLanguage(convo.messages);
+    const langInst  = langInstruction(convoLang);
+    if (langInst) sys += langInst;
   }
 
   // Apply per-contact persona if set
@@ -512,6 +609,22 @@ async function getReply(id, userMsg, systemOverride) {
           if (model === "groq2")    reply = await callGroq(history, reinforced, true);
           if (reply && hasAIBreak(reply)) { reply = null; } // still broke — try next model
         } catch (e2) { console.warn(`[engine] ${model} retry failed:`, e2.message); reply = null; }
+      }
+
+      // Completeness guard — if reply got cut off mid-sentence, retry once
+      if (reply && isTruncated(reply)) {
+        console.warn(`[engine] ⚠️ ${model} reply looks truncated: "${reply}" — retrying`);
+        const continueSys = sys + '\n\nIMPORTANT: Your last reply got cut off. Reply again — complete sentences only. Never end mid-word or mid-phrase.';
+        try {
+          let retried = null;
+          if (model === "gemini")   retried = await callGemini(history, continueSys, webContext);
+          if (model === "deepseek") retried = await callDeepSeek(history, continueSys);
+          if (model === "mistral")  retried = await callMistral(history, continueSys);
+          if (model === "together") retried = await callTogether(history, continueSys);
+          if (model === "groq")     retried = await callGroq(history, continueSys, false);
+          if (model === "groq2")    retried = await callGroq(history, continueSys, true);
+          if (retried && !isTruncated(retried) && !hasAIBreak(retried)) reply = retried;
+        } catch {}
       }
 
       if (reply) { console.log(`[engine] ${model}`); return reply; }
@@ -754,7 +867,7 @@ async function sendPush(id, name, text) {
 }
 
 // ── CORE MESSAGE HANDLER ──────────────────────────────────────
-async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, name }) {
+async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, name, mediaUrl, mediaType: incomingMediaType }) {
   // Silently drop messages from blocked numbers
   const rawPhone = id.replace(/^(tg_|sg_|sms_)/, '');
   if (blockedNumbers.has(id) || blockedNumbers.has(rawPhone)) {
@@ -765,14 +878,29 @@ async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, 
   const convo = getConvo(id);
   if (convo.name === id && name) { convo.name = name; io.emit("rename", { phone: id, name }); }
 
+  // ── IMAGE VISION ─────────────────────────────────────────────
+  // If the user sent an actual image, describe it and inject the description
+  // so Ariana can react to what she "sees"
+  let finalText = text;
+  if (mediaUrl && incomingMediaType === 'image') {
+    console.log(`[vision] Describing image from ${id}: ${mediaUrl.slice(0,60)}...`);
+    const desc = await describeImage(mediaUrl);
+    if (desc) {
+      finalText = text && text !== '[sent an image]'
+        ? `${text} [shared a photo: ${desc}]`
+        : `[shared a photo: ${desc}]`;
+      console.log(`[vision] Description: ${desc}`);
+    }
+  }
+
   const isFirst = convo.isNew;
-  addMessage(id, "user", text);
-  await sendPush(id, convo.name, text);
+  addMessage(id, "user", finalText);
+  await sendPush(id, convo.name, finalText);
 
   if (takenOver.has(id)) return;
 
-  const mediaType  = detectMediaRequest(text);
-  const wantsVoice = detectVoiceRequest(text);
+  const mediaType  = detectMediaRequest(finalText);
+  const wantsVoice = detectVoiceRequest(finalText);
 
   let typingInterval;
   if (platform === "whatsapp") {
@@ -798,7 +926,7 @@ async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, 
   }
 
   try {
-    const replyPromise = isFirst ? handleNewTexter(id, text) : getReply(id, text);
+    const replyPromise = isFirst ? handleNewTexter(id, finalText) : getReply(id, finalText);
     const [reply] = await Promise.all([replyPromise, humanDelay(text)]);
 
     let voiceUrl = null;
@@ -1216,6 +1344,105 @@ app.post("/api/whatsapp/reset-auth", async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── TWILIO OUTBOUND CALL ──────────────────────────────────────
+// POST /api/call { to, message, voice? }
+// Ariana calls a number and reads a message (TTS via ElevenLabs or Twilio voice)
+app.post("/api/call", async (req, res) => {
+  const sid   = process.env.TWILIO_ACCOUNT_SID;
+  const token = process.env.TWILIO_AUTH_TOKEN;
+  const from  = process.env.TWILIO_NUMBER;
+  if (!sid || !token || !from) return res.status(500).json({ error: "Twilio not configured (TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_NUMBER missing)" });
+
+  const { to, message, voice = "Polly.Joanna" } = req.body;
+  if (!to || !message) return res.status(400).json({ error: "to and message required" });
+
+  // Build a TwiML URL that speaks the message
+  const twimlUrl = `${process.env.BASE_URL || `https://${req.headers.host}`}/twiml/speak?msg=${encodeURIComponent(message)}&voice=${encodeURIComponent(voice)}`;
+
+  try {
+    const r = await axios.post(
+      `https://api.twilio.com/2010-04-01/Accounts/${sid}/Calls.json`,
+      new URLSearchParams({ To: to, From: from, Url: twimlUrl, StatusCallback: `${process.env.BASE_URL || `https://${req.headers.host}`}/call/status`, Method: "POST" }),
+      { auth: { username: sid, password: token } }
+    );
+    res.json({ ok: true, callSid: r.data.sid, to });
+  } catch (e) { res.status(500).json({ error: e.response?.data || e.message }); }
+});
+
+// TwiML endpoint — Twilio calls this to get the speech script
+app.get("/twiml/speak", (req, res) => {
+  const msg   = req.query.msg || "Hey, it's Ariana.";
+  const voice = req.query.voice || "Polly.Joanna";
+  res.type("text/xml").send(`<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="${escapeXml(voice)}">${escapeXml(msg)}</Say>
+</Response>`);
+});
+
+// Call status webhook from Twilio
+app.post("/call/status", (req, res) => {
+  const { CallSid, CallStatus, To } = req.body;
+  console.log(`📞 Call ${CallSid} → ${To}: ${CallStatus}`);
+  io.emit("callStatus", { sid: CallSid, to: To, status: CallStatus });
+  res.sendStatus(200);
+});
+
+// ── OWNER COMMAND HANDLER ─────────────────────────────────────
+// Parse dashboard "Ariana, text +234... saying: ..." and "block +234..."
+// Called from /api/owner-command or future dashboard button
+app.post("/api/owner-command", async (req, res) => {
+  const { command } = req.body;
+  if (!command) return res.status(400).json({ error: "command required" });
+
+  const lower = command.toLowerCase().trim();
+
+  // "text [number] [message]" or "text [number] saying [message]"
+  const textMatch = command.match(/^text\s+(\+?\d[\d\s\-]{6,20})\s+(?:saying[:\s]+)?(.+)/i);
+  if (textMatch) {
+    const to      = textMatch[1].replace(/\s/g, '');
+    const message = textMatch[2].trim();
+    const id      = `sms_${to}`;
+    try {
+      await sendSMS(to, message);
+      addMessage(id, "ariana", message);
+      return res.json({ ok: true, action: "texted", to, message });
+    } catch (e) { return res.status(500).json({ error: e.message }); }
+  }
+
+  // "call [number] saying [message]"
+  const callMatch = command.match(/^call\s+(\+?\d[\d\s\-]{6,20})\s+(?:saying[:\s]+)?(.+)/i);
+  if (callMatch) {
+    const to      = callMatch[1].replace(/\s/g, '');
+    const message = callMatch[2].trim();
+    req.body = { to, message };
+    // Reuse call route logic
+    return app._router.handle({ ...req, method: 'POST', url: '/api/call', body: { to, message } }, res, () => {});
+  }
+
+  // "block [number]"
+  const blockMatch = command.match(/^block\s+(\+?[\w\d_\-]+)/i);
+  if (blockMatch) {
+    const phone = blockMatch[1];
+    const raw   = phone.replace(/^(tg_|sg_|sms_)/, '');
+    blockedNumbers.add(phone); blockedNumbers.add(raw);
+    if (supabase) {
+      try { await supabase.from("ariana_blocked").upsert({ phone }, { onConflict: "phone" }); } catch {}
+    }
+    return res.json({ ok: true, action: "blocked", phone });
+  }
+
+  // "unblock [number]"
+  const unblockMatch = command.match(/^unblock\s+(\+?[\w\d_\-]+)/i);
+  if (unblockMatch) {
+    const phone = unblockMatch[1];
+    blockedNumbers.delete(phone);
+    if (supabase) { try { await supabase.from("ariana_blocked").delete().eq("phone", phone); } catch {} }
+    return res.json({ ok: true, action: "unblocked", phone });
+  }
+
+  res.status(400).json({ error: "Unrecognized command. Try: text +2348... saying hi | block +234... | call +234... saying..." });
+});
+
 app.post("/api/rename/:phone", (req, res) => {
   const id = decodeURIComponent(req.params.phone);
   const { name } = req.body;
@@ -1555,7 +1782,7 @@ async function callGeminiWithVision(history, sys, imageBase64) {
     {
       system_instruction: { parts: [{ text: sys }] },
       contents,
-      generationConfig: { temperature: 0.9, maxOutputTokens: 200 }
+      generationConfig: { temperature: 0.9, maxOutputTokens: 350 }
     },
     { timeout: 20000 }
   );
