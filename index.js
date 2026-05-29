@@ -411,8 +411,20 @@ async function searchUnsplash(query) {
 
 async function getMediaUrl(type) {
   if (type === "selfie") {
+    // Primary: ariana_media Supabase table (where dashboard uploads go)
+    if (supabase) {
+      try {
+        const { data } = await supabase.from('ariana_media').select('url').eq('media_type','image').limit(50);
+        const urls = (data||[]).map(r => r.url).filter(Boolean);
+        if (urls.length) {
+          console.log(`[media] Picking from ${urls.length} Supabase photos`);
+          return urls[Math.floor(Math.random() * urls.length)];
+        }
+      } catch (e) { console.warn('[media] Supabase query failed:', e.message); }
+    }
+    // Fallback: legacy ariana_photos array in media_library.json
     const photos = mediaLib.ariana_photos || [];
-    if (!photos.length) return null;
+    if (!photos.length) { console.warn('[media] No photos in Supabase or media_library.json'); return null; }
     return photos[Math.floor(Math.random() * photos.length)];
   }
   const queries = { food: "aesthetic food photography", vibe: "aesthetic lifestyle photography" };
@@ -427,16 +439,32 @@ function detectVoiceRequest(msg) {
 function randomVoice() { return Math.random() < 0.15; }
 
 async function uploadToCloudinary(buffer) {
-  if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_UPLOAD_PRESET) return null;
-  try {
-    const base64  = buffer.toString("base64");
-    const dataUri = `data:audio/mpeg;base64,${base64}`;
-    const res = await axios.post(
-      `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/auto/upload`,
-      { file: dataUri, upload_preset: process.env.CLOUDINARY_UPLOAD_PRESET, folder: "ariana-voice" }
-    );
-    return res.data.secure_url;
-  } catch (e) { console.warn("Cloudinary upload failed:", e.message); return null; }
+  // Try Cloudinary first
+  if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_UPLOAD_PRESET) {
+    try {
+      const base64  = buffer.toString('base64');
+      const dataUri = `data:audio/mpeg;base64,${base64}`;
+      const res = await axios.post(
+        `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/auto/upload`,
+        { file: dataUri, upload_preset: process.env.CLOUDINARY_UPLOAD_PRESET, folder: 'ariana-voice' }
+      );
+      if (res.data?.secure_url) return res.data.secure_url;
+    } catch (e) { console.warn('Cloudinary failed, trying Supabase storage:', e.message); }
+  }
+  // Fallback: Supabase storage (already configured)
+  if (supabase) {
+    try {
+      const { randomUUID } = require('crypto');
+      const filename = `voice/${randomUUID()}.mp3`;
+      const { error } = await supabase.storage.from('ariana-media').upload(filename, buffer, { contentType: 'audio/mpeg', upsert: false });
+      if (error) throw new Error(error.message);
+      const { data: { publicUrl } } = supabase.storage.from('ariana-media').getPublicUrl(filename);
+      console.log('[voice] Audio uploaded to Supabase:', publicUrl.slice(0,60));
+      return publicUrl;
+    } catch (e) { console.warn('Supabase audio upload failed:', e.message); }
+  }
+  console.warn('[voice] No audio storage configured (no Cloudinary or Supabase)');
+  return null;
 }
 
 async function generateVoiceNote(text) {
@@ -454,6 +482,29 @@ async function generateVoiceNote(text) {
   } catch (e) { console.warn("ElevenLabs TTS failed:", e.message); return null; }
 }
 
+
+// ── SPANISH / LANGUAGE FILTER ─────────────────────────────────
+// Strips Spanish terms when user is texting in English
+function filterLanguage(reply, userMessage) {
+  if (!reply) return reply;
+  // Detect if user is writing in Spanish
+  const spanishSignals = /[áéíóúñü¿¡]|(hola|gracias|por favor|cariño|amor|querida|querido|bueno|también|está|señor|señora|pero|para|como|esto|aqui|aquí|mucho|poco|nada|todo|siempre|nunca|ahora|después|antes|porque|cuando|donde|quien|qué|cómo|cuándo|dónde|quién)/i;
+  if (spanishSignals.test(userMessage)) return reply; // User writes Spanish — allow it
+  
+  // User is English — strip Spanish endearments and phrases from reply
+  const terms = [
+    [/mi amor[,.]?/gi, ''], [/cariño[,.]?/gi, ''], [/amor[,.]?/gi, ''],
+    [/querida[,.]?/gi, ''], [/querido[,.]?/gi, ''], [/hermosa[,.]?/gi, ''],
+    [/bella[,.]?/gi, ''], [/guapa[,.]?/gi, ''], [/chica[,.]?/gi, ''],
+    [/dios mio[,.]?/gi, 'oh my god'], [/ay[,.]?/gi, ''],
+  ];
+  let out = reply;
+  for (const [pat, rep] of terms) out = out.replace(pat, rep);
+  out = out.replace(/^[,s]+|[,s]+$/g, '').replace(/s{2,}/g, ' ').trim();
+  if (out.length < 3) return reply; // Don't return near-empty string
+  if (out !== reply) console.log('[lang] Stripped Spanish from reply');
+  return out;
+}
 // ── MODEL CALLERS ─────────────────────────────────────────────
 async function callGemini(history, sys, webContext) {
   if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not set");
@@ -668,7 +719,7 @@ async function getReply(id, userMsg, systemOverride, imageBase64 = null) {
         } catch {}
       }
 
-      if (reply) { console.log(`[engine] ${model}`); return reply; }
+      if (reply) { console.log(`[engine] ${model}`); return filterLanguage(reply, userMsg); }
     } catch (e) { console.warn(`[engine] ${model} failed:`, e.message); }
   }
   return "hold on";
@@ -875,14 +926,14 @@ async function sendMMS(to, message, mediaUrl) {
 }
 
 // ── UNIFIED SEND ──────────────────────────────────────────────
-async function sendReply(id, platform, reply, voiceUrl, imageUrl, chatId, from, phoneNumberId) {
+async function sendReply(id, platform, reply, voiceUrl, imageUrl, chatId, from, phoneNumberId, caption) {
   if (voiceUrl) {
     if (platform === "whatsapp")      await sendWhatsAppVoiceNote(from, voiceUrl, phoneNumberId);
     else if (platform === "telegram") await sendTelegramVoice(chatId, voiceUrl);
     else if (platform === "signal")   await sendSignal(from, reply);
     else if (platform === "sms")      await sendSMS(from, reply);
   } else if (imageUrl) {
-    if (platform === "whatsapp")      await sendWhatsAppImage(from, imageUrl, "", phoneNumberId);
+    if (platform === "whatsapp")      await sendWhatsAppImage(from, imageUrl, caption || "", phoneNumberId);
     else if (platform === "telegram") await sendTelegramPhoto(chatId, imageUrl);
     else if (platform === "signal")   await sendSignal(from, imageUrl);
     else if (platform === "sms")      await sendMMS(from, "", imageUrl);
@@ -946,6 +997,47 @@ async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, 
   addMessage(id, "user", finalText);
   await sendPush(id, convo.name, finalText);
 
+
+  // ── OWNER CROSS-PLATFORM COMMANDS ────────────────────────────
+  const isOwner = OWNER_PHONE && (rawPhone === OWNER_PHONE || id === OWNER_PHONE);
+  if (isOwner && finalText) {
+    // text +234XXXX on whatsapp saying hi
+    const m = finalText.match(/^(?:text|message|msg|send)\s+([+\d\s\-]{7,20}|\w+)(?:\s+on)?\s+(whatsapp|signal|telegram|sms|wa)?\s*(?:saying[:\s]+|:\s*)?(.+)/i);
+    if (m) {
+      const target = m[1].trim().replace(/\s/g, '');
+      const p      = (m[2]||'whatsapp').toLowerCase();
+      const msg    = m[3].trim();
+      const plat   = p.includes('signal') ? 'signal' : p.includes('telegram') ? 'telegram' : p.includes('sms') ? 'sms' : 'whatsapp';
+      console.log('[owner] cross-send to ' + plat + ' ' + target + ': ' + msg);
+      try {
+        if (plat === 'whatsapp')      await sendWhatsApp(target, msg);
+        else if (plat === 'signal')   await sendSignal(target, msg);
+        else if (plat === 'telegram') await sendTelegram(target, msg);
+        else if (plat === 'sms')      await sendSMS(target, msg);
+        addMessage(plat === 'signal' ? 'sg_'+target : plat === 'telegram' ? 'tg_'+target : target, 'ariana', msg);
+        const ack = 'done. sent to ' + target + ' on ' + plat;
+        addMessage(id, 'ariana', ack);
+        await sendReply(id, platform, ack, null, null, chatId, from, phoneNumberId);
+        return;
+      } catch(e) {
+        const err = 'failed: ' + e.message;
+        addMessage(id, 'ariana', err);
+        await sendReply(id, platform, err, null, null, chatId, from, phoneNumberId);
+        return;
+      }
+    }
+    // block +234XXXX
+    const bm = finalText.match(/^block\s+([+\w\d_\-]+)/i);
+    if (bm) {
+      const phone = bm[1];
+      blockedNumbers.add(phone);
+      if (supabase) supabase.from('ariana_blocked').upsert({phone},{onConflict:'phone'}).catch(()=>{});
+      const ack = 'blocked ' + phone;
+      addMessage(id,'ariana',ack);
+      await sendReply(id,platform,ack,null,null,chatId,from,phoneNumberId);
+      return;
+    }
+  }
   if (takenOver.has(id)) return;
 
   const mediaType  = detectMediaRequest(finalText);
@@ -989,7 +1081,7 @@ async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, 
       addMessage(id, "ariana", `[image: ${mediaType}]`);
       if (typingInterval)   clearInterval(typingInterval);
       if (tgTypingInterval) clearInterval(tgTypingInterval);
-      await sendReply(id, platform, textReply, null, imageUrl, chatId, from, phoneNumberId);
+      await sendReply(id, platform, textReply, null, imageUrl, chatId, from, phoneNumberId, textReply);
       return;
     }
 
