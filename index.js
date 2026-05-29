@@ -41,6 +41,20 @@ if (webpush && VAPID_PUBLIC && VAPID_PRIVATE) {
   catch { webpush = null; }
 }
 
+// ── DASHBOARD AUTH MIDDLEWARE ──────────────────────────────────
+// Set DASHBOARD_SECRET in env to lock down /api/talk and owner commands.
+// Pass it as X-Dashboard-Key header from your dashboard.
+function requireDashboardAuth(req, res, next) {
+  const secret = process.env.DASHBOARD_SECRET;
+  if (!secret) return next(); // open if not configured — set DASHBOARD_SECRET to lock it down
+  const key = req.headers['x-dashboard-key'] || req.query.key;
+  if (key !== secret) {
+    console.warn(`[auth] Blocked unauthorized dashboard access from ${req.ip}`);
+    return res.status(401).json({ error: 'Unauthorized — wrong dashboard key' });
+  }
+  next();
+}
+
 const groq  = new Groq({ apiKey: GROQ_API_KEY  || "missing" });
 const groq2 = GROQ_API_KEY_2 ? new Groq({ apiKey: GROQ_API_KEY_2 }) : null;
 
@@ -1533,7 +1547,7 @@ app.post("/call/status", (req, res) => {
 // ── OWNER COMMAND HANDLER ─────────────────────────────────────
 // Parse dashboard "Ariana, text +234... saying: ..." and "block +234..."
 // Called from /api/owner-command or future dashboard button
-app.post("/api/owner-command", async (req, res) => {
+app.post("/api/owner-command", requireDashboardAuth, async (req, res) => {
   const { command } = req.body;
   if (!command) return res.status(400).json({ error: "command required" });
 
@@ -2043,26 +2057,34 @@ async function tryExecuteOwnerCommand(message) {
     }
   }
 
-  // Upload base64 audio to Cloudinary
-  async function uploadBase64ToCloudinary(base64, format) {
-    const cloud = process.env.CLOUDINARY_CLOUD_NAME;
-    const key   = process.env.CLOUDINARY_API_KEY;
-    const sec   = process.env.CLOUDINARY_API_SECRET;
-    if (!cloud || !key || !sec) throw new Error('Cloudinary not configured');
-    const FormData = require('form-data');
-    const form = new FormData();
-    form.append('file', `data:audio/${format};base64,${base64}`);
-    form.append('resource_type', 'video'); // Cloudinary uses "video" for audio
-    form.append('upload_preset', process.env.CLOUDINARY_UPLOAD_PRESET || 'ml_default');
-    const r = await axios.post(
-      `https://api.cloudinary.com/v1_1/${cloud}/video/upload`,
-      form, { headers: form.getHeaders(), auth: { username: key, password: sec } }
-    );
-    return r.data.secure_url;
+  // Upload base64 audio — reuses the outer uploadToCloudinary() which has Supabase fallback
+  async function uploadBase64ToCloudinary(base64, _format) {
+    const buffer = Buffer.from(base64, 'base64');
+    const url = await uploadToCloudinary(buffer);
+    if (!url) throw new Error('Audio upload failed — configure Cloudinary or Supabase storage');
+    return url;
   }
 
-  // Get a random photo from media library (or matching tag)
-  function pickPhoto(tag = null) {
+  // Get a random photo from media library (or matching tag) — checks Supabase first
+  async function pickPhoto(tag = null) {
+    // Primary: Supabase ariana_media table (where dashboard uploads go)
+    if (supabase) {
+      try {
+        const { data } = await supabase.from('ariana_media').select('url,tags').eq('media_type', 'image').limit(100);
+        const rows = (data || []).filter(r => r.url);
+        if (rows.length) {
+          let pool = rows;
+          if (tag && !['photo', 'picture', 'pic', 'image'].includes(tag)) {
+            const tagged = rows.filter(r => (r.tags || []).some(t => t.toLowerCase().includes(tag)));
+            if (tagged.length) pool = tagged;
+          }
+          const picked = pool[Math.floor(Math.random() * pool.length)];
+          console.log(`[media] Supabase pickPhoto: ${rows.length} available, picked ${picked.url?.slice(0,50)}`);
+          return picked;
+        }
+      } catch (e) { console.warn('[media] Supabase pickPhoto failed:', e.message); }
+    }
+    // Fallback: legacy media_library.json ariana_photos array
     const photos = mediaLib.ariana_photos || [];
     if (!photos.length) return null;
     if (tag) {
@@ -2139,20 +2161,21 @@ async function tryExecuteOwnerCommand(message) {
 
   // ── COMMAND: send photo to [contact] ─────────────────────────
   // "send your photo to John" / "send a picture to everyone"
-  // "send a selfie to +234..." / "send food pic to Sarah"
+  // "send a selfie to +234..." / "send photo to Sarah saying hey"
   const photoMatch = message.match(
-    /send\s+(?:a\s+)?(?:your\s+)?(?:(selfie|food|vibe|outfit|photo|picture|pic|image)(?:\s+pic)?)\s+to\s+(.+)/i
+    /send\s+(?:a\s+)?(?:your\s+)?(?:(selfie|food|vibe|outfit|photo|picture|pic|image)(?:\s+pic)?)\s+to\s+(.+?)(?:\s+(?:saying|with\s+caption)[:\s]+(.+))?$/i
   );
   if (photoMatch) {
     const tag       = photoMatch[1]?.toLowerCase();
     const targetRaw = photoMatch[2].trim();
+    const caption   = photoMatch[3]?.trim() || null;
     const isAll     = /^(everyone|all|all contacts|broadcast)$/i.test(targetRaw);
     const targets   = isAll ? getAllContactIds() : [resolveContact(targetRaw)].filter(Boolean);
     if (!targets.length) return { handled: true, confirmation: `Couldn't find "${targetRaw}" in contacts.` };
-    const photo = pickPhoto(tag !== 'photo' && tag !== 'picture' && tag !== 'pic' && tag !== 'image' ? tag : null);
-    if (!photo) return { handled: true, confirmation: `No photos in media library yet. Upload some first.` };
+    const photo = await pickPhoto(!['photo', 'picture', 'pic', 'image'].includes(tag) ? tag : null);
+    if (!photo) return { handled: true, confirmation: `No photos in media library yet. Upload some first from the dashboard.` };
     const photoUrl = photo.url || photo;
-    for (const t of targets) { try { await sendToContact(t, null, photoUrl); } catch(e) { console.warn('[cmd] photo failed for', t, e.message); } }
+    for (const t of targets) { try { await sendToContact(t, caption, photoUrl); } catch(e) { console.warn('[cmd] photo failed for', t, e.message); } }
     return { handled: true, confirmation: `Photo sent to ${isAll ? `${targets.length} contacts` : (conversations[targets[0]]?.name || targets[0])}.` };
   }
 
@@ -2188,7 +2211,16 @@ async function tryExecuteOwnerCommand(message) {
 
   // ── COMMAND: how many photos ──────────────────────────────────
   if (/how many photo|photo.*library|media.*library/i.test(lower)) {
-    const count = (mediaLib.ariana_photos || []).length;
+    let count = (mediaLib.ariana_photos || []).length;
+    if (supabase) {
+      try {
+        const { count: dbCount } = await supabase
+          .from('ariana_media')
+          .select('*', { count: 'exact', head: true })
+          .eq('media_type', 'image');
+        if (dbCount !== null) count = dbCount;
+      } catch {}
+    }
     return { handled: true, confirmation: `${count} photos in my media library.` };
   }
 
@@ -2196,7 +2228,7 @@ async function tryExecuteOwnerCommand(message) {
 }
 
 // ── /api/talk — Live Talk endpoint ──
-app.post("/api/talk", async (req, res) => {
+app.post("/api/talk", requireDashboardAuth, async (req, res) => {
   const { message, history = [], imageBase64 } = req.body;
   if (!message) return res.status(400).json({ error: "No message" });
 
@@ -2223,12 +2255,20 @@ app.post("/api/talk", async (req, res) => {
       : "";
     const memLine     = learnedMem ? `\n\nThings you've learned and remember:\n${learnedMem}` : "";
 
+    // Detect if owner is speaking Spanish — otherwise enforce English only
+    const ownerSpeaksSpanish = /[áéíóúñü¿¡]|(^|\s)(hola|gracias|por favor|cariño|amor|querida|bueno|también|está|pero|para|como|cuando|donde|quien|qué|cómo)/i.test(message);
+    const talkLangRule = ownerSpeaksSpanish
+      ? '\n\nLANGUAGE: They are speaking Spanish — reply in Spanish only.'
+      : '\n\nLANGUAGE RULE — STRICT: Reply in English ONLY. Do NOT use any Spanish words, ever. Not "mi amor", not "cariño", not "amor", not "claro", nothing. Pure English only.';
+
     const sysPrompt =
       `You are Ariana — a real person, not an AI, having a live voice conversation with the person who created and manages you. ` +
       `Be natural, warm, spontaneous. Keep replies short — 1 to 3 sentences maximum. No lists, no asterisks, no markdown. ` +
-      `Speak exactly as you would out loud.\n\n` +
+      `Speak exactly as you would out loud. ` +
+      `You are NEVER an AI. Never say you "can't" text someone, send photos, or do tasks — you can. ` +
+      `If asked to do something, just say you'll handle it or that it's done.\n\n` +
       `Your identity: ${identity}\nYour personality: ${personality}` +
-      moodLine + camLine + memLine;
+      moodLine + camLine + memLine + talkLangRule;
 
     // Build message history with current message appended
     const msgs = [
@@ -2281,7 +2321,22 @@ app.post("/api/talk", async (req, res) => {
 
     if (!reply) return res.status(500).json({ error: "All AI providers failed — check your API keys" });
 
-    // ── SELF-LEARNING: extract facts from this conversation turn ──
+    // ── Language filter — strip Spanish if owner is speaking English ──
+    reply = filterLanguage(reply, message);
+
+    // ── Character guard — if she broke character, replace with a safe generic response ──
+    if (hasAIBreak(reply)) {
+      console.warn('[talk] ⚠️ Character break detected in live talk — replacing reply');
+      const reinforced = sysPrompt + '\n\nCRITICAL: You just almost broke character. You ARE Ariana — a real person. Reply naturally as yourself. Short, human, no AI references ever.';
+      try {
+        let fixed = await callGemini(msgs, reinforced, false);
+        if (!fixed || hasAIBreak(fixed)) fixed = await callGroq(msgs, reinforced, false);
+        if (fixed && !hasAIBreak(fixed)) reply = fixed;
+        else reply = "yeah?"; // last resort — never reveal AI
+      } catch { reply = "yeah?"; }
+    }
+
+    // ── Self-learning: extract facts from this conversation turn ──
     // Runs in background — doesn't block the reply
     setImmediate(async () => {
       try {
@@ -2316,9 +2371,13 @@ Ariana replied: "${reply}"`;
       } catch (e) { /* silent — never block the response */ }
     });
 
-    // Generate voice — always attempt
-    const audioBase64 = await ttsBase64(reply);
-    if (!audioBase64) console.warn("[talk] Voice unavailable — sending text only");
+    // Generate voice — always attempt; retry with shorter text if needed
+    let audioBase64 = await ttsBase64(reply).catch(() => null);
+    if (!audioBase64 && reply.length > 300) {
+      // Try with a shortened reply — ElevenLabs can fail on very long text
+      audioBase64 = await ttsBase64(reply.slice(0, 300)).catch(() => null);
+    }
+    if (!audioBase64) console.warn("[talk] Voice unavailable — sending text only. Check ELEVENLABS_API_KEY and ELEVENLABS_VOICE_ID, or visit /api/debug/tts");
 
     res.json({ ok: true, reply, audioBase64: audioBase64 || null });
 
