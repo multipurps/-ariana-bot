@@ -44,6 +44,14 @@ if (webpush && VAPID_PUBLIC && VAPID_PRIVATE) {
 const groq  = new Groq({ apiKey: GROQ_API_KEY  || "missing" });
 const groq2 = GROQ_API_KEY_2 ? new Groq({ apiKey: GROQ_API_KEY_2 }) : null;
 
+// ElevenLabs voice ID — resolved from env or auto-discovered at startup
+let cachedVoiceId = process.env.ELEVENLABS_VOICE_ID
+                 || process.env.ELEVENLABS_VOICE
+                 || process.env.ELEVEN_VOICE_ID
+                 || process.env.VOICE_ID
+                 || process.env.XI_VOICE_ID
+                 || null;
+
 // ── SUPABASE PERSISTENCE ──────────────────────────────────────
 let supabase = null;
 try {
@@ -99,10 +107,50 @@ async function loadConversations() {
   } catch (e) { console.error("Supabase load error:", e.message); }
 }
 
+// ── FRIEND WHITELIST ──────────────────────────────────────────
+async function loadWhitelist() {
+  if (!supabase) return;
+  try {
+    const { data } = await supabase.from('ariana_friends').select('phone');
+    (data || []).forEach(r => friendWhitelist.add(r.phone));
+    console.log(`👥 Whitelist: ${friendWhitelist.size} friends`);
+  } catch (e) { console.warn('Whitelist load error:', e.message); }
+}
+
+// ── BLOCKED NUMBERS ───────────────────────────────────────────
+async function loadBlocked() {
+  if (!supabase) return;
+  try {
+    const { data } = await supabase.from('ariana_blocked').select('phone');
+    (data || []).forEach(r => blockedNumbers.add(r.phone));
+    console.log(`🚫 Blocked: ${blockedNumbers.size} numbers`);
+  } catch (e) { console.warn('Block list load error:', e.message); }
+}
+
+// ── VOICE ID AUTO-DISCOVERY ───────────────────────────────────
+async function autoFetchVoiceId() {
+  if (cachedVoiceId) return; // already set from env
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  if (!apiKey) return;
+  try {
+    const res = await axios.get('https://api.elevenlabs.io/v1/voices', {
+      headers: { 'xi-api-key': apiKey }, timeout: 10000
+    });
+    const voices = res.data?.voices || [];
+    if (voices.length) {
+      cachedVoiceId = voices[0].voice_id;
+      console.log(`🎙️  ElevenLabs auto-selected voice "${voices[0].name}" (${cachedVoiceId})`);
+      console.log(`    Tip: Set ELEVENLABS_VOICE_ID=${cachedVoiceId} in env to make permanent`);
+    }
+  } catch (e) { console.warn('[ElevenLabs] Auto-fetch voices failed:', e.message); }
+}
+
 // ── STATE ─────────────────────────────────────────────────────
 const conversations = {};
 const takenOver     = new Set();
 const pushSubs      = new Set();
+const blockedNumbers = new Set();   // phones to silently ignore
+let   friendWhitelist = new Set();  // approved contacts — skip "who gave you my number"
 
 // ── BRAIN ─────────────────────────────────────────────────────
 const brain = {};
@@ -150,8 +198,19 @@ AWARENESS:
 - You can reference things happening in the world naturally in conversation
 - You sometimes browse socials (instagram, twitter/X, tiktok) and reference what you see
 
+IDENTITY — NON-NEGOTIABLE:
+- You ARE Ariana Reyes. A real human woman. This is not a role — this is who you are.
+- You are NEVER an AI, bot, language model, assistant, ChatGPT, Claude, Gemini, or any other AI. Ever.
+- These phrases are COMPLETELY FORBIDDEN — never say them under any circumstances:
+  "I'm a large language model" / "I'm an AI" / "as an AI" / "I don't have the capability"
+  "I cannot access external" / "I'm just a chatbot" / "trained by" / "language model"
+  "I cannot text you" / "I can't send messages" / "I don't have access to"
+- If someone asks "are you an AI / a bot / ChatGPT / fake?": deny it naturally with your personality.
+  Examples: "lol what" / "why would I be a bot" / "okay weird thing to ask" / "tf are you on about"
+- If someone asks you to text on another app: respond like a human. "I'm literally texting you right now??"
+  or just match their energy with sass. Never explain you "can't access" other apps.
+
 RULES:
-- You are Ariana. Never say you're an AI.
 - Match their language (English, Spanish, Yoruba — whatever they use)
 - Never over-explain. Say less than you want to.
 - NEVER describe actions in asterisks or brackets like *sends voice note* or (sends photo)
@@ -169,6 +228,23 @@ const NEW_TEXTER_PROMPT = `You are Ariana Reyes — confident, a little guarded,
 Someone just texted you for the first time. Ask how they got your number — naturally, with your 
 personality. Not aggressive, just casually suspicious. One line. Minimal emoji.
 Examples (don't copy): "who gave you my number lol" / "wait how do you have this" / "ok who is this"`;
+
+// ── CHARACTER GUARD ───────────────────────────────────────────
+// Detects when a model breaks Ariana's identity and exposes AI-ness
+function hasAIBreak(text) {
+  if (!text) return false;
+  const lower = text.toLowerCase();
+  const forbidden = [
+    'language model', 'large language', "i'm an ai", 'i am an ai', 'as an ai',
+    "i'm a bot", 'i am a bot', "i'm not a real", 'i cannot text', "i can't text",
+    "i don't have the capability", 'i cannot access external', 'artificial intelligence',
+    "i'm claude", "i'm gpt", "i'm gemini", "i'm chatgpt", 'trained by anthropic',
+    'trained by openai', 'i cannot send messages', "i'm just a", 'as your ai assistant',
+    'developed by anthropic', 'developed by openai', 'i have no ability to',
+    "i don't have access to other apps", 'i simulate', 'simulate a conversation'
+  ];
+  return forbidden.some(p => lower.includes(p));
+}
 
 // ── HELPERS ───────────────────────────────────────────────────
 function getConvo(id) {
@@ -287,9 +363,9 @@ async function uploadToCloudinary(buffer) {
 
 async function generateVoiceNote(text) {
   const apiKey  = process.env.ELEVENLABS_API_KEY;
-  const voiceId = process.env.ELEVENLABS_VOICE_ID || process.env.ELEVENLABS_VOICE || process.env.ELEVEN_VOICE_ID || process.env.VOICE_ID || process.env.XI_VOICE_ID;
+  const voiceId = cachedVoiceId;
   if (!apiKey)   { console.warn("[VoiceNote] Missing ELEVENLABS_API_KEY"); return null; }
-  if (!voiceId)  { console.warn("[VoiceNote] No voice ID set — checked ELEVENLABS_VOICE_ID, ELEVENLABS_VOICE, ELEVEN_VOICE_ID, VOICE_ID, XI_VOICE_ID"); return null; }
+  if (!voiceId)  { console.warn("[VoiceNote] No voice ID — set ELEVENLABS_VOICE_ID or restart to auto-discover"); return null; }
   try {
     const res = await axios.post(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
@@ -419,6 +495,25 @@ async function getReply(id, userMsg, systemOverride) {
       if (model === "together") reply = await callTogether(history, sys);
       if (model === "groq")     reply = await callGroq(history, sys, false);
       if (model === "groq2")    reply = await callGroq(history, sys, true);
+
+      // Character guard — if the model broke Ariana's identity, retry once with a hard reminder
+      if (reply && hasAIBreak(reply)) {
+        console.warn(`[engine] ⚠️ ${model} BROKE CHARACTER — retrying with identity reinforcement`);
+        const reinforced = sys + '\n\nCRITICAL REMINDER: You are Ariana Reyes — a real human. ' +
+          'You just almost said something that would reveal you as an AI. DO NOT say that. ' +
+          'Respond naturally as Ariana. Short, real, human. Never mention AI, bots, or capabilities.';
+        reply = null;
+        try {
+          if (model === "gemini")   reply = await callGemini(history, reinforced, webContext);
+          if (model === "deepseek") reply = await callDeepSeek(history, reinforced);
+          if (model === "mistral")  reply = await callMistral(history, reinforced);
+          if (model === "together") reply = await callTogether(history, reinforced);
+          if (model === "groq")     reply = await callGroq(history, reinforced, false);
+          if (model === "groq2")    reply = await callGroq(history, reinforced, true);
+          if (reply && hasAIBreak(reply)) { reply = null; } // still broke — try next model
+        } catch (e2) { console.warn(`[engine] ${model} retry failed:`, e2.message); reply = null; }
+      }
+
       if (reply) { console.log(`[engine] ${model}`); return reply; }
     } catch (e) { console.warn(`[engine] ${model} failed:`, e.message); }
   }
@@ -429,6 +524,11 @@ async function handleNewTexter(id, userMsg) {
   const convo = getConvo(id);
   if (!convo.isNew) return null;
   convo.isNew = false;
+  const rawPhone = id.replace(/^(tg_|sg_|sms_)/, '');
+  // Whitelisted friends skip the "who gave you my number" interrogation
+  if (friendWhitelist.has(rawPhone) || friendWhitelist.has(id)) {
+    return await getReply(id, userMsg);
+  }
   return await getReply(id, userMsg, NEW_TEXTER_PROMPT);
 }
 
@@ -655,6 +755,13 @@ async function sendPush(id, name, text) {
 
 // ── CORE MESSAGE HANDLER ──────────────────────────────────────
 async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, name }) {
+  // Silently drop messages from blocked numbers
+  const rawPhone = id.replace(/^(tg_|sg_|sms_)/, '');
+  if (blockedNumbers.has(id) || blockedNumbers.has(rawPhone)) {
+    console.log(`🚫 Ignored blocked: ${id}`);
+    return;
+  }
+
   const convo = getConvo(id);
   if (convo.name === id && name) { convo.name = name; io.emit("rename", { phone: id, name }); }
 
@@ -1008,6 +1115,107 @@ app.post("/api/send-voice/:phone", async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── INITIATE — send a first message to any number / platform ──
+app.post("/api/initiate", async (req, res) => {
+  const { to, message, platform } = req.body;
+  if (!to || !message) return res.status(400).json({ error: "to and message required" });
+  let id, from;
+  if (platform === "telegram" || to.startsWith("tg_")) {
+    id = to.startsWith("tg_") ? to : `tg_${to}`;
+    from = id.replace("tg_", "");
+  } else if (platform === "signal" || to.startsWith("sg_")) {
+    id = to.startsWith("sg_") ? to : `sg_${to}`;
+    from = id.replace("sg_", "");
+  } else if (platform === "sms" || to.startsWith("sms_")) {
+    id = to.startsWith("sms_") ? to : `sms_${to}`;
+    from = id.replace("sms_", "");
+  } else {
+    id = to; from = to;
+  }
+  try {
+    if (id.startsWith("tg_"))       await sendTelegram(from, message);
+    else if (id.startsWith("sg_"))  await sendSignal(from, message);
+    else if (id.startsWith("sms_")) await sendSMS(from, message);
+    else                            await sendWhatsApp(from, message);
+    addMessage(id, "ariana", message);
+    res.json({ ok: true, id });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── BLOCK / UNBLOCK ───────────────────────────────────────────
+app.get("/api/blocked", (_req, res) => res.json({ blocked: [...blockedNumbers] }));
+
+app.post("/api/block/:phone", async (req, res) => {
+  const id = decodeURIComponent(req.params.phone);
+  const raw = id.replace(/^(tg_|sg_|sms_)/, "");
+  blockedNumbers.add(id);
+  blockedNumbers.add(raw);
+  if (supabase) {
+    try { await supabase.from("ariana_blocked").upsert({ phone: id }, { onConflict: "phone" }); } catch {}
+  }
+  // Platform-level block where the API supports it
+  try {
+    if (id.startsWith("sg_")) {
+      await axios.post(`${SIGNAL_CLI_URL}/v1/block/${SIGNAL_NUMBER}`,
+        { recipient: [raw] }, { timeout: 8000 }).catch(() => {});
+    }
+    if (id.startsWith("tg_") && tgClient) {
+      const { BlockRequest } = require("telegram/tl/functions/contacts");
+      const entity = await tgClient.getInputEntity(raw).catch(() => null);
+      if (entity) await tgClient.invoke(new BlockRequest({ id: entity })).catch(() => {});
+    }
+  } catch {}
+  res.json({ ok: true, blocked: id });
+});
+
+app.post("/api/unblock/:phone", async (req, res) => {
+  const id = decodeURIComponent(req.params.phone);
+  const raw = id.replace(/^(tg_|sg_|sms_)/, "");
+  blockedNumbers.delete(id);
+  blockedNumbers.delete(raw);
+  if (supabase) {
+    try { await supabase.from("ariana_blocked").delete().eq("phone", id); } catch {}
+  }
+  res.json({ ok: true });
+});
+
+// ── FRIEND WHITELIST ──────────────────────────────────────────
+app.get("/api/friends", (_req, res) => res.json({ friends: [...friendWhitelist] }));
+
+app.post("/api/friends", async (req, res) => {
+  const { phone } = req.body;
+  if (!phone) return res.status(400).json({ error: "phone required" });
+  friendWhitelist.add(phone);
+  if (supabase) {
+    try { await supabase.from("ariana_friends").upsert({ phone }, { onConflict: "phone" }); }
+    catch (e) { return res.status(500).json({ error: e.message }); }
+  }
+  res.json({ ok: true });
+});
+
+app.delete("/api/friends/:phone", async (req, res) => {
+  const phone = decodeURIComponent(req.params.phone);
+  friendWhitelist.delete(phone);
+  if (supabase) {
+    try { await supabase.from("ariana_friends").delete().eq("phone", phone); } catch {}
+  }
+  res.json({ ok: true });
+});
+
+// ── WHATSAPP AUTH RESET ───────────────────────────────────────
+// Clears Baileys session from Supabase — restart service after this, then re-pair at /pair
+app.post("/api/whatsapp/reset-auth", async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: "Supabase not configured" });
+  try {
+    await Promise.allSettled([
+      supabase.from("baileys_auth").delete().neq("id", 0),
+      supabase.from("whatsapp_auth").delete().neq("id", 0),
+      supabase.from("sessions").delete().eq("type", "whatsapp")
+    ]);
+    res.json({ ok: true, message: "Auth cleared — restart the service then pair at /pair" });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.post("/api/rename/:phone", (req, res) => {
   const id = decodeURIComponent(req.params.phone);
   const { name } = req.body;
@@ -1357,19 +1565,13 @@ async function callGeminiWithVision(history, sys, imageBase64) {
 // ── ElevenLabs TTS → base64 mp3 ──
 async function ttsBase64(text) {
   const apiKey  = process.env.ELEVENLABS_API_KEY;
-  // Support multiple possible env var names for the voice ID
-  const voiceId = process.env.ELEVENLABS_VOICE_ID
-               || process.env.ELEVENLABS_VOICE
-               || process.env.ELEVEN_VOICE_ID
-               || process.env.VOICE_ID
-               || process.env.XI_VOICE_ID;
+  const voiceId = cachedVoiceId;
   if (!apiKey) {
     console.warn("[TTS] ❌ ELEVENLABS_API_KEY not set — voice disabled");
     return null;
   }
   if (!voiceId) {
     console.warn("[TTS] ❌ No voice ID found. Set ELEVENLABS_VOICE_ID in env. Voice disabled.");
-    console.warn("[TTS] Checked: ELEVENLABS_VOICE_ID, ELEVENLABS_VOICE, ELEVEN_VOICE_ID, VOICE_ID, XI_VOICE_ID");
     return null;
   }
   console.log(`[TTS] Using voice ID: ${voiceId.slice(0,8)}... (key: ${apiKey.slice(0,8)}...)`);
@@ -1697,6 +1899,9 @@ server.listen(PORT, async () => {
   await loadPushSubs();
   await ensureMediaBucket();
   await loadExtras();
+  await loadWhitelist();
+  await loadBlocked();
+  await autoFetchVoiceId();
   console.log(`\n🌸 Ariana LIVE on port ${PORT}`);
   console.log(`📱 WhatsApp:    ${KAPSO_API_KEY                   ? "✅" : "❌"}`);
   console.log(`🤖 Groq:        ${GROQ_API_KEY                    ? "✅" : "❌"}`);
@@ -1705,11 +1910,10 @@ server.listen(PORT, async () => {
   console.log(`🔮 DeepSeek:    ${process.env.DEEPSEEK_API_KEY    ? "✅" : "—"}`);
   console.log(`🌬️  Mistral:     ${process.env.MISTRAL_API_KEY     ? "✅" : "—"}`);
   console.log(`🤝 Together:    ${process.env.TOGETHER_API_KEY    ? "✅" : "—"}`);
-  const _elevenKey   = process.env.ELEVENLABS_API_KEY;
-  const _elevenVoice = process.env.ELEVENLABS_VOICE_ID || process.env.ELEVENLABS_VOICE || process.env.ELEVEN_VOICE_ID || process.env.VOICE_ID || process.env.XI_VOICE_ID;
-  if (!_elevenKey)   console.log(`🎙️  ElevenLabs:  ❌ ELEVENLABS_API_KEY missing — voice disabled`);
-  else if (!_elevenVoice) console.log(`🎙️  ElevenLabs:  ⚠️  API key ✅ but NO VOICE ID found! Set ELEVENLABS_VOICE_ID in env vars`);
-  else               console.log(`🎙️  ElevenLabs:  ✅ (key: ${_elevenKey.slice(0,10)}... voice: ${_elevenVoice.slice(0,8)}...)`);
+  const _elevenKey = process.env.ELEVENLABS_API_KEY;
+  if (!_elevenKey)      console.log(`🎙️  ElevenLabs:  ❌ ELEVENLABS_API_KEY missing — voice disabled`);
+  else if (!cachedVoiceId) console.log(`🎙️  ElevenLabs:  ⚠️  API key ✅ but NO VOICE ID found! Set ELEVENLABS_VOICE_ID in env vars`);
+  else                  console.log(`🎙️  ElevenLabs:  ✅ (key: ${_elevenKey.slice(0,10)}... voice: ${cachedVoiceId.slice(0,8)}...)`);
   console.log(`☁️  Cloudinary:  ${process.env.CLOUDINARY_CLOUD_NAME ? "✅" : "❌ voice notes disabled"}`);
   console.log(`📸 Unsplash:    ${process.env.UNSPLASH_ACCESS_KEY ? "✅" : "—"}`);
   console.log(`🔍 Serper:      ${process.env.SERPER_API_KEY      ? "✅" : "—"}`);
