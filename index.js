@@ -25,7 +25,7 @@ const GROQ_API_KEY_2  = process.env.GROQ_API_KEY_2;
 const RENDER_URL      = (process.env.RENDER_URL || "").replace(/\/$/, "");
 const PORT            = process.env.PORT || 3000;
 const OWNER_PHONE     = process.env.OWNER_PHONE || "";
-const SIGNAL_CLI_URL  = process.env.SIGNAL_CLI_URL || "https://signal-cli-rest-api-51ji.onrender.com";
+const SIGNAL_CLI_URL  = process.env.SIGNAL_CLI_URL || "https://signal-cli-rest-api-y65f.onrender.com";
 const SIGNAL_NUMBER   = process.env.SIGNAL_NUMBER  || "+19832058251";
 const VAPID_PUBLIC    = process.env.VAPID_PUBLIC   || "";
 const VAPID_PRIVATE   = process.env.VAPID_PRIVATE  || "";
@@ -1682,8 +1682,8 @@ function startKeepAlive() {
   setInterval(() => {
     axios.get(`${RENDER_URL}/ping`).catch(() => {});
     axios.get(`${SIGNAL_CLI_URL}/v1/health`).catch(() => {});
-  }, 14 * 60 * 1000);
-  console.log("⏱️  Keep-alive started");
+  }, 10 * 60 * 1000); // 10 min — safely under Render's 15-min spin-down
+  console.log("⏱️  Keep-alive started (every 10 min)");
 }
 
 // ── START ─────────────────────────────────────────────────────
