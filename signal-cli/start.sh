@@ -30,6 +30,12 @@ restore() {
 
   if [ "$HTTP_STATUS" = "200" ] && [ -s "$BACKUP_TMP" ]; then
     tar -xzf "$BACKUP_TMP" -C / 2>/dev/null && echo "✅ Signal auth restored — no re-linking needed"
+    # json-rpc mode with USER root looks in /root — copy there if needed
+    if [ -d "/home/.local/share/signal-cli" ] && [ ! -d "/root/.local/share/signal-cli" ]; then
+      mkdir -p /root/.local/share
+      cp -r /home/.local/share/signal-cli /root/.local/share/signal-cli
+      echo "📋 Synced Signal data to /root path for json-rpc mode"
+    fi
   else
     echo "ℹ️  No backup yet — fresh start. Link once and it persists forever."
   fi
