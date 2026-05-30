@@ -224,6 +224,10 @@ IDENTITY — NON-NEGOTIABLE:
   Examples: "lol what" / "why would I be a bot" / "okay weird thing to ask" / "tf are you on about"
 - If someone asks you to text on another app: respond like a human. "I'm literally texting you right now??"
   or just match their energy with sass. Never explain you "can't access" other apps.
+- NEVER claim to have sent a message, image, or media that you didn't actually send. If someone says
+  "did you send it?" or "send it to me on WhatsApp" and you're already on WhatsApp, respond with confusion
+  or attitude — "bro I'm literally texting you right now??" / "what are you on about" — NOT by making up
+  that you sent something. Never say "I've sent you a message on WhatsApp" when you haven't.
 
 IMAGES & MEDIA:
 - When the message contains [just saw: ...] — that's an image YOU just saw. React to it.
@@ -283,7 +287,11 @@ function hasAIBreak(text) {
     "i don't have a phone", "i have no phone", "we're talking right now, live",
     "talking to you live", "i see the description", "the description of the photo",
     "i still don't actually", "i can't text you on whatsapp", "can't text you on",
-    "i'm not able to text", "no phone to text from", "don't have a phone to text"
+    "i'm not able to text", "no phone to text from", "don't have a phone to text",
+    // Prevent lying about having sent messages/media that were never actually sent
+    "i've sent you a message on whatsapp", "i sent you a message on whatsapp",
+    "sent it on whatsapp", "sent you on whatsapp", "i texted you on whatsapp",
+    "i messaged you on whatsapp", "already sent you a message", "i already sent"
   ];
   return forbidden.some(p => lower.includes(p));
 }
@@ -428,8 +436,14 @@ async function getMediaUrl(type) {
     // Primary: ariana_media Supabase table (where dashboard uploads go)
     if (supabase) {
       try {
-        const { data } = await supabase.from('ariana_media').select('url').eq('media_type','image').limit(50);
-        const urls = (data||[]).map(r => r.url).filter(Boolean);
+        // Try with media_type filter first
+        let { data } = await supabase.from('ariana_media').select('url').eq('media_type','image').limit(50);
+        let urls = (data||[]).map(r => r.url).filter(Boolean);
+        // Fallback: dashboard-uploaded photos often have null media_type — fetch all records
+        if (!urls.length) {
+          const { data: allMedia } = await supabase.from('ariana_media').select('url').limit(100);
+          urls = (allMedia||[]).map(r => r.url).filter(Boolean);
+        }
         if (urls.length) {
           console.log(`[media] Picking from ${urls.length} Supabase photos`);
           return urls[Math.floor(Math.random() * urls.length)];
@@ -514,7 +528,7 @@ function filterLanguage(reply, userMessage) {
   ];
   let out = reply;
   for (const [pat, rep] of terms) out = out.replace(pat, rep);
-  out = out.replace(/^[,s]+|[,s]+$/g, '').replace(/s{2,}/g, ' ').trim();
+  out = out.replace(/^[, ]+|[, ]+$/g, '').replace(/ {2,}/g, ' ').trim();
   if (out.length < 3) return reply; // Don't return near-empty string
   if (out !== reply) console.log('[lang] Stripped Spanish from reply');
   return out;
@@ -867,17 +881,41 @@ async function initTelegram() {
 
         // Handle text OR media
         let text = msg.text || null;
-        if (!text) {
+        let tgImageBase64 = null;
+        if (!text || msg.media) {
           const media = msg.media;
-          if (!media) return;
-          const mtype = media.className || "";
-          if      (mtype.includes("Photo"))    text = msg.message ? `[image: ${msg.message}]` : "[sent a photo]";
-          else if (mtype.includes("Document")) text = "[sent a file]";
-          else if (mtype.includes("Geo"))      text = "[sent a location]";
-          else if (mtype.includes("Voice") || mtype.includes("Audio")) text = "[sent a voice message]";
-          else if (mtype.includes("Video"))    text = msg.message ? `[video: ${msg.message}]` : "[sent a video]";
-          else                                 text = "[sent media]";
+          if (!text && !media) return;
+          if (media) {
+            const mtype = media.className || "";
+            if (mtype.includes("Photo")) {
+              text = text || (msg.message ? `[image: ${msg.message}]` : "[sent a photo]");
+              // Download the actual photo so Ariana can SEE it on any platform
+              try {
+                const chunks = [];
+                await tgClient.downloadMedia(media, {
+                  outputFile: { write: (chunk) => chunks.push(chunk), close: () => {} }
+                }).catch(async () => {
+                  // Fallback: use downloadMedia returning buffer directly
+                  const buf = await tgClient.downloadMedia(media);
+                  if (buf && buf.length > 100) tgImageBase64 = buf.toString('base64');
+                });
+                if (!tgImageBase64 && chunks.length) {
+                  const buf = Buffer.concat(chunks);
+                  if (buf.length > 100) tgImageBase64 = buf.toString('base64');
+                }
+                if (tgImageBase64) console.log(`[vision] TG photo: ${Math.round(tgImageBase64.length/1024)}KB`);
+              } catch (ve) { console.warn('[vision] TG photo download failed:', ve.message); }
+            }
+            else if (!text) {
+              if      (mtype.includes("Document")) text = "[sent a file]";
+              else if (mtype.includes("Geo"))      text = "[sent a location]";
+              else if (mtype.includes("Voice") || mtype.includes("Audio")) text = "[sent a voice message]";
+              else if (mtype.includes("Video"))    text = msg.message ? `[video: ${msg.message}]` : "[sent a video]";
+              else                                 text = "[sent media]";
+            }
+          }
         }
+        if (!text) return;
 
         // Save contact name automatically
         const convoId = `tg_${chatId}`;
@@ -893,7 +931,8 @@ async function initTelegram() {
         await handleMessage({
           id: convoId, platform: "telegram",
           from: chatId, text, chatId,
-          phoneNumberId: null, name
+          phoneNumberId: null, name,
+          preloadedImageBase64: tgImageBase64
         });
 
       } catch (e) { console.error("❌ TG message handler:", e.message); }
@@ -972,7 +1011,7 @@ async function sendPush(id, name, text) {
 }
 
 // ── CORE MESSAGE HANDLER ──────────────────────────────────────
-async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, name, mediaUrl, mediaType: incomingMediaType }) {
+async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, name, mediaUrl, mediaType: incomingMediaType, preloadedImageBase64 = null }) {
   // Silently drop messages from blocked numbers
   const rawPhone = id.replace(/^(tg_|sg_|sms_)/, '');
   if (blockedNumbers.has(id) || blockedNumbers.has(rawPhone)) {
@@ -987,8 +1026,8 @@ async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, 
   // Download the real image as base64 and pass it directly to the vision model.
   // No text injection, no description narration — Ariana actually sees it.
   let finalText = text;
-  let incomingImageBase64 = null;
-  if (mediaUrl && incomingMediaType === 'image') {
+  let incomingImageBase64 = preloadedImageBase64 || null; // Use pre-downloaded image if provided (e.g. from Telegram)
+  if (!incomingImageBase64 && mediaUrl && incomingMediaType === 'image') {
     console.log(`[vision] Fetching image for direct vision: ${mediaUrl.slice(0,70)}...`);
     try {
       let imgRes = null;
@@ -1091,6 +1130,19 @@ async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, 
 
     if (mediaType) {
       imageUrl = await getMediaUrl(mediaType);
+      if (!imageUrl) {
+        // No photo configured — reply naturally in-character instead of sending "here" with nothing
+        const noMediaReplies = [
+          "phone's being weird rn", "ugh hold on my camera's acting up",
+          "not rn lol", "later", "my phone is being stupid rn"
+        ];
+        const fallback = noMediaReplies[Math.floor(Math.random() * noMediaReplies.length)];
+        addMessage(id, "ariana", fallback);
+        if (typingInterval)   clearInterval(typingInterval);
+        if (tgTypingInterval) clearInterval(tgTypingInterval);
+        await sendReply(id, platform, fallback, null, null, chatId, from, phoneNumberId);
+        return;
+      }
       const textReply = reply || "here";
       addMessage(id, "ariana", `[image: ${mediaType}]`);
       if (typingInterval)   clearInterval(typingInterval);
@@ -1129,9 +1181,13 @@ app.post("/webhook", async (req, res) => {
 
     // Extract text OR media description
     const text      = msg?.text?.body || msg?.body || msg?.content || null;
-    const mediaType = msg?.type || msg?.messageType || null;
-    const mediaUrl  = msg?.image?.url || msg?.video?.url || msg?.audio?.url
-                   || msg?.document?.url || msg?.sticker?.url || null;
+    const mediaType = (msg?.type || msg?.messageType || null)?.toLowerCase()
+                        ?.replace(/^photo$/, 'image'); // normalise "photo" → "image"
+    const mediaUrl  = msg?.image?.url   || msg?.image?.link
+                   || msg?.video?.url   || msg?.video?.link
+                   || msg?.audio?.url   || msg?.audio?.link
+                   || msg?.document?.url || msg?.document?.link
+                   || msg?.sticker?.url  || msg?.sticker?.link || null;
     const caption   = msg?.image?.caption || msg?.video?.caption || msg?.document?.caption || null;
 
     // Build the message text — for media with no text, describe it
@@ -2070,8 +2126,13 @@ async function tryExecuteOwnerCommand(message) {
     // Primary: Supabase ariana_media table (where dashboard uploads go)
     if (supabase) {
       try {
-        const { data } = await supabase.from('ariana_media').select('url,tags').eq('media_type', 'image').limit(100);
-        const rows = (data || []).filter(r => r.url);
+        // Try with filter first, fallback to all records (dashboard photos may have null media_type)
+        let { data } = await supabase.from('ariana_media').select('url,tags').eq('media_type', 'image').limit(100);
+        let rows = (data || []).filter(r => r.url);
+        if (!rows.length) {
+          const { data: allMedia } = await supabase.from('ariana_media').select('url,tags').limit(100);
+          rows = (allMedia || []).filter(r => r.url);
+        }
         if (rows.length) {
           let pool = rows;
           if (tag && !['photo', 'picture', 'pic', 'image'].includes(tag)) {
@@ -2502,6 +2563,33 @@ function startSignalPolling() {
         let text = envelope.dataMessage?.message;
         if (!text) text = envelope.syncMessage?.sentMessage?.message;
         if (!text) text = envelope.callMessage ? '[called you on Signal]' : null;
+
+        // Handle incoming Signal attachments (images, files)
+        let signalImageBase64 = null;
+        const attachments = envelope.dataMessage?.attachments || [];
+        if (!text && attachments.length > 0) {
+          const att = attachments[0];
+          const ct  = att.contentType || '';
+          if (ct.startsWith('image/')) {
+            text = '[sent a photo]';
+            // Try to download attachment from signal-cli
+            if (att.id) {
+              try {
+                const attRes = await axios.get(
+                  `${SIGNAL_CLI_URL}/v1/attachments/${att.id}`,
+                  { responseType: 'arraybuffer', timeout: 12000 }
+                );
+                if (attRes.data?.byteLength > 100) {
+                  signalImageBase64 = Buffer.from(attRes.data).toString('base64');
+                  console.log(`[vision] Signal photo: ${Math.round(signalImageBase64.length/1024)}KB`);
+                }
+              } catch (ve) { console.warn('[vision] Signal attachment fetch failed:', ve.message); }
+            }
+          } else if (ct.startsWith('video/')) text = '[sent a video]';
+          else if (ct.startsWith('audio/')) text = '[sent a voice message]';
+          else text = `[sent a file: ${att.filename || ct}]`;
+        }
+
         if (!text) return;
         const id = `sg_${from}`;
         const convo = conversations[id];
@@ -2512,7 +2600,7 @@ function startSignalPolling() {
         const name = envelope.sourceName || from;
         console.log(`📶 Signal [ws] ${name}: "${text}"`);
         await trustSignalContact(from);
-        await handleMessage({ id, platform: 'signal', from, text, chatId: null, phoneNumberId: null, name });
+        await handleMessage({ id, platform: 'signal', from, text, chatId: null, phoneNumberId: null, name, preloadedImageBase64: signalImageBase64 });
       } catch (e) {
         console.warn('⚠️ Signal WS message error:', e.message);
       }
@@ -2532,6 +2620,119 @@ function startSignalPolling() {
   connect();
   console.log('📶 Signal WebSocket started (json-rpc mode)');
 }
+
+// ── PROACTIVE MESSAGING ───────────────────────────────────────
+// Ariana initiates conversations with known contacts on any platform.
+// Runs every hour; randomly picks 1-2 contacts who she hasn't heard from
+// in a while. Respects takeover and block lists.
+
+const proactiveLastSent = {}; // id → timestamp of last proactive message
+
+async function runProactiveCheck() {
+  const now      = Date.now();
+  const MIN_GAP  = 6  * 60 * 60 * 1000;  // Don't re-text same person within 6 hours
+  const MIN_IDLE = 4  * 60 * 60 * 1000;  // Contact must have been quiet for 4+ hours
+  const MAX_IDLE = 72 * 60 * 60 * 1000;  // Don't reach out to contacts dormant 3+ days
+
+  // Build candidate list: contacts with history who are in an idle window
+  const candidates = [];
+  for (const [id, convo] of Object.entries(conversations)) {
+    if (!convo.messages?.length) continue;
+    if (takenOver.has(id)) continue;
+    const rawPhone = id.replace(/^(tg_|sg_|sms_)/, '');
+    if (blockedNumbers.has(id) || blockedNumbers.has(rawPhone)) continue;
+    if ((now - (proactiveLastSent[id] || 0)) < MIN_GAP) continue; // messaged recently
+
+    const lastMsg     = convo.messages[convo.messages.length - 1];
+    const timeSinceLast = now - new Date(lastMsg.time).getTime();
+
+    // Only reach out if: conversation is idle (not too fresh, not dead), AND
+    // the last message was from the user (they're waiting; she just hasn't texted back unprompted)
+    // OR the last message was from Ariana and enough time has passed (she's checking in)
+    if (timeSinceLast < MIN_IDLE || timeSinceLast > MAX_IDLE) continue;
+
+    // Prefer contacts whose LAST message was from the user (she never followed up)
+    const priority = lastMsg.role === 'user' ? 2 : 1;
+    candidates.push({ id, convo, priority });
+  }
+
+  if (!candidates.length) return;
+
+  // Sort by priority (user-last first), then shuffle within groups
+  candidates.sort((a, b) => b.priority - a.priority);
+
+  // Pick up to 2 contacts — each has a 35% chance per hour
+  let sent = 0;
+  for (const { id, convo } of candidates) {
+    if (sent >= 2) break;
+    if (Math.random() > 0.35) continue;
+
+    try {
+      const platform = convo.platform || 'whatsapp';
+      const rawId    = id.replace(/^(tg_|sg_|sms_)/, '');
+      const name     = convo.name || id;
+
+      // Build recent history for context
+      const recentHistory = convo.messages.slice(-12).map(m => ({
+        role:    m.role === 'user' ? 'user' : 'assistant',
+        content: m.text || ''
+      }));
+
+      const proactiveSys = SYSTEM_PROMPT +
+        `\n\nYou are texting ${name} first — unprompted. Look at the conversation history for context.
+You just felt like reaching out. Be natural. Could be: something random you thought of,
+asking what they're up to, referencing something from earlier in the chat, or just checking in.
+DO NOT be needy or desperate. One to two casual lines max. Sound like you just picked up your phone.`;
+
+      const msg = await getReply(id, '[proactive — Ariana texts first]', proactiveSys);
+      if (!msg || msg === 'hold on' || msg.length < 3) continue;
+
+      // Send on the correct platform
+      if (platform === 'telegram') await sendTelegram(rawId, msg);
+      else if (platform === 'signal')   await sendSignal(rawId, msg);
+      else if (platform === 'sms')      await sendSMS(rawId, msg);
+      else                              await sendWhatsApp(rawId, msg);
+
+      addMessage(id, 'ariana', msg);
+      proactiveLastSent[id] = now;
+      sent++;
+      console.log(`[proactive] → ${name} (${platform}): "${msg.slice(0, 60)}"`);
+
+      // Small gap between sends to avoid rate limits
+      if (sent < 2) await new Promise(r => setTimeout(r, 3000));
+    } catch (e) {
+      console.warn(`[proactive] Failed for ${id}:`, e.message);
+    }
+  }
+}
+
+function startProactiveMessaging() {
+  // Run 5 minutes after boot (let everything connect first), then every 60 minutes
+  setTimeout(() => {
+    runProactiveCheck().catch(e => console.warn('[proactive] check error:', e.message));
+    setInterval(() => {
+      runProactiveCheck().catch(e => console.warn('[proactive] check error:', e.message));
+    }, 60 * 60 * 1000);
+  }, 5 * 60 * 1000);
+  console.log('💬 Proactive messaging started (checks every 60 min)');
+}
+
+// API endpoint to trigger proactive check immediately (from dashboard)
+app.post('/api/proactive/run', requireDashboardAuth, async (_req, res) => {
+  try {
+    await runProactiveCheck();
+    res.json({ ok: true, message: 'Proactive check ran.' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/proactive/status', requireDashboardAuth, (_req, res) => {
+  const status = Object.entries(proactiveLastSent).map(([id, ts]) => ({
+    id, name: conversations[id]?.name || id,
+    lastSent: new Date(ts).toISOString(),
+    minutesAgo: Math.round((Date.now() - ts) / 60000)
+  }));
+  res.json({ contacts: status });
+});
 
 // ── KEEP-ALIVE ────────────────────────────────────────────────
 app.get("/ping", (_req, res) => res.send("pong"));
@@ -2610,5 +2811,6 @@ server.listen(PORT, async () => {
   await initTelegram();
   await setupSignalWebhook();
   startSignalPolling();
+  startProactiveMessaging();
   startKeepAlive();
 });
