@@ -987,9 +987,40 @@ input,textarea{font-family:inherit;color:inherit}
 .wp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
 .wp-thumb{aspect-ratio:9/16;border-radius:10px;cursor:pointer;border:2px solid transparent;display:flex;align-items:center;justify-content:center;font-size:12px;color:rgba(255,255,255,.4);transition:border-color .2s}
 .wp-thumb.active{border-color:var(--wa)}
-/* toast */
-#toast{position:fixed;bottom:86px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(20,20,26,.96);border:1px solid var(--b2);color:#fff;border-radius:10px;padding:10px 18px;font-size:13px;opacity:0;transition:all .25s;z-index:700;white-space:nowrap;pointer-events:none;max-width:88vw;overflow:hidden;text-overflow:ellipsis}
-#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* ── iOS-style notification banner ── */
+#notif-banner{
+  position:fixed;top:0;left:0;right:0;z-index:900;
+  padding-top:env(safe-area-inset-top);
+  pointer-events:none;
+}
+#notif-inner{
+  margin:8px 12px 0;
+  background:rgba(30,30,36,0.97);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:16px;padding:11px 14px;
+  display:flex;align-items:center;gap:11px;
+  transform:translateY(-130%);
+  transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);
+  backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);
+  box-shadow:0 10px 40px rgba(0,0,0,0.55);
+  pointer-events:all;
+}
+#notif-inner.show{transform:translateY(0)}
+#notif-icon-wrap{width:36px;height:36px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.08)}
+#notif-title{font-size:13px;font-weight:600;color:#fff;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#notif-body{font-size:13px;color:rgba(255,255,255,0.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#notif-time{font-size:11px;color:rgba(255,255,255,0.3);flex-shrink:0;align-self:flex-start;margin-top:1px}
+
+/* ── talk media caption preview bar ── */
+#talk-media-preview{display:none;align-items:center;gap:10px;padding:8px 14px;background:rgba(0,0,0,0.96);border-top:1px solid rgba(255,255,255,0.1)}
+#talk-media-preview.show{display:flex}
+#talk-preview-thumb{width:52px;height:52px;border-radius:9px;overflow:hidden;flex-shrink:0;background:rgba(255,255,255,.08)}
+#talk-preview-thumb img,#talk-preview-thumb video{width:100%;height:100%;object-fit:cover}
+#talk-preview-label{flex:1;font-size:12px;color:rgba(255,255,255,.45)}
+#talk-preview-cancel{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.7);font-size:16px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+
+/* ── settings modal layout ── */
+.settings-field-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--t3);margin-bottom:5px;margin-top:12px;display:block}
 
 /* ── RESPONSIVE ── */
 @media(max-width:700px){
@@ -1011,6 +1042,10 @@ input,textarea{font-family:inherit;color:inherit}
 
 /* force-hide fallback orb layers when canvas is rendering */
 #talk-orb.canvas-active .ol { display:none !important; }
+
+/* muted state for orb control buttons */
+.orb-ctrl-btn.muted{background:rgba(239,68,68,.18)!important;border-color:rgba(239,68,68,.35)!important}
+.orb-ctrl-btn.muted svg{stroke:#ef4444}
 </style>
 </head>
 <body>
@@ -1114,6 +1149,10 @@ input,textarea{font-family:inherit;color:inherit}
     <div class="sb-footer-item" onclick="openWallpaperModal()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
       Wallpaper
+    </div>
+    <div class="sb-footer-item" onclick="openSettingsModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+      API Keys
     </div>
   </div>
 </div>
@@ -1452,6 +1491,13 @@ input,textarea{font-family:inherit;color:inherit}
       <!-- BOTTOM -->
       <div id="talk-bottom">
 
+        <!-- media caption preview (shown when image is attached) -->
+        <div id="talk-media-preview">
+          <div id="talk-preview-thumb"></div>
+          <span id="talk-preview-label">Tap send or type a caption</span>
+          <button id="talk-preview-cancel" onclick="talkClearMedia()">×</button>
+        </div>
+
         <!-- standard bar -->
         <div id="talk-bar-std">
           <label id="talk-plus-btn" title="Attach media" style="display:flex;align-items:center;justify-content:center;cursor:pointer">
@@ -1609,7 +1655,35 @@ input,textarea{font-family:inherit;color:inherit}
     <div class="modal-btns"><button class="mbtn cancel" onclick="closeModal('tag-modal')">Cancel</button><button class="mbtn confirm accent" onclick="saveTagModal()">Save Tags</button></div>
   </div>
 </div>
-<div id="toast"></div>
+<!-- iOS NOTIFICATION BANNER -->
+<div id="notif-banner">
+  <div id="notif-inner">
+    <div id="notif-icon-wrap"><span id="notif-icon" style="font-size:18px">✦</span></div>
+    <div style="flex:1;min-width:0">
+      <div id="notif-title"></div>
+      <div id="notif-body"></div>
+    </div>
+    <div id="notif-time"></div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay hidden" id="settings-modal">
+  <div class="modal">
+    <h3>API Settings</h3>
+    <p style="font-size:12px;color:var(--t2);margin-bottom:14px">Stored locally in your browser — never sent anywhere else.</p>
+    <span class="settings-field-label">ElevenLabs API Key</span>
+    <input class="modal-input" id="el-key-input" type="password" placeholder="sk_...">
+    <span class="settings-field-label">ElevenLabs Voice ID</span>
+    <input class="modal-input" id="el-voice-input" type="text" placeholder="Voice ID">
+    <span class="settings-field-label">Dashboard Secret Key</span>
+    <input class="modal-input" id="dash-key-input" type="password" placeholder="Your DASHBOARD_SECRET value from Render">
+    <div class="modal-btns">
+      <button class="mbtn cancel" onclick="closeModal('settings-modal')">Cancel</button>
+      <button class="mbtn confirm accent" onclick="saveSettingsModal()">Save</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ══════════════════════════════════════════════
@@ -1767,7 +1841,12 @@ socket.on("new_message",data=>{
     if(convo)convos[phone]=convo;
     else{if(!convos[phone])convos[phone]={phone,messages:[],name:"",lastSeen:msg.time};if(!Array.isArray(convos[phone].messages))convos[phone].messages=[];convos[phone].messages.push(msg);convos[phone].lastSeen=msg.time}
     if(phone===currentPhone){appendMsg(msg);scrollBottom()}
-    else{if(!convos[phone]._unread)convos[phone]._unread=0;convos[phone]._unread++;showToast((convos[phone].name||phone)+": "+String(msg.text||"").slice(0,40))}
+    else{
+      if(!convos[phone]._unread)convos[phone]._unread=0;convos[phone]._unread++;
+      const p=getPlat(phone);
+      const platEmoji={wa:'💬',tg:'✈️',sms:'📱',sg:'🔒'};
+      showNotif(convos[phone].name||phone, String(msg.text||'').slice(0,70)||'Sent media', platEmoji[p]||'💬', 5000);
+    }
     renderList();
   }catch(e){}
 });
@@ -2070,16 +2149,103 @@ function applyWp(id,bg){wallpaper=id;try{localStorage.setItem("_wp",id);localSto
 function applyWallpaper(){const m=document.getElementById("messages");if(!m)return;const bg=localStorage.getItem("_wpbg")||"#000";m.style.background=wallpaper==="w0"?"#000":bg}
 function handleWpUpload(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>applyWp("custom",`url(${ev.target.result}) center/cover`);r.readAsDataURL(f)}
 async function requestPush(){
-  if(!("Notification"in window)){showToast("Not supported");return}
-  const p=await Notification.requestPermission();if(p!=="granted"){showToast("Permission denied");return}
-  try{const reg=await navigator.serviceWorker.ready;const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64ToArr(VAPID)});await fetch("/api/push-subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(sub)});showToast("Notifications enabled");closeSidebar()}catch(e){showToast("Push failed")}
+  if(!("Notification"in window)){showNotif('Not supported','Your browser doesn\'t support push notifications','⚠️');return}
+  const p=await Notification.requestPermission();
+  if(p!=="granted"){showNotif('Blocked','Notification permission denied — check browser settings','🔕');return}
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64ToArr(VAPID)});
+    await fetch("/api/push-subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(sub)});
+    showNotif('Notifications on','You\'ll get notified even when the tab is closed','🔔');
+    closeSidebar();
+  }catch(e){showNotif('Push failed',e.message,'⚠️')}
 }
 function b64ToArr(b64){const pad="=".repeat((4-b64.length%4)%4);const raw=atob((b64+pad).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)))}
 function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 function fmtTime(iso){if(!iso)return"";try{const d=new Date(iso),now=new Date();if(d.toDateString()===now.toDateString())return d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});const diff=(now-d)/864e5;if(diff<7)return["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()];return d.toLocaleDateString([],{month:"numeric",day:"numeric"})}catch{return""}}
 function fmtTimeFull(iso){if(!iso)return"";try{return new Date(iso).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}catch{return""}}
 function fmtDate(iso){if(!iso)return"—";try{const d=new Date(iso),now=new Date();if(d.toDateString()===now.toDateString())return"Today";if(new Date(now-864e5).toDateString()===d.toDateString())return"Yesterday";return d.toLocaleDateString([],{month:"short",day:"numeric",year:"numeric"})}catch{return"—"}}
-let _tt;function showToast(msg){const el=document.getElementById("toast");el.textContent=String(msg||"");el.classList.add("show");clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove("show"),3000)}
+let _notifTimer = null;
+function showNotif(title, body, icon, duration) {
+  duration = duration || 3800;
+  clearTimeout(_notifTimer);
+  const inner = document.getElementById('notif-inner');
+  const iconEl = document.getElementById('notif-icon');
+  const titleEl = document.getElementById('notif-title');
+  const bodyEl  = document.getElementById('notif-body');
+  const timeEl  = document.getElementById('notif-time');
+  if (typeof icon === 'string' && icon.startsWith('<')) {
+    iconEl.parentElement.innerHTML = '<div style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">'+icon+'</div>';
+  } else {
+    iconEl.textContent = icon || '✦';
+  }
+  titleEl.textContent = String(title || '');
+  bodyEl.textContent  = String(body  || '');
+  timeEl.textContent  = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  inner.classList.add('show');
+  inner.onclick = () => { clearTimeout(_notifTimer); inner.classList.remove('show'); };
+  _notifTimer = setTimeout(() => inner.classList.remove('show'), duration);
+}
+/* backward-compat: all existing showToast() calls route here */
+function showToast(msg) { showNotif('Ariana', msg, '✦'); }
+
+/* ── ElevenLabs key helpers — stored in localStorage, never hardcoded ── */
+function getElevenKey()   { return localStorage.getItem('_el_key')   || ''; }
+function getElevenVoice() { return localStorage.getItem('_el_voice') || 'Uuc6s41mqYjIaMyXWGxL'; }
+function getDashKey()     { return localStorage.getItem('_dashKey')  || ''; }
+
+/* ── Settings modal ── */
+function openSettingsModal() {
+  document.getElementById('el-key-input').value   = getElevenKey();
+  document.getElementById('el-voice-input').value = getElevenVoice();
+  document.getElementById('dash-key-input').value = getDashKey();
+  document.getElementById('settings-modal').classList.remove('hidden');
+  closeSidebar();
+}
+function saveSettingsModal() {
+  const key   = document.getElementById('el-key-input').value.trim();
+  const voice = document.getElementById('el-voice-input').value.trim();
+  const dash  = document.getElementById('dash-key-input').value.trim();
+  if (key)   localStorage.setItem('_el_key',   key);
+  if (voice) localStorage.setItem('_el_voice', voice);
+  if (dash)  localStorage.setItem('_dashKey',  dash);
+  closeModal('settings-modal');
+  showNotif('Settings saved', 'API keys stored in your browser', '✓');
+}
+
+/* ── Self-learning: extract facts from conversation turn → update brain ── */
+async function talkSelfLearn(userMsg, arianaReply) {
+  if (!userMsg || !arianaReply || userMsg === '[image]') return;
+  try {
+    await fetch('/api/talk-learn', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Dashboard-Key': getDashKey() },
+      body: JSON.stringify({ userMessage: userMsg, arianaReply })
+    });
+  } catch(e) { /* silent — not critical */ }
+}
+
+/* ── Scheduler: fire due messages ── */
+async function runDueSchedules() {
+  if (!schedules.length) return;
+  const now = Date.now();
+  const due = schedules.filter(s => s.time && new Date(s.time).getTime() <= now);
+  if (!due.length) return;
+  for (const s of due) {
+    try {
+      const r = await fetch('/api/send/' + encodeURIComponent(s.phone), {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ message: s.msg || s.message })
+      });
+      const j = await r.json();
+      if (j.ok) showNotif('Scheduled message sent', (window._cachedConvos?.[s.phone]?.name || s.phone), '📅');
+    } catch(e) { console.warn('[scheduler]', e); }
+  }
+  schedules = schedules.filter(s => new Date(s.time).getTime() > now);
+  try { await fetch('/api/extras/schedules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({schedules})}); } catch(e){}
+  renderSchedules();
+}
+setInterval(runDueSchedules, 30000); // check every 30s
 
 // ══════════════════════════════════════════════
 // GENERATE
@@ -2417,6 +2583,8 @@ let talkInlineBars  = [];
 let talkWaveRaf     = null;
 let talkTypeTimer   = null;
 let talkOrbMode     = false;
+let _talkGainNode   = null;  // current ElevenLabs gain node — used for real-time volume
+let _speakerOn      = true;
 window._talkDisplayLog      = [];
 window._talkPendingMedia     = null;
 window._talkPendingMediaUrl  = null;
@@ -2760,10 +2928,16 @@ function talkPlayAudio(b64, transcript) {
   });
 }
 
-/* ── ElevenLabs Direct (called from browser — uses phone IP, not Render) ── */
+/* ── ElevenLabs Direct (called from browser — bypasses Render so key can't be rate-limited by proxy) ── */
 async function talkElevenLabsDirect(text) {
-  const ELEVEN_KEY      = "sk_ce3baf0035e207baf49c35219a9dcd6ab681e9160e0184c0";
-  const ELEVEN_VOICE_ID = "Uuc6s41mqYjIaMyXWGxL";
+  const ELEVEN_KEY      = getElevenKey();
+  const ELEVEN_VOICE_ID = getElevenVoice();
+
+  if (!ELEVEN_KEY) {
+    console.warn('[ElevenDirect] No API key — open API Keys in sidebar to set one');
+    talkSpeakWebSpeech(text);
+    return;
+  }
 
   // Disconnect mic source from analyser during playback — prevents browser echo
   // cancellation / AGC from ducking Ariana's voice output
@@ -2802,7 +2976,8 @@ async function talkElevenLabsDirect(text) {
     await audioCtx.resume();  // iOS requires explicit resume even for new contexts
     const decoded  = await audioCtx.decodeAudioData(arrayBuffer);
     const gainNode  = audioCtx.createGain();
-    gainNode.gain.value = 2.0;  // Full speaker volume (iOS may still apply system limit)
+    gainNode.gain.value = _speakerOn ? 2.0 : 0.001;  // respect mute state
+    _talkGainNode = gainNode;
     const source   = audioCtx.createBufferSource();
     source.buffer  = decoded;
     source.connect(gainNode);
@@ -2898,18 +3073,19 @@ function talkSpeakWebSpeech(text) {
   setTimeout(() => window.speechSynthesis.speak(utter), 80);
 }
 
-/* ── speaker toggle ── */
-let _speakerOn = true;
+/* ── speaker toggle — works on active gain node, not setSinkId ── */
 function talkToggleSpeaker() {
   _speakerOn = !_speakerOn;
   const btn = document.getElementById('talk-speaker-btn');
-  if (btn) btn.classList.toggle('muted', !_speakerOn);
-  // On iOS, programmatic audio routing is not available via JS.
-  // setSinkId works on desktop Chrome/Edge.
-  if (talkAudio && talkAudio.setSinkId) {
-    talkAudio.setSinkId(_speakerOn ? '' : 'default').catch(() => {});
+  if (btn) {
+    btn.classList.toggle('muted', !_speakerOn);
+    btn.innerHTML = _speakerOn
+      ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>`
+      : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>`;
   }
-  showToast(_speakerOn ? 'Speaker on' : 'Speaker off');
+  // Control live audio gain if currently playing
+  if (_talkGainNode) _talkGainNode.gain.value = _speakerOn ? 2.0 : 0.001;
+  if (talkAudio) talkAudio.volume = _speakerOn ? 1.0 : 0.001;
 }
 
 /* ── mic analyser ── */
@@ -2956,7 +3132,7 @@ async function talkToggleCamera() {
       flipBtn.classList.add('show');
       talkCameraOn = true;
     } catch(e) {
-      showToast('Camera access denied');
+      showNotif('Camera blocked', 'Allow camera access in browser settings', '📷');
     }
   }
 }
@@ -2972,7 +3148,7 @@ async function talkFlipCamera() {
     });
     document.getElementById('talk-video-bg').srcObject = talkStream;
   } catch(e) {
-    showToast('Could not switch camera');
+    showNotif('Camera error', 'Could not switch camera', '📷');
   }
 }
 
@@ -2987,11 +3163,22 @@ function talkCaptureFrame() {
   return canvas.toDataURL('image/jpeg', 0.78).split(',')[1];
 }
 
+/* ── clear pending media (caption cancel) ── */
+function talkClearMedia() {
+  window._talkPendingMedia     = null;
+  window._talkPendingMediaUrl  = null;
+  window._talkPendingMediaType = null;
+  window._talkMediaAlreadyShown = false;
+  document.getElementById('talk-media-preview').classList.remove('show');
+  document.getElementById('talk-text-input').placeholder = 'Message Ariana...';
+  talkOnType(document.getElementById('talk-text-input').value);
+}
+
 /* ── text input ── */
 function talkOnType(val) {
   const sendBtn = document.getElementById('talk-send-btn');
   const micBtn  = document.getElementById('talk-mic-inline-btn');
-  if (val.trim().length > 0) {
+  if (val.trim().length > 0 || window._talkPendingMedia) {
     sendBtn.classList.add('show');
     micBtn.style.display = 'none';
   } else {
@@ -3166,15 +3353,34 @@ function talkLeaveOrbMode() {
 }
 
 function talkOrbMicToggle() {
+  const btn = document.getElementById('talk-orb-mic-btn');
   if (talkListening) {
-    // Mute: stop recogniser but stay in orb mode
+    // MUTE: stop recogniser, show slashed mic
     if (talkRecog) { try { talkRecog.abort(); } catch(e){} talkRecog = null; }
     talkListening = false;
-    const btn = document.getElementById('talk-orb-mic-btn');
-    if (btn) btn.style.opacity = '0.4';
+    if (btn) {
+      btn.classList.add('muted');
+      btn.title = 'Unmute';
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <line x1="1" y1="1" x2="23" y2="23"/>
+        <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
+        <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>`;
+    }
   } else {
-    const btn = document.getElementById('talk-orb-mic-btn');
-    if (btn) btn.style.opacity = '';
+    // UNMUTE: restore mic icon
+    if (btn) {
+      btn.classList.remove('muted');
+      btn.title = 'Mute';
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>`;
+    }
     talkStartListening();
   }
 }
@@ -3190,7 +3396,7 @@ async function talkToggleMic() {
 
 async function talkStartListening() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { showToast('Speech recognition not supported in this browser'); return; }
+  if (!SR) { showNotif('Not supported', 'Use Chrome or Safari for voice', '🎙️'); return; }
   if (talkAudio) { talkAudio.pause(); talkAudio = null; }
 
   // Request mic permission ONCE — reuse stream after that
@@ -3419,8 +3625,39 @@ async function talkProcess(text) {
   if (!text && !hasMedia) return;
   if (!text) text = '[image]';
 
+  // ── Clear caption bar as soon as message is sent ──
+  document.getElementById('talk-media-preview').classList.remove('show');
+  document.getElementById('talk-text-input').placeholder = 'Message Ariana...';
+
   talkProcessing = true;
   talkWatchdogStart();
+
+  // ── Try owner command first (text/send/call actions) ──
+  const dashKey = getDashKey();
+  const isAction = /^(text|message|send|call|tell|email|forward|reply|ask)\s/i.test(text.trim());
+  if (isAction && text !== '[image]') {
+    try {
+      const cmdRes = await fetch('/api/owner-command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Dashboard-Key': dashKey },
+        body: JSON.stringify({ message: text, source: 'live_talk' })
+      });
+      const cmdData = await cmdRes.json();
+      if (cmdData.handled) {
+        talkWatchdogClear();
+        talkProcessing = false;
+        const replyTs = Date.now();
+        talkAppendMsg('ariana', cmdData.confirmation, null, null, replyTs);
+        window._talkDisplayLog.push({ role:'ariana', text: cmdData.confirmation, ts: replyTs });
+        talkSaveChatLog();
+        if (talkOrbMode) {
+          talkShowState('speaking');
+          await talkElevenLabsDirect(cmdData.confirmation);
+        } else { talkShowState('idle'); }
+        return;
+      }
+    } catch(e) { console.warn('[cmd] owner-command lookup failed:', e.message); }
+  }
 
   // Use pending uploaded media OR camera frame
   const imageBase64 = window._talkPendingMedia || talkCaptureFrame();
@@ -3462,7 +3699,7 @@ async function talkProcess(text) {
   try {
     const res = await fetch('/api/talk', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Dashboard-Key': dashKey },
       body: JSON.stringify({ message: text, history: talkHistory.slice(-14), imageBase64 })
     });
     if (!res.ok) throw new Error('Server ' + res.status);
@@ -3473,15 +3710,29 @@ async function talkProcess(text) {
     talkHistory.push({ role: 'assistant', content: data.reply });
     window._talkDisplayLog.push({ role:'ariana', text: data.reply, ts: replyTs });
 
-    // Append Ariana reply to chat log
-    talkAppendMsg('ariana', data.reply, null, null, replyTs);
+    // If server returned a media image (e.g. "show me your photo" command), display it
+    if (data.imageUrl) {
+      talkAppendMsg('ariana', data.reply === 'here' ? '' : data.reply, data.imageUrl, 'image', replyTs);
+    } else {
+      // Append Ariana reply to chat log
+      talkAppendMsg('ariana', data.reply, null, null, replyTs);
+    }
     talkSaveChatLog();
+
+    // Self-learn in background (non-blocking)
+    setTimeout(() => talkSelfLearn(text, data.reply), 0);
 
     // Speak only in call/orb mode — text chat stays silent
     if (talkOrbMode) {
       talkShowState('speaking');
       talkTypeText(data.reply);
-      await talkElevenLabsDirect(data.reply);
+      if (data.audioBase64) {
+        // Server pre-generated audio — use it directly (no extra API call)
+        talkPlayAudio(data.audioBase64, data.reply);
+      } else {
+        // Browser calls ElevenLabs directly
+        await talkElevenLabsDirect(data.reply);
+      }
     } else {
       talkWatchdogClear();
       talkProcessing = false;
@@ -3543,13 +3794,21 @@ async function talkHandleMediaUpload(e) {
         window._talkPendingMediaUrl  = dataUrl;
         window._talkPendingMediaType = mtype;
 
-        // NOTE: media is NOT saved to the library here — use Media Library tab manually if needed.
-
-        // 4. Auto-trigger Ariana response to the media
-        if (!talkProcessing) {
-          const prompt = mtype === 'video' ? 'I sent you a video' : 'I just shared a photo with you';
-          setTimeout(() => talkProcess(prompt), 300);
+        // 3. Show caption preview bar — let user type caption or press send directly
+        const thumb = document.getElementById('talk-preview-thumb');
+        if (thumb) {
+          thumb.innerHTML = mtype === 'video'
+            ? `<video src="${dataUrl}" muted playsinline style="width:100%;height:100%;object-fit:cover"></video>`
+            : `<img src="${dataUrl}" alt="preview" style="width:100%;height:100%;object-fit:cover">`;
         }
+        document.getElementById('talk-media-preview').classList.add('show');
+
+        // Show send button (even with empty caption) and focus input
+        talkOnType(document.getElementById('talk-text-input').value);
+        document.getElementById('talk-text-input').placeholder = 'Add a caption...';
+        document.getElementById('talk-text-input').focus();
+
+        // NOTE: do NOT auto-trigger here — user controls when to send
 
         resolve();
       };
@@ -3805,11 +4064,20 @@ async function loadAnalytics() {
 // Load extras data when view activates
 const _origNavTo = navTo;
 
+async function loadSchedules() {
+  try {
+    const res = await fetch('/api/extras/schedules');
+    const d = await res.json();
+    if (d.schedules) { schedules = d.schedules; renderSchedules(); }
+  } catch(e) {}
+}
+
 // Initialize extras on first load
 async function initExtras() {
   await loadMood();
   await loadPersonas();
   await loadRules();
+  await loadSchedules();
 }
 
 document.addEventListener("touchstart",e=>{_tx=e.touches[0].clientX;_ty=e.touches[0].clientY},{passive:true});
