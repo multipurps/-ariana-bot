@@ -291,7 +291,12 @@ function hasAIBreak(text) {
     // Prevent lying about having sent messages/media that were never actually sent
     "i've sent you a message on whatsapp", "i sent you a message on whatsapp",
     "sent it on whatsapp", "sent you on whatsapp", "i texted you on whatsapp",
-    "i messaged you on whatsapp", "already sent you a message", "i already sent"
+    "i messaged you on whatsapp", "already sent you a message", "i already sent",
+    // Denying having sent media that was actually sent (new break pattern)
+    "i didn't send a picture", "i didnt send a picture", "didn't send a pic",
+    "i didn't send anything", "i didnt send anything", "i haven't sent",
+    "i havent sent", "i'm texting you", "im texting you",
+    "just texting you", "we're just texting", "we are just texting"
   ];
   return forbidden.some(p => lower.includes(p));
 }
@@ -433,27 +438,28 @@ async function searchUnsplash(query) {
 
 async function getMediaUrl(type) {
   if (type === "selfie") {
-    // Primary: ariana_media Supabase table (where dashboard uploads go)
+    // ONLY use Supabase ariana_media (the dashboard media library).
+    // Never fall back to media_library.json — it may contain old/wrong images.
     if (supabase) {
       try {
-        // Try with media_type filter first
-        let { data } = await supabase.from('ariana_media').select('url').eq('media_type','image').limit(50);
-        let urls = (data||[]).map(r => r.url).filter(Boolean);
-        // Fallback: dashboard-uploaded photos often have null media_type — fetch all records
-        if (!urls.length) {
-          const { data: allMedia } = await supabase.from('ariana_media').select('url').limit(100);
-          urls = (allMedia||[]).map(r => r.url).filter(Boolean);
-        }
-        if (urls.length) {
-          console.log(`[media] Picking from ${urls.length} Supabase photos`);
-          return urls[Math.floor(Math.random() * urls.length)];
+        // Try explicit selfie type first, then any image type, then null type
+        for (const filter of [
+          q => q.eq('media_type', 'selfie'),
+          q => q.eq('media_type', 'image'),
+          q => q.is('media_type', null),
+        ]) {
+          const { data } = await filter(supabase.from('ariana_media').select('url').limit(50));
+          const urls = (data || []).map(r => r.url).filter(Boolean);
+          if (urls.length) {
+            console.log(`[media] Picking selfie from ${urls.length} dashboard photos`);
+            return urls[Math.floor(Math.random() * urls.length)];
+          }
         }
       } catch (e) { console.warn('[media] Supabase query failed:', e.message); }
     }
-    // Fallback: legacy ariana_photos array in media_library.json
-    const photos = mediaLib.ariana_photos || [];
-    if (!photos.length) { console.warn('[media] No photos in Supabase or media_library.json'); return null; }
-    return photos[Math.floor(Math.random() * photos.length)];
+    // No photos found in dashboard — return null so Ariana makes an excuse
+    console.warn('[media] No selfie photos in dashboard media library');
+    return null;
   }
   const queries = { food: "aesthetic food photography", vibe: "aesthetic lifestyle photography" };
   return await searchUnsplash(queries[type] || type);
@@ -796,35 +802,50 @@ async function markWhatsAppRead(messageId, phoneNumberId) {
   } catch { /* silent */ }
 }
 
-// Re-upload an image to Cloudinary (or keep original URL as fallback) so
-// Meta's servers can reliably fetch it — Supabase storage URLs often 422.
-async function uploadImageForWhatsApp(imageUrl) {
-  if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_UPLOAD_PRESET) {
-    try {
-      const resp = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 15000 });
-      const contentType = (resp.headers['content-type'] || 'image/jpeg').split(';')[0].trim();
-      const dataUri = `data:${contentType};base64,${Buffer.from(resp.data).toString('base64')}`;
-      const res = await axios.post(
-        `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload`,
-        { file: dataUri, upload_preset: process.env.CLOUDINARY_UPLOAD_PRESET, folder: 'ariana-photos' }
-      );
-      if (res.data?.secure_url) {
-        console.log('[media] Re-uploaded to Cloudinary for WhatsApp:', res.data.secure_url.slice(0, 60));
-        return res.data.secure_url;
-      }
-    } catch (e) { console.warn('[media] Cloudinary image re-upload failed:', e.message); }
-  }
-  return imageUrl;  // fallback: use original URL and hope for the best
-}
-
 async function sendWhatsAppImage(to, imageUrl, caption, phoneNumberId) {
-  const id = phoneNumberId || KAPSO_PHONE_ID;
-  // Re-upload so Meta's servers can fetch the image (Supabase URLs → 422)
-  let finalUrl = imageUrl;
-  try { finalUrl = await uploadImageForWhatsApp(imageUrl); } catch {}
+  const pid = phoneNumberId || KAPSO_PHONE_ID;
+
+  // Download the image so we can upload the binary directly to WhatsApp.
+  // This avoids Meta trying to fetch the Supabase URL (which causes 422).
+  let buf, contentType;
+  try {
+    const resp = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 15000 });
+    buf = Buffer.from(resp.data);
+    contentType = (resp.headers['content-type'] || 'image/jpeg').split(';')[0].trim();
+  } catch (e) { console.warn('[WA] Image download failed:', e.message); }
+
+  // Strategy 1: Upload binary to WhatsApp Media API → send by media_id
+  // Meta fetches from its own CDN — no third-party URL needed.
+  if (buf) {
+    try {
+      const FormData = require('form-data');
+      const form = new FormData();
+      form.append('file', buf, { filename: 'photo.jpg', contentType });
+      form.append('messaging_product', 'whatsapp');
+      form.append('type', contentType);
+      const uploadRes = await axios.post(
+        `https://api.kapso.ai/meta/whatsapp/v24.0/${pid}/media`,
+        form,
+        { headers: { 'X-API-Key': KAPSO_API_KEY, ...form.getHeaders() }, timeout: 30000 }
+      );
+      const mediaId = uploadRes.data?.id;
+      if (mediaId) {
+        console.log('[WA] 📸 Sending image by media_id:', mediaId);
+        await axios.post(
+          `https://api.kapso.ai/meta/whatsapp/v24.0/${pid}/messages`,
+          { messaging_product: "whatsapp", recipient_type: "individual", to, type: "image", image: { id: mediaId, caption: caption || "" } },
+          { headers: { "X-API-Key": KAPSO_API_KEY, "Content-Type": "application/json" } }
+        );
+        return;
+      }
+    } catch (e) { console.warn('[WA] Media API upload failed:', e.message); }
+  }
+
+  // Strategy 2: Last resort — raw Supabase URL (may 422, but logged)
+  console.warn('[WA] ⚠️  Falling back to raw URL — may 422');
   await axios.post(
-    `https://api.kapso.ai/meta/whatsapp/v24.0/${id}/messages`,
-    { messaging_product: "whatsapp", recipient_type: "individual", to, type: "image", image: { link: finalUrl, caption: caption || "" } },
+    `https://api.kapso.ai/meta/whatsapp/v24.0/${pid}/messages`,
+    { messaging_product: "whatsapp", recipient_type: "individual", to, type: "image", image: { link: imageUrl, caption: caption || "" } },
     { headers: { "X-API-Key": KAPSO_API_KEY, "Content-Type": "application/json" } }
   );
 }
@@ -848,13 +869,17 @@ async function sendTelegram(chatId, text) {
 
 async function sendTelegramPhoto(chatId, imageUrl, caption) {
   if (!tgClient) throw new Error("Telegram not connected");
-  // Download image to buffer then send — avoids URL permission issues.
-  // IMPORTANT: do NOT pass `attributes` — plain {className:"..."} objects are
-  // not valid GramJS TL types and cause sendFile to throw silently.
   const resp = await axios.get(imageUrl, { responseType: "arraybuffer", timeout: 15000 });
   const buf  = Buffer.from(resp.data);
+  // Wrap in CustomFile so GramJS knows the name/MIME — without it GramJS sends
+  // a nameless binary blob ("unnamed 1.9 MB") that apps can't render as an image.
+  let file = buf;
+  try {
+    const { CustomFile } = require("telegram/client/uploads");
+    file = new CustomFile("ariana.jpg", buf.length, "", buf);
+  } catch { /* fallback to raw buffer if CustomFile unavailable */ }
   await tgClient.sendFile(chatId, {
-    file: buf,
+    file,
     caption: caption || "",
     forceDocument: false
   });
