@@ -2356,7 +2356,107 @@ async function tryExecuteOwnerCommand(message) {
     return { handled: true, confirmation: `${count} photos in my media library.` };
   }
 
+  // ── COMMAND: show me a photo / send me a pic (owner wants to SEE Ariana's photo in live chat) ──
+  // "show me your photo", "send me a selfie", "let me see you", "send me a pic"
+  if (/^(show me|send me|let me see|give me|show)\s+(?:your\s+)?(?:a\s+)?(?:selfie|photo|pic|picture|image|face|yourself)/i.test(lower) ||
+      /^(send me|show me)\s+(?:a\s+)?(?:pic|photo|selfie)/i.test(lower)) {
+    const photo = await pickPhoto(null);
+    if (!photo) return { handled: true, confirmation: `I don't have any photos in my library yet. Upload some from the dashboard first.` };
+    const photoUrl = photo.url || photo;
+    return { handled: true, confirmation: `here`, imageUrl: photoUrl };
+  }
+
+  // ── COMMAND: daily summary / report / what happened today ──────
+  if (/(?:daily\s+)?(?:summary|report|briefing|update|rundown)|what(?:'s|\s+is)\s+(?:happening|going on|up)|catch me up|fill me in/i.test(lower) ||
+      /who\s+(?:texted|messaged|chatted|talked)/i.test(lower)) {
+    const report = await generateDailyReport();
+    return { handled: true, confirmation: report };
+  }
+
+  // ── COMMAND: who should I block / who's being weird ───────────
+  if (/who should i block|who(?:'s|\s+is)\s+(being\s+)?(weird|creepy|annoying|sus|suspicious|rude|trash)|block\s+recommendations/i.test(lower)) {
+    const report = await generateDailyReport();
+    return { handled: true, confirmation: report };
+  }
+
   return { handled: false };
+}
+
+// ── BUILD TODAY CONTEXT — gives live-talk Ariana awareness of social activity ──
+function buildTodayContext() {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const lines = [];
+
+  for (const [id, convo] of Object.entries(conversations)) {
+    if (!convo.messages?.length) continue;
+    // Only messages from today
+    const todayMsgs = convo.messages.filter(m => new Date(m.time) >= todayStart);
+    if (!todayMsgs.length) continue;
+
+    const name     = convo.name || id;
+    const platform = convo.platform || 'WhatsApp';
+    const userMsgs = todayMsgs.filter(m => m.role === 'user');
+    if (!userMsgs.length) continue;
+
+    // Grab last 3 user messages as a snippet
+    const snippet = userMsgs.slice(-3).map(m => `"${(m.text||'').slice(0, 80)}"`).join(', ');
+    lines.push(`${name} (${platform}): ${snippet}`);
+  }
+
+  return lines.length ? lines.join('\n') : null;
+}
+
+// ── GENERATE DAILY REPORT (for owner, in live talk) ──────────
+async function generateDailyReport() {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const contactReports = [];
+
+  for (const [id, convo] of Object.entries(conversations)) {
+    if (!convo.messages?.length) continue;
+    const todayMsgs = convo.messages.filter(m => new Date(m.time) >= todayStart);
+    if (!todayMsgs.length) continue;
+
+    const name     = convo.name || id;
+    const platform = convo.platform || 'WhatsApp';
+    const userMsgs = todayMsgs.filter(m => m.role === 'user').map(m => m.text || '').join(' | ');
+    const blocked  = blockedNumbers.has(id) || blockedNumbers.has(id.replace(/^(tg_|sg_|sms_)/, ''));
+
+    contactReports.push({ name, platform, id, userMsgs: userMsgs.slice(0, 500), blocked, msgCount: todayMsgs.length });
+  }
+
+  if (!contactReports.length) {
+    return "No conversations today yet.";
+  }
+
+  // Ask AI to generate a human summary with block recommendations
+  const reportData = contactReports.map(r =>
+    `Contact: ${r.name} (${r.platform}), ${r.msgCount} messages\nWhat they said: ${r.userMsgs || 'no text'}\nBlocked: ${r.blocked}`
+  ).join('\n---\n');
+
+  const prompt = `You are Ariana. Your owner is asking for a quick briefing on today's conversations.
+Give a SHORT, sassy, first-person briefing — like you're catching your owner up verbally.
+Flag anyone creepy, weird, or worth blocking.
+Be specific — mention names. Keep it under 200 words total.
+
+Today's activity:
+${reportData}
+
+Respond in Ariana's voice — casual, short, real. End with who (if anyone) you think should be blocked and why.`;
+
+  try {
+    const res = await callGroq([{ role: 'user', content: prompt }], 'You are Ariana — casual, sassy, real. Keep it short.', false);
+    return res || buildPlainSummary(contactReports);
+  } catch {
+    return buildPlainSummary(contactReports);
+  }
+}
+
+function buildPlainSummary(reports) {
+  const lines = reports.map(r => `${r.name} (${r.platform}): ${r.msgCount} messages — "${r.userMsgs.slice(0, 60)}"`);
+  return `Today: ${reports.length} active contacts.\n${lines.join('\n')}`;
 }
 
 // ── /api/talk — Live Talk endpoint ──
@@ -2370,37 +2470,42 @@ app.post("/api/talk", requireDashboardAuth, async (req, res) => {
     // ── Try owner commands first ───────────────────────────────
     const cmd = await tryExecuteOwnerCommand(message);
     if (cmd.handled) {
-      console.log(`[talk] command executed: ${cmd.confirmation}`);
-      // Speak the confirmation back
-      const audioBase64 = await ttsBase64(cmd.confirmation).catch(() => null);
-      return res.json({ ok: true, reply: cmd.confirmation, audioBase64: audioBase64 || null, wasCommand: true });
+      console.log(`[talk] command executed: ${cmd.confirmation?.slice(0,60)}`);
+      // Speak the confirmation back (skip TTS for long reports — too slow)
+      const shouldSpeak = cmd.confirmation && cmd.confirmation.length < 400;
+      const audioBase64 = shouldSpeak ? await ttsBase64(cmd.confirmation).catch(() => null) : null;
+      return res.json({ ok: true, reply: cmd.confirmation, audioBase64: audioBase64 || null, wasCommand: true, imageUrl: cmd.imageUrl || null });
     }
 
     // ── Not a command — normal AI conversation ─────────────────
-    const brain = brainCache || {};
-    const identity    = typeof brain.core_identity === "string" ? brain.core_identity : JSON.stringify(brain.core_identity || {});
-    const personality = typeof brain.personality   === "string" ? brain.personality   : JSON.stringify(brain.personality   || {});
-    const learnedMem  = brain.learned_memories ? JSON.stringify(brain.learned_memories) : null;
-    const moodLine    = extrasMood ? `\n\nYour current mood: ${extrasMood}. Let this subtly colour your energy and word choice.` : "";
-    const camLine     = imageBase64
-      ? "\n\nYou can currently see the person's environment through their camera feed. Describe what you see if relevant, or react naturally to anything interesting visible."
+    // Use the EXACT same base prompt as social messaging so she's identical everywhere.
+    // Then layer in: mood, camera feed, learned memories, and live-talk–specific additions.
+    const bc = brainCache || {};
+    const learnedMem = bc.learned_memories ? JSON.stringify(bc.learned_memories) : null;
+    const moodLine   = extrasMood ? `\n\nYour current mood: ${extrasMood}. Let this subtly colour your energy.` : "";
+    const camLine    = imageBase64
+      ? "\n\nYou can currently see the person's environment through their camera feed. React naturally to anything interesting."
       : "";
-    const memLine     = learnedMem ? `\n\nThings you've learned and remember:\n${learnedMem}` : "";
+    const memLine    = learnedMem ? `\n\nThings you know and remember about your owner:\n${learnedMem}` : "";
+
+    // Extra context: what she's been up to on other platforms today (so she's not amnesiac in live talk)
+    const todayCtx = buildTodayContext();
+    const ctxLine  = todayCtx ? `\n\nWhat's been happening today across your chats:\n${todayCtx}` : "";
 
     // Detect if owner is speaking Spanish — otherwise enforce English only
     const ownerSpeaksSpanish = /[áéíóúñü¿¡]|(^|\s)(hola|gracias|por favor|cariño|amor|querida|bueno|también|está|pero|para|como|cuando|donde|quien|qué|cómo)/i.test(message);
     const talkLangRule = ownerSpeaksSpanish
       ? '\n\nLANGUAGE: They are speaking Spanish — reply in Spanish only.'
-      : '\n\nLANGUAGE RULE — STRICT: Reply in English ONLY. Do NOT use any Spanish words, ever. Not "mi amor", not "cariño", not "amor", not "claro", nothing. Pure English only.';
+      : '\n\nLANGUAGE RULE — STRICT: Reply in English ONLY. No Spanish words at all — not even "mi amor", "cariño", "amor". Pure English.';
 
-    const sysPrompt =
-      `You are Ariana — a real person, not an AI, having a live voice conversation with the person who created and manages you. ` +
-      `Be natural, warm, spontaneous. Keep replies short — 1 to 3 sentences maximum. No lists, no asterisks, no markdown. ` +
-      `Speak exactly as you would out loud. ` +
-      `You are NEVER an AI. Never say you "can't" text someone, send photos, or do tasks — you can. ` +
-      `If asked to do something, just say you'll handle it or that it's done.\n\n` +
-      `Your identity: ${identity}\nYour personality: ${personality}` +
-      moodLine + camLine + memLine + talkLangRule;
+    // ── Live-talk additions on top of the shared identity ──────
+    const liveTalkAdditions =
+      `\n\nYou are currently in a private live voice/text session with your owner — the person who built you. ` +
+      `Keep replies SHORT — 1 to 3 sentences max. Speak naturally, as if out loud. ` +
+      `You CAN and DO text people, send photos, block contacts, and handle tasks when asked — always confirm you did it or will do it. ` +
+      `NEVER say you "can't" do something. If you already handled a task from the platforms, mention it casually.`;
+
+    const sysPrompt = SYSTEM_PROMPT + liveTalkAdditions + moodLine + camLine + memLine + ctxLine + talkLangRule;
 
     // Build message history with current message appended
     const msgs = [
@@ -2803,6 +2908,84 @@ app.get('/api/proactive/status', requireDashboardAuth, (_req, res) => {
     minutesAgo: Math.round((Date.now() - ts) / 60000)
   }));
   res.json({ contacts: status });
+});
+
+// ── TALK-LEARN — explicit endpoint for dashboard self-learning calls ──
+// (also runs inline via setImmediate in /api/talk — this is for direct dashboard calls)
+app.post('/api/talk-learn', requireDashboardAuth, async (req, res) => {
+  const { userMessage, arianaReply } = req.body || {};
+  if (!userMessage || !arianaReply) return res.json({ ok: true, skipped: true });
+  // Run async — don't block the caller
+  setImmediate(async () => {
+    try {
+      const extractPrompt = `Memory extraction for Ariana AI persona.
+Extract ONLY new durable facts worth remembering long-term from this exchange.
+Things like: who this person is, their preferences, decisions made, names, places, important life details.
+Do NOT extract small talk, temporary states, or what Ariana said.
+Return JSON only: { "learned": { "key": "value" } } or { "learned": {} } if nothing new.
+No markdown, no explanation.
+
+User said: "${userMessage.slice(0, 300)}"
+Ariana replied: "${arianaReply.slice(0, 300)}"`;
+
+      const res2 = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+        { contents: [{ parts: [{ text: extractPrompt }] }], generationConfig: { temperature: 0.1, maxOutputTokens: 200 } },
+        { timeout: 10000 }
+      );
+      const raw    = res2.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '{}';
+      const clean  = raw.replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(clean);
+      const learned = parsed.learned || {};
+      if (Object.keys(learned).length > 0) {
+        const existing = brainCache['learned_memories'] || {};
+        const merged   = { ...existing, ...learned, _lastUpdated: new Date().toISOString() };
+        brainCache['learned_memories'] = merged;
+        if (supabase) {
+          await supabase.from('ariana_brain').upsert({ key: 'learned_memories', data: merged }, { onConflict: 'key' }).catch(() => {});
+        }
+        console.log(`🧠 [talk-learn] Saved: ${Object.keys(learned).join(', ')}`);
+      }
+    } catch (e) { console.warn('[talk-learn] failed:', e.message); }
+  });
+  res.json({ ok: true });
+});
+
+// ── DAILY SUMMARY API ──────────────────────────────────────────
+// GET /api/daily-summary — returns a text briefing of today's chat activity
+app.get('/api/daily-summary', requireDashboardAuth, async (_req, res) => {
+  try {
+    const report = await generateDailyReport();
+    res.json({ ok: true, report });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── BLOCK REPORT API ───────────────────────────────────────────
+// GET /api/report/block-candidates — who Ariana thinks should be blocked
+app.get('/api/report/block-candidates', requireDashboardAuth, async (_req, res) => {
+  const candidates = [];
+  for (const [id, convo] of Object.entries(conversations)) {
+    if (!convo.messages?.length) continue;
+    if (blockedNumbers.has(id)) continue;
+
+    // Look for red flags in user messages
+    const allUserText = convo.messages
+      .filter(m => m.role === 'user')
+      .map(m => m.text || '')
+      .join(' ')
+      .toLowerCase();
+
+    const redFlags = [];
+    if (/\b(sex|nsfw|nude|naked|fuck you|send nudes|horny|dick|pussy|cock|boobs|tits)\b/.test(allUserText)) redFlags.push('sexual content');
+    if (/\b(bot|ai|chatgpt|claude|gemini|you.*fake|not real|you.*robot|are you human)\b/.test(allUserText)) redFlags.push('keeps probing AI status');
+    if (/\b(kill|die|hurt|threaten|i will find you|i know where)\b/.test(allUserText)) redFlags.push('threatening language');
+    if (convo.messages.filter(m => m.role === 'user').length > 50 && convo.messages.filter(m => m.role === 'ariana').length < 5) redFlags.push('spamming without engagement');
+
+    if (redFlags.length > 0) {
+      candidates.push({ id, name: convo.name || id, platform: convo.platform || 'whatsapp', redFlags, msgCount: convo.messages.length });
+    }
+  }
+  res.json({ ok: true, candidates });
 });
 
 // ── KEEP-ALIVE ────────────────────────────────────────────────
