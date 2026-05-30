@@ -796,11 +796,35 @@ async function markWhatsAppRead(messageId, phoneNumberId) {
   } catch { /* silent */ }
 }
 
+// Re-upload an image to Cloudinary (or keep original URL as fallback) so
+// Meta's servers can reliably fetch it — Supabase storage URLs often 422.
+async function uploadImageForWhatsApp(imageUrl) {
+  if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_UPLOAD_PRESET) {
+    try {
+      const resp = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 15000 });
+      const contentType = (resp.headers['content-type'] || 'image/jpeg').split(';')[0].trim();
+      const dataUri = `data:${contentType};base64,${Buffer.from(resp.data).toString('base64')}`;
+      const res = await axios.post(
+        `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload`,
+        { file: dataUri, upload_preset: process.env.CLOUDINARY_UPLOAD_PRESET, folder: 'ariana-photos' }
+      );
+      if (res.data?.secure_url) {
+        console.log('[media] Re-uploaded to Cloudinary for WhatsApp:', res.data.secure_url.slice(0, 60));
+        return res.data.secure_url;
+      }
+    } catch (e) { console.warn('[media] Cloudinary image re-upload failed:', e.message); }
+  }
+  return imageUrl;  // fallback: use original URL and hope for the best
+}
+
 async function sendWhatsAppImage(to, imageUrl, caption, phoneNumberId) {
   const id = phoneNumberId || KAPSO_PHONE_ID;
+  // Re-upload so Meta's servers can fetch the image (Supabase URLs → 422)
+  let finalUrl = imageUrl;
+  try { finalUrl = await uploadImageForWhatsApp(imageUrl); } catch {}
   await axios.post(
     `https://api.kapso.ai/meta/whatsapp/v24.0/${id}/messages`,
-    { messaging_product: "whatsapp", recipient_type: "individual", to, type: "image", image: { link: imageUrl, caption: caption || "" } },
+    { messaging_product: "whatsapp", recipient_type: "individual", to, type: "image", image: { link: finalUrl, caption: caption || "" } },
     { headers: { "X-API-Key": KAPSO_API_KEY, "Content-Type": "application/json" } }
   );
 }
@@ -824,12 +848,15 @@ async function sendTelegram(chatId, text) {
 
 async function sendTelegramPhoto(chatId, imageUrl, caption) {
   if (!tgClient) throw new Error("Telegram not connected");
-  // Download image to buffer then send — avoids URL permission issues
-  const resp = await axios.get(imageUrl, { responseType: "arraybuffer" });
+  // Download image to buffer then send — avoids URL permission issues.
+  // IMPORTANT: do NOT pass `attributes` — plain {className:"..."} objects are
+  // not valid GramJS TL types and cause sendFile to throw silently.
+  const resp = await axios.get(imageUrl, { responseType: "arraybuffer", timeout: 15000 });
   const buf  = Buffer.from(resp.data);
   await tgClient.sendFile(chatId, {
-    file: buf, caption: caption || "", forceDocument: false,
-    attributes: [{ className: "DocumentAttributeFilename", fileName: "photo.jpg" }]
+    file: buf,
+    caption: caption || "",
+    forceDocument: false
   });
 }
 
@@ -959,6 +986,25 @@ async function sendSignal(to, message) {
   });
 }
 
+async function sendSignalImage(to, imageUrl, caption = '') {
+  try {
+    const resp = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 15000 });
+    const contentType = (resp.headers['content-type'] || 'image/jpeg').split(';')[0].trim();
+    const base64  = Buffer.from(resp.data).toString('base64');
+    const dataUri = `data:${contentType};base64,${base64}`;
+    await axios.post(`${SIGNAL_CLI_URL}/v2/send`, {
+      message: caption || '',
+      number: SIGNAL_NUMBER,
+      recipients: [to],
+      base64_attachments: [dataUri]
+    });
+    console.log('[Signal] 📸 Image sent as attachment');
+  } catch (e) {
+    console.warn('[Signal] Image attach failed, falling back to URL text:', e.message);
+    await sendSignal(to, imageUrl);   // graceful degradation
+  }
+}
+
 // ── SMS / MMS SENDERS ─────────────────────────────────────────
 async function sendSMS(to, message) {
   await axios.post(
@@ -988,7 +1034,7 @@ async function sendReply(id, platform, reply, voiceUrl, imageUrl, chatId, from, 
   } else if (imageUrl) {
     if (platform === "whatsapp")      await sendWhatsAppImage(from, imageUrl, caption || "", phoneNumberId);
     else if (platform === "telegram") await sendTelegramPhoto(chatId, imageUrl);
-    else if (platform === "signal")   await sendSignal(from, imageUrl);
+    else if (platform === "signal")   await sendSignalImage(from, imageUrl, caption || "");
     else if (platform === "sms")      await sendMMS(from, "", imageUrl);
   } else {
     if (platform === "whatsapp")      await sendWhatsApp(from, reply, phoneNumberId);
