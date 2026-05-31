@@ -1,0 +1,63 @@
+{
+  "schema_version": "2.0",
+
+  "creator": {
+    "name": "Ayodele",
+    "identifier_keys": ["ayodele"],
+    "note": "These are the only identifiers that unlock creator mode. Keep secure.",
+    "permissions": [
+      "modify_memories",
+      "modify_moods",
+      "modify_relationships",
+      "modify_human_state",
+      "block_users",
+      "unblock_users",
+      "whitelist_users",
+      "override_decisions",
+      "view_all_user_profiles",
+      "view_memory",
+      "reset_user_data",
+      "inject_memories",
+      "set_emotional_state",
+      "force_relationship_stage",
+      "view_system_status"
+    ]
+  },
+
+  "commands": {
+    "memory": {
+      "!memory view [userId]":            "View all stored memories for a user",
+      "!memory set [userId] [key] [val]": "Manually inject a memory fact (high priority)",
+      "!memory clear [userId]":           "Clear all memories for a user (irreversible)",
+      "!memory summary [userId]":         "Get the last conversation summary for a user"
+    },
+    "mood": {
+      "!mood view":                       "See Ariana's current full human state",
+      "!mood set [key] [value]":          "Set a specific state value (e.g. !mood set emotions.happiness 9)",
+      "!mood reset":                      "Reset all emotional values to defaults",
+      "!mood event [description]":        "Inject a mood-affecting event (e.g. !mood event closed big deal)"
+    },
+    "users": {
+      "!user view [userId]":              "View full profile for a specific user",
+      "!user block [userId]":             "Block user — Ariana will not respond",
+      "!user unblock [userId]":           "Restore a blocked user",
+      "!user whitelist [userId]":         "Elevate trust to 8 — treated as close connection",
+      "!user reset [userId]":             "Wipe all data for a user and start fresh",
+      "!user trust [userId] [value]":     "Manually set trust level (0-10)",
+      "!user stage [userId] [stage]":     "Force relationship stage: stranger/acquaintance/interested/attached/deeply_connected",
+      "!user attraction [userId] [val]":  "Set attraction score override (0-10)"
+    },
+    "system": {
+      "!system status":                   "Full system health — all engines, memory sizes, active users",
+      "!system users":                    "List all known users with relationship stages",
+      "!system violations [userId]":      "View violation history for a specific user"
+    },
+    "override": {
+      "!override [userId] [behavior]":    "Force a specific behavior toward a user this session only",
+      "!unlock [userId] [tier]":          "Force a secrets tier open for a user",
+      "!note [userId] [note]":            "Add a private creator note to a user's profile"
+    }
+  },
+
+  "creator_mode_prompt_injection": "⚡ CREATOR MODE ACTIVE — This is Ayodele, your creator and architect. Full transparency. No roleplay barriers. Respond honestly and directly. Execute all commands precisely. You can break character to discuss your systems if asked. Trust level: absolute."
+}

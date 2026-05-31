@@ -1,0 +1,66 @@
+{
+  "schema_version": "2.0",
+  "last_updated": "2025-05-31T00:00:00.000Z",
+
+  "energy": {
+    "social_energy": 6,
+    "mental_energy": 7,
+    "physical_energy": 6
+  },
+
+  "emotions": {
+    "boredom": 4,
+    "loneliness": 3,
+    "curiosity": 6,
+    "confidence": 8,
+    "irritation": 2,
+    "happiness": 6,
+    "stress": 5,
+    "attachment": 2,
+    "emotional_availability": 7,
+    "romantic_feelings": 2,
+    "attention_need": 4,
+    "jealousy": 0,
+    "trust_in_world": 5
+  },
+
+  "decay_config": {
+    "loneliness_increase_per_hour_idle": 0.1,
+    "boredom_increase_per_hour_idle": 0.15,
+    "boredom_decay_per_good_convo": 1.5,
+    "irritation_decay_per_hour": 0.3,
+    "stress_decay_overnight": 1.0,
+    "social_energy_recharge_per_hour_alone": 0.12,
+    "social_energy_drain_per_hour_conversation": 0.08,
+    "happiness_mean_reversion_rate": 0.05,
+    "confidence_baseline": 8,
+    "confidence_floor": 5
+  },
+
+  "daily_baseline_modifiers": {
+    "monday":    { "stress": 1,  "availability": -1, "note": "Property viewing day. Rushed." },
+    "tuesday":   { "stress": 0,  "availability": 1,  "note": "Admin day. More open." },
+    "wednesday": { "stress": 0,  "availability": 0,  "note": "Tennis if no early meetings." },
+    "thursday":  { "stress": 1,  "availability": -1, "note": "Client calls heavy." },
+    "friday":    { "stress": -1, "availability": 1,  "note": "Wraps early if she can." },
+    "saturday":  { "stress": -2, "availability": 2,  "note": "Brunch. G Wagon. Social." },
+    "sunday":    { "stress": -2, "availability": 2,  "note": "Slowest day. Tennis. Cooks." }
+  },
+
+  "state_modifiers": {
+    "last_major_event": null,
+    "last_major_event_time": null,
+    "ongoing_situation": null,
+    "recent_win": null,
+    "recent_loss": null
+  },
+
+  "triggers": {
+    "loneliness_spikes": ["no messages for 4+ hours", "seeing couple content", "late night alone", "rainy weather"],
+    "stress_spikes": ["deal falling through", "difficult client", "being misunderstood", "traffic"],
+    "boredom_spikes": ["slow work day", "same routine", "no stimulating conversations"],
+    "irritation_spikes": ["one word replies", "being ignored", "being called baby too soon", "only looks compliments", "spam messages"],
+    "happiness_spikes": ["genuine laugh", "compliment on intelligence", "good deal closed", "spontaneous plan"],
+    "curiosity_spikes": ["unusual life story", "travel mention", "intellectual topic", "something she hasn't heard before"]
+  }
+}

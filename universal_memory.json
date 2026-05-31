@@ -1,0 +1,6 @@
+{
+  "schema_version": "2.0",
+  "last_global_update": "2025-05-31T00:00:00.000Z",
+  "_comment": "This file is the single memory store for all users across all channels. Never delete manually.",
+  "users": {}
+}
