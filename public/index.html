@@ -1043,6 +1043,18 @@ input,textarea{font-family:inherit;color:inherit}
 /* force-hide fallback orb layers when canvas is rendering */
 #talk-orb.canvas-active .ol { display:none !important; }
 
+/* ── quick-action chips on idle screen ── */
+.talk-chip{
+  background:rgba(255,255,255,0.07);
+  border:1px solid rgba(255,255,255,0.13);
+  color:rgba(255,255,255,0.75);
+  border-radius:20px;padding:7px 14px;
+  font-size:13px;cursor:pointer;
+  transition:background .18s,border-color .18s;
+  white-space:nowrap;
+}
+.talk-chip:hover,.talk-chip:active{background:rgba(255,255,255,0.14);border-color:rgba(255,255,255,0.25)}
+
 /* muted state for orb control buttons */
 .orb-ctrl-btn.muted{background:rgba(239,68,68,.18)!important;border-color:rgba(239,68,68,.35)!important}
 .orb-ctrl-btn.muted svg{stroke:#ef4444}
@@ -1415,6 +1427,13 @@ input,textarea{font-family:inherit;color:inherit}
           onerror="this.style.display='none'">
         <div id="talk-idle-greeting">Hi, what's the move?</div>
         <div id="talk-idle-sub">Say something or type below</div>
+        <!-- Quick action chips -->
+        <div id="talk-quick-chips" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px;padding:0 20px">
+          <button class="talk-chip" onclick="talkQuick('give me a daily briefing')">📋 Daily briefing</button>
+          <button class="talk-chip" onclick="talkQuick('who should I block')">🚫 Who to block</button>
+          <button class="talk-chip" onclick="talkQuick('show me your photo')">📸 Show me you</button>
+          <button class="talk-chip" onclick="talkQuick('what have you been up to today')">💬 What\'s been happening</button>
+        </div>
       </div>
 
       <!-- CHAT LOG HEADER (clear button, shows when there are messages) -->
@@ -3163,6 +3182,17 @@ function talkCaptureFrame() {
   return canvas.toDataURL('image/jpeg', 0.78).split(',')[1];
 }
 
+/* ── quick-action chip tap ── */
+function talkQuick(text) {
+  if (talkProcessing) return;
+  // Show it as a user bubble immediately, then process
+  const now = Date.now();
+  talkAppendMsg('user', text, null, null, now);
+  window._talkDisplayLog.push({ role:'user', text, ts: now });
+  talkHistory.push({ role:'user', content: text });
+  talkProcess(text);
+}
+
 /* ── clear pending media (caption cancel) ── */
 function talkClearMedia() {
   window._talkPendingMedia     = null;
@@ -3934,30 +3964,56 @@ function renderSchedules() {
 function delSchedule(i) { schedules.splice(i, 1); fetch('/api/extras/schedules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ schedules }) }); renderSchedules(); }
 
 // ── Persona ──
-const PERSONAS = ['default','sweet','cold','flirty','distant'];
+const PERSONAS = ['default','sweet','cold','flirty','distant','explicit','nsfw','girlfriend'];
+const PERSONA_LABELS = {
+  default: { label: 'Default', color: '' },
+  sweet:   { label: 'Sweet',   color: '' },
+  cold:    { label: 'Cold',    color: '' },
+  flirty:  { label: 'Flirty',  color: '#f59e0b' },
+  distant: { label: 'Distant', color: '' },
+  explicit:   { label: '🔥 Explicit',   color: '#ef4444' },
+  nsfw:       { label: '🔞 NSFW',       color: '#dc2626' },
+  girlfriend: { label: '💋 GF Mode',    color: '#ec4899' },
+};
+
 function renderPersonaList() {
   const list = document.getElementById('persona-list');
   const convos = window._cachedConvos || {};
   list.innerHTML = '';
   Object.keys(convos).forEach(phone => {
-    const name = convos[phone].name || phone;
+    const name    = convos[phone].name || phone;
     const current = personas[phone] || 'default';
-    const row = document.createElement('div');
+    const row     = document.createElement('div');
     row.className = 'persona-contact-row';
-    row.innerHTML = `<div class="pc-name">${name}</div>
-      <select class="ex-select" style="width:120px;flex-shrink:0" onchange="setPersona('${phone}',this.value)">
-        ${PERSONAS.map(p => `<option value="${p}" ${p===current?'selected':''}>${p.charAt(0).toUpperCase()+p.slice(1)}</option>`).join('')}
+    row.innerHTML = `
+      <div class="pc-name">${name}</div>
+      <select class="ex-select" style="width:140px;flex-shrink:0" onchange="setPersona('${phone}',this.value)">
+        ${PERSONAS.map(p => {
+          const info  = PERSONA_LABELS[p] || { label: p, color: '' };
+          const style = info.color ? `style="color:${info.color};font-weight:600"` : '';
+          return `<option value="${p}" ${p===current?'selected':''} ${style}>${info.label}</option>`;
+        }).join('')}
       </select>`;
     list.appendChild(row);
   });
 }
 async function setPersona(phone, persona) {
   personas[phone] = persona;
-  try { await fetch('/api/extras/personas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ personas }) }); } catch(e) {}
-  showToast('Persona updated');
+  try {
+    await fetch('/api/extras/personas', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ personas })
+    });
+    const info = PERSONA_LABELS[persona] || { label: persona };
+    showNotif('Persona updated', `${(window._cachedConvos?.[phone]?.name||phone)} → ${info.label}`, '✓');
+  } catch(e) {}
 }
 async function loadPersonas() {
-  try { const res = await fetch('/api/extras/personas'); const d = await res.json(); if (d.personas) personas = d.personas; } catch(e) {}
+  try {
+    const res = await fetch('/api/extras/personas');
+    const d   = await res.json();
+    if (d.personas) personas = d.personas;
+  } catch(e) {}
 }
 
 // ── Broadcast ──
