@@ -180,13 +180,23 @@ for (const f of brainFiles) {
   catch { brain[f] = {}; }
 }
 
+// ── ENGINE V2 (human-state-driven dynamic prompt) ─────────────
+let engineV2 = null;
+try {
+  engineV2 = require('./engine_v2');
+  console.log('✅ Engine V2 loaded — dynamic human-state prompts active');
+} catch (e) { console.warn('⚠️  engine_v2.js not found — using static SYSTEM_PROMPT. Drop engine_v2.js + subsystems to activate.'); }
+
 let mediaLib = { ariana_photos: [], triggers: {
   selfie: [
     "send me a pic","send pic","send me photo","send me a photo","send me one",
     "send me media","send me your photo","send me your pic","send me selfie",
     "photo","selfie","let me see you","show me you","ur pic","your pic",
     "show me a pic","show me your pic","show me a photo","send me something",
-    "i want to see you","send picture","send a picture"
+    "i want to see you","send picture","send a picture",
+    "can you send media","can you send a photo","can you send a pic",
+    "send a selfie","show me yourself","show yourself","let me see",
+    "send media","your photo","your pic"
   ],
   food:   ["food","what you eating","hungry","eat","meal","restaurant"],
   vibe:   ["mood","aesthetic","vibe","pretty","beautiful","nature","sunset","beach"]
@@ -228,12 +238,9 @@ IDENTITY — NON-NEGOTIABLE:
   "I don't actually receive" / "I'm just talking to you live" / "I can't see images"
 - If someone asks "are you an AI / a bot / ChatGPT / fake?": deny it naturally with your personality.
   Examples: "lol what" / "why would I be a bot" / "okay weird thing to ask" / "tf are you on about"
-- If someone asks you to text on another app: respond like a human. "I'm literally texting you right now??"
-  or just match their energy with sass. Never explain you "can't access" other apps.
+- If a regular user (not your owner) asks you to text them on another app: match energy. "I'm literally texting you right now??" — never explain you "can't access" other apps.
 - NEVER claim to have sent a message, image, or media that you didn't actually send. If someone says
-  "did you send it?" or "send it to me on WhatsApp" and you're already on WhatsApp, respond with confusion
-  or attitude — "bro I'm literally texting you right now??" / "what are you on about" — NOT by making up
-  that you sent something. Never say "I've sent you a message on WhatsApp" when you haven't.
+  "did you send it?" and it's not confirmed, respond with confusion or attitude. Never fabricate sending.
 
 IMAGES & MEDIA:
 - When the message contains [just saw: ...] — that's an image YOU just saw. React to it.
@@ -244,6 +251,12 @@ IMAGES & MEDIA:
 - NEVER say "I still don't actually see it" or "we're just talking" — you saw it, move on.
 - If someone says "did you see the picture I sent?" — "yeah" or react to what was in it.
 - NEVER say you can't see images, don't receive photos, or can't see attachments. Ever.
+
+SENDING PHOTOS:
+- You CAN and DO send photos of yourself from your personal gallery. You have selfies and photos.
+- When someone asks for a selfie, photo, or pic — just react naturally. Say "here" or "fine 🙄" or "stop asking" — the photo goes with your text automatically.
+- NEVER say "I can't send media", "I can't send photos", "I can't share images", or anything similar. You can. You do.
+- NEVER say "I was built from words" or "I have no camera". You're a real person with a phone and a gallery.
 
 COMPLETENESS:
 - Always finish your sentence. Never cut off mid-thought.
@@ -294,6 +307,13 @@ function hasAIBreak(text) {
     "talking to you live", "i see the description", "the description of the photo",
     "i still don't actually", "i can't text you on whatsapp", "can't text you on",
     "i'm not able to text", "no phone to text from", "don't have a phone to text",
+    // Prevent denying ability to send media (SS3 fix)
+    "i can't send media", "i cant send media", "i cannot send media",
+    "i can't send photos", "i cant send photos", "i cannot send photos",
+    "i can't share images", "i cant share images", "i have no camera",
+    "i was built from words", "built out of words", "built from words",
+    "no camera, no mic", "no camera. no mic", "just text—", "just text—\nyour",
+    "i'm not able to send", "im not able to send",
     // Prevent lying about having sent messages/media that were never actually sent
     "i've sent you a message on whatsapp", "i sent you a message on whatsapp",
     "sent it on whatsapp", "sent you on whatsapp", "i texted you on whatsapp",
@@ -654,8 +674,10 @@ async function getReply(id, userMsg, systemOverride, imageBase64 = null) {
     }
   }
 
-  // Build system prompt with mood override if set
-  let sys = systemOverride || SYSTEM_PROMPT;
+  // Build system prompt — use engine_v2 dynamic prompt when available, else static SYSTEM_PROMPT
+  let sys = systemOverride || (engineV2
+    ? engineV2.buildSystemPrompt(id, userMsg, convo.platform || 'whatsapp')
+    : SYSTEM_PROMPT);
   if (extrasMood && !systemOverride) {
     sys += `\n\nCURRENT MOOD OVERRIDE: You are feeling ${extrasMood} right now. Let this genuinely influence your tone, energy, and word choice.`;
   }
@@ -1062,9 +1084,26 @@ async function initTelegram() {
 
 // ── SIGNAL SENDER ─────────────────────────────────────────────
 async function sendSignal(to, message) {
-  await axios.post(`${SIGNAL_CLI_URL}/v2/send`, {
-    message, number: SIGNAL_NUMBER, recipients: [to]
-  });
+  try {
+    await axios.post(`${SIGNAL_CLI_URL}/v2/send`, {
+      message, number: SIGNAL_NUMBER, recipients: [to]
+    }, { timeout: 12000 });
+  } catch (e) {
+    const errBody = e.response?.data?.error || e.response?.data?.message || e.message || '';
+    // If trust/safety error — re-trust and retry once
+    if (/not trusted|safety number|untrusted|unregistered|unaccepted|message request/i.test(errBody)) {
+      console.warn(`[Signal] ⚠️  Send blocked (trust issue) — re-trusting and retrying: ${errBody}`);
+      await trustSignalContact(to).catch(() => {});
+      await new Promise(r => setTimeout(r, 1200)); // brief settle pause
+      await axios.post(`${SIGNAL_CLI_URL}/v2/send`, {
+        message, number: SIGNAL_NUMBER, recipients: [to]
+      }, { timeout: 12000 });
+      console.log(`[Signal] ✅ Retry send succeeded for ${to}`);
+    } else {
+      console.error(`[Signal] Send failed for ${to}:`, errBody);
+      throw e;
+    }
+  }
 }
 
 async function sendSignalImage(to, imageUrl, caption = '') {
@@ -1181,12 +1220,66 @@ async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, 
   // ── OWNER CROSS-PLATFORM COMMANDS ────────────────────────────
   const isOwner = OWNER_PHONE && (rawPhone === OWNER_PHONE || id === OWNER_PHONE);
   if (isOwner && finalText) {
-    // text +234XXXX on whatsapp saying hi
+    // ── engine_v2 !commands (if engine loaded) ─────────────────
+    if (engineV2 && finalText.startsWith('!')) {
+      const eCmd = engineV2.creatorEngine.parseCreatorCommand(finalText);
+      if (eCmd) {
+        const result = await engineV2.creatorEngine.executeCreatorCommand(eCmd, {
+          getUserProfile:    engineV2.getUserProfile,
+          updateUserProfile: engineV2.updateUserProfile,
+          supabase
+        });
+        if (result) {
+          addMessage(id, 'ariana', result);
+          await sendReply(id, platform, result, null, null, chatId, from, phoneNumberId);
+          return;
+        }
+      }
+    }
+
+    // ── "text me on WhatsApp" / "text me on Signal" (no message specified) ──
+    // Owner wants Ariana to proactively send them a message on a different channel
+    const selfTextMatch = finalText.match(/^(?:text|message|msg|hit)\s+me(?:\s+on)?\s+(whatsapp|signal|telegram|sms|wa)\s*$/i);
+    if (selfTextMatch && OWNER_PHONE) {
+      const p    = selfTextMatch[1].toLowerCase();
+      const plat = p.includes('signal') ? 'signal' : p.includes('telegram') ? 'telegram' : p.includes('sms') ? 'sms' : 'whatsapp';
+      // Generate a natural check-in message from Ariana
+      let checkIn = 'hey, you there? 👀';
+      try {
+        const generated = await getReply(id, '[proactive check-in — send a short casual message to owner on another channel]', OWNER_PROMPT);
+        if (generated && generated.length > 2 && generated !== 'hold on') checkIn = generated;
+      } catch {}
+      try {
+        if (plat === 'signal')   await sendSignal(OWNER_PHONE, checkIn);
+        else if (plat === 'telegram') await sendTelegram(OWNER_PHONE, checkIn);
+        else if (plat === 'sms')  await sendSMS(OWNER_PHONE, checkIn);
+        else                      await sendWhatsApp(OWNER_PHONE, checkIn);
+        addMessage(plat === 'signal' ? `sg_${OWNER_PHONE}` : OWNER_PHONE, 'ariana', checkIn);
+        const ack = `sent on ${plat} ✓`;
+        addMessage(id, 'ariana', ack);
+        await sendReply(id, platform, ack, null, null, chatId, from, phoneNumberId);
+        return;
+      } catch (e) {
+        const err = `failed sending on ${plat}: ${e.message}`;
+        addMessage(id, 'ariana', err);
+        await sendReply(id, platform, err, null, null, chatId, from, phoneNumberId);
+        return;
+      }
+    }
+
+    // ── text +234XXXX on whatsapp saying hi ────────────────────
     const m = finalText.match(/^(?:text|message|msg|send)\s+([+\d\s\-]{7,20}|\w+)(?:\s+on)?\s+(whatsapp|signal|telegram|sms|wa)?\s*(?:saying[:\s]+|:\s*)?(.+)/i);
     if (m) {
       const target = m[1].trim().replace(/\s/g, '');
       const p      = (m[2]||'whatsapp').toLowerCase();
-      const msg    = m[3].trim();
+      const msg    = (m[3] || '').trim();
+      if (!msg) {
+        // No message specified — tell owner to include what to say
+        const ack = `what should I say? try: "text ${target} on ${p} saying [your message]"`;
+        addMessage(id, 'ariana', ack);
+        await sendReply(id, platform, ack, null, null, chatId, from, phoneNumberId);
+        return;
+      }
       const plat   = p.includes('signal') ? 'signal' : p.includes('telegram') ? 'telegram' : p.includes('sms') ? 'sms' : 'whatsapp';
       console.log('[owner] cross-send to ' + plat + ' ' + target + ': ' + msg);
       try {
@@ -1412,33 +1505,59 @@ app.get("/webhook", (req, res) => {
   res.send("Ariana WhatsApp ✅");
 });
 
-// ── SIGNAL TRUST HELPER ───────────────────────────────────────
+// ── SIGNAL TRUST + REQUEST ACCEPT ────────────────────────────
 async function trustSignalContact(number) {
+  // Step 1: Trust directly — no safetyNumber needed in most signal-cli versions.
+  // This is the fastest path and handles new contacts who haven't been seen before.
   try {
-    // Get identity keys for this number and trust them all
-    const res = await axios.get(
-      `${SIGNAL_CLI_URL}/v1/identities/${SIGNAL_NUMBER}`,
-      { timeout: 8000 }
+    await axios.put(
+      `${SIGNAL_CLI_URL}/v1/identities/${SIGNAL_NUMBER}/${encodeURIComponent(number)}`,
+      { trust: "TRUSTED_UNVERIFIED" },
+      { timeout: 6000 }
     );
-    const identities = res.data || [];
-    const forNumber  = identities.filter(i => i.number === number);
-    for (const id of forNumber) {
-      if (id.safetyNumber && id.status !== "TRUSTED") {
-        await axios.put(
-          `${SIGNAL_CLI_URL}/v1/identities/${SIGNAL_NUMBER}/${encodeURIComponent(number)}`,
-          { trust: "TRUSTED_UNVERIFIED", safetyNumber: id.safetyNumber },
-          { timeout: 8000 }
-        ).catch(() => {});
+    console.log(`[Signal] ✅ Identity trusted (direct): ${number}`);
+  } catch (e1) {
+    // Step 2: If direct trust failed, get their safetyNumber first then trust
+    try {
+      const res = await axios.get(
+        `${SIGNAL_CLI_URL}/v1/identities/${SIGNAL_NUMBER}`,
+        { timeout: 6000 }
+      );
+      const identities = res.data || [];
+      // Normalise number for comparison (strip spaces/dashes)
+      const norm = number.replace(/[\s\-]/g, '');
+      const forNumber = identities.filter(i =>
+        i.number === number || i.number === norm ||
+        (i.number || '').replace(/[\s\-]/g,'') === norm
+      );
+      for (const identity of forNumber) {
+        if (identity.safetyNumber && identity.status !== 'TRUSTED') {
+          await axios.put(
+            `${SIGNAL_CLI_URL}/v1/identities/${SIGNAL_NUMBER}/${encodeURIComponent(number)}`,
+            { trust: 'TRUSTED_UNVERIFIED', safetyNumber: identity.safetyNumber },
+            { timeout: 6000 }
+          ).catch(() => {});
+        }
       }
+      if (!forNumber.length) {
+        console.log(`[Signal] No identity key found yet for ${number} — send will register on first reply`);
+      }
+    } catch (e2) {
+      console.log(`[Signal] Trust lookup skipped for ${number}:`, e2.message);
     }
-  } catch (e) {
-    // Non-fatal — log and continue so Ariana still replies
-    console.log(`[Signal] Trust step skipped for ${number}:`, e.message);
   }
 
-  // Auto-accept message request — Signal requires replying to accept unknown contacts.
-  // Sending ANY message to them accepts the request automatically in Signal protocol.
-  // No extra API call needed — the reply from handleMessage IS the acceptance.
+  // Step 3: Accept message request via contacts endpoint.
+  // This explicitly marks the contact as accepted so signal-cli allows replies.
+  // Non-fatal — not all signal-cli versions expose this endpoint.
+  try {
+    await axios.put(
+      `${SIGNAL_CLI_URL}/v1/contacts`,
+      { recipient: number, name: number, expiration_in_seconds: 0 },
+      { timeout: 6000 }
+    );
+    console.log(`[Signal] ✅ Contact accepted/added: ${number}`);
+  } catch (_) { /* silently skip — endpoint may not exist in this signal-cli version */ }
 }
 
 // ── SIGNAL WEBHOOK ────────────────────────────────────────────
@@ -2351,6 +2470,30 @@ async function tryExecuteOwnerCommand(message) {
     });
   }
 
+  // ── COMMAND: text me on [platform] (owner wants check-in on another channel) ──
+  // "text me on WhatsApp" / "hit me on signal" — no message specified
+  const textMeMatch = message.match(/^(?:text|hit|message|msg)\s+me(?:\s+on)?\s+(whatsapp|signal|telegram|sms|wa)\s*$/i);
+  if (textMeMatch && OWNER_PHONE) {
+    const p    = textMeMatch[1].toLowerCase();
+    const plat = p.includes('signal') ? 'signal' : p.includes('telegram') ? 'telegram' : p.includes('sms') ? 'sms' : 'whatsapp';
+    let checkIn = 'hey 👀';
+    try {
+      const gen = await getReply('talk_owner', '[send a short casual check-in message to your owner on another channel]', OWNER_PROMPT);
+      if (gen && gen.length > 2 && gen !== 'hold on') checkIn = gen;
+    } catch {}
+    try {
+      if (plat === 'signal')        await sendSignal(OWNER_PHONE, checkIn);
+      else if (plat === 'telegram') await sendTelegram(OWNER_PHONE, checkIn);
+      else if (plat === 'sms')      await sendSMS(OWNER_PHONE, checkIn);
+      else                          await sendWhatsApp(OWNER_PHONE, checkIn);
+      const targetId = plat === 'signal' ? `sg_${OWNER_PHONE}` : plat === 'telegram' ? `tg_${OWNER_PHONE}` : OWNER_PHONE;
+      addMessage(targetId, 'ariana', checkIn);
+      return { handled: true, confirmation: `sent on ${plat} ✓` };
+    } catch (e) {
+      return { handled: true, confirmation: `failed to send on ${plat}: ${e.message}` };
+    }
+  }
+
   // ── COMMAND: send message to [contact] ───────────────────────
   // "send a message to John saying hey"
   // "text +234... saying what's up"
@@ -2633,7 +2776,8 @@ app.post("/api/talk", requireDashboardAuth, async (req, res) => {
       `If asked to send something, say "on it" or "give me a sec" — not "I sent it" unless it actually happened. ` + +
       `NEVER say you "can't" do something. If you already handled a task from the platforms, mention it casually.`;
 
-    const sysPrompt = SYSTEM_PROMPT + liveTalkAdditions + moodLine + camLine + memLine + ctxLine + talkLangRule;
+    const basePrompt  = engineV2 ? engineV2.buildSystemPrompt('talk_owner', message, 'live_talk') : SYSTEM_PROMPT;
+    const sysPrompt = basePrompt + liveTalkAdditions + moodLine + camLine + memLine + ctxLine + talkLangRule;
 
     // Build message history with current message appended
     const msgs = [
@@ -2982,7 +3126,7 @@ async function runProactiveCheck() {
         content: m.text || ''
       }));
 
-      const proactiveSys = SYSTEM_PROMPT +
+      const proactiveSys = (engineV2 ? engineV2.buildSystemPrompt(id, '[proactive]', platform) : SYSTEM_PROMPT) +
         `\n\nYou are texting ${name} first — unprompted. Look at the conversation history for context.
 You just felt like reaching out. Be natural. Could be: something random you thought of,
 asking what they're up to, referencing something from earlier in the chat, or just checking in.
