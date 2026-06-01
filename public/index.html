@@ -1033,88 +1033,98 @@ input,textarea{font-family:inherit;color:inherit}
 #profile-btn img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 #profile-btn svg{width:22px;height:22px}
 
-/* ── PROFILE PANEL (slides from right) ── */
-#profile-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:460;opacity:0;pointer-events:none;transition:opacity .3s;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
-#profile-overlay.show{opacity:1;pointer-events:all}
-#profile-panel{
-  position:fixed;top:0;right:0;height:100%;width:280px;z-index:470;
-  background:rgba(10,10,14,0.98);
-  border-left:1px solid rgba(255,255,255,0.07);
-  backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
-  display:flex;flex-direction:column;
-  transform:translateX(100%);
-  transition:transform .32s cubic-bezier(.4,0,.2,1);
-  overflow:hidden;
+/* ── HIDE NAV/TOGGLE IN CHAT VIEWS (body class approach) ── */
+body.view-chats #bottom-nav,
+body.view-chats #profile-btn { display:none !important; }
+body.view-talk #bottom-nav,
+body.view-talk #profile-btn,
+body.view-talk #sidebar-toggle { display:none !important; }
+body.view-profile #bottom-nav { display:none !important; }
+/* Hide sidebar toggle when chat is open on mobile */
+body.in-chat #sidebar-toggle { display:none !important; }
+
+/* ── PROFILE VIEW (full page) ── */
+#view-profile{
+  flex-direction:column;overflow-y:auto;
+  background:rgba(8,8,12,1);
 }
-#profile-panel.open{transform:translateX(0)}
-.pp-header{
-  padding:calc(14px + env(safe-area-inset-top)) 18px 18px;
-  border-bottom:1px solid rgba(255,255,255,0.07);
+#view-profile::-webkit-scrollbar{display:none}
+.pv-topbar{
+  display:flex;align-items:center;gap:10px;
+  padding:calc(12px + env(safe-area-inset-top)) 16px 12px;
+  background:rgba(8,8,12,.95);
+  border-bottom:1px solid rgba(255,255,255,.07);
+  flex-shrink:0;position:sticky;top:0;z-index:10;
+}
+.pv-back{
+  display:flex;align-items:center;gap:4px;
+  color:#3a9df8;font-size:16px;font-weight:500;
+  padding:6px 8px 6px 2px;border-radius:8px;cursor:pointer;
+  transition:opacity .15s;-webkit-tap-highlight-color:transparent;
   flex-shrink:0;
-  display:flex;align-items:center;gap:12px;
 }
-.pp-avatar{
-  width:52px;height:52px;border-radius:50%;flex-shrink:0;
-  border:1.5px solid rgba(255,255,255,0.15);
+.pv-back:active{opacity:.5}
+.pv-back svg{width:10px;height:16px;flex-shrink:0}
+.pv-topbar-title{font-size:17px;font-weight:700;flex:1;text-align:center}
+.pv-topbar-spacer{width:60px;flex-shrink:0}
+.pv-hero{
+  display:flex;flex-direction:column;align-items:center;
+  padding:32px 24px 24px;gap:10px;
+}
+.pv-avatar{
+  width:88px;height:88px;border-radius:50%;flex-shrink:0;
+  border:2px solid rgba(255,255,255,0.12);
   background:linear-gradient(135deg,rgba(167,139,250,.2),rgba(37,211,102,.15));
   display:flex;align-items:center;justify-content:center;overflow:hidden;
+  box-shadow:0 0 40px 8px rgba(147,51,234,0.15);
 }
-.pp-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
-.pp-avatar svg{width:26px;height:26px;color:rgba(255,255,255,.5)}
-.pp-name{font-size:17px;font-weight:700;letter-spacing:-.3px}
-.pp-sub{font-size:11px;color:rgba(255,255,255,.4);margin-top:2px}
-.pp-close{margin-left:auto;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.07);border:none;color:rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
-.pp-close svg{width:14px;height:14px}
-.pp-section{padding:10px 10px 4px;flex-shrink:0}
-.pp-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:rgba(255,255,255,.25);padding:6px 10px 4px}
-.pp-item{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;cursor:pointer;transition:background .15s,color .15s;color:rgba(255,255,255,.5);margin-bottom:1px}
-.pp-item:hover{background:rgba(255,255,255,.05);color:#fff}
-.pp-item:active{background:rgba(255,255,255,.09)}
-.pp-item-icon{width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.pp-item-icon svg{width:16px;height:16px}
-.pp-item-text{flex:1}
-.pp-item-label{font-size:14px;font-weight:500;color:inherit}
-.pp-item-sub{font-size:11px;color:rgba(255,255,255,.28);margin-top:1px}
-.pp-divider{height:1px;background:rgba(255,255,255,.06);margin:6px 18px}
-.pp-item.brain-col .pp-item-icon{background:rgba(167,139,250,.1);border-color:rgba(167,139,250,.2)}
-.pp-item.brain-col .pp-item-icon svg{color:var(--accent)}
-.pp-item.media-col .pp-item-icon{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.2)}
-.pp-item.media-col .pp-item-icon svg{color:var(--amber)}
-.pp-item.notif-col .pp-item-icon{background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.2)}
-.pp-item.notif-col .pp-item-icon svg{color:var(--wa)}
-.pp-item.wall-col .pp-item-icon{background:rgba(42,171,238,.1);border-color:rgba(42,171,238,.2)}
-.pp-item.wall-col .pp-item-icon svg{color:var(--tg)}
-.pp-item.api-col .pp-item-icon{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.2)}
-.pp-item.api-col .pp-item-icon svg{color:var(--danger)}
+.pv-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.pv-avatar svg{width:40px;height:40px;color:rgba(255,255,255,.4)}
+.pv-name{font-size:22px;font-weight:700;letter-spacing:-.4px;margin-top:4px}
+.pv-tagline{font-size:13px;color:rgba(255,255,255,.38);text-align:center}
+.pv-body{padding:0 14px 40px;flex:1}
+.pv-section{margin-bottom:10px}
+.pv-section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:rgba(255,255,255,.28);padding:12px 4px 6px}
+.pv-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:14px;overflow:hidden}
+.pv-row{
+  display:flex;align-items:center;gap:13px;
+  padding:14px 16px;cursor:pointer;
+  transition:background .14s;
+  border-bottom:1px solid rgba(255,255,255,.05);
+}
+.pv-row:last-child{border-bottom:none}
+.pv-row:hover{background:rgba(255,255,255,.04)}
+.pv-row:active{background:rgba(255,255,255,.08)}
+/* ALL icons same color — clean uniform style */
+.pv-icon{
+  width:36px;height:36px;border-radius:10px;
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.1);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.pv-icon svg{width:17px;height:17px;color:rgba(255,255,255,.6)}
+.pv-row-text{flex:1}
+.pv-row-label{font-size:15px;font-weight:500;color:rgba(255,255,255,.88)}
+.pv-row-sub{font-size:12px;color:rgba(255,255,255,.3);margin-top:1px}
+.pv-chevron{color:rgba(255,255,255,.2)}
+.pv-chevron svg{width:14px;height:14px}
 
 /* ── PLATFORM-SPECIFIC BUBBLE COLORS ── */
-/* WhatsApp sent bubble */
 .plat-wa #messages .msg-wrap.out .bubble{background:var(--sent-wa);border-color:var(--sent-wa-b)}
-/* Telegram sent bubble */
 .plat-tg #messages .msg-wrap.out .bubble{background:var(--sent-tg);border-color:var(--sent-tg-b)}
-/* Signal sent bubble */
 .plat-sg #messages .msg-wrap.out .bubble{background:var(--sent-sg);border-color:var(--sent-sg-b)}
-/* SMS sent bubble */
 .plat-sms #messages .msg-wrap.out .bubble{background:var(--sent-sms);border-color:var(--sent-sms-b)}
-
-/* WhatsApp recv bubble */
 .plat-wa #messages .msg-wrap.in .bubble{background:rgba(18,28,18,0.92);border-color:rgba(37,211,102,.12)}
-/* Telegram recv bubble */
 .plat-tg #messages .msg-wrap.in .bubble{background:rgba(22,32,44,0.92);border-color:rgba(42,171,238,.12)}
-/* Signal recv bubble */
 .plat-sg #messages .msg-wrap.in .bubble{background:rgba(14,24,44,0.92);border-color:rgba(58,118,240,.12)}
 
-/* ── PLATFORM-SPECIFIC DELIVERY TICKS ── */
-.btick{display:inline-flex;align-items:center;vertical-align:middle;margin-left:2px}
-.btick svg{display:block}
-/* WhatsApp: gray double tick */
-.tick-wa svg{width:16px;height:10px;color:rgba(134,171,159,1)}
-/* Telegram: lighter double tick */
-.tick-tg svg{width:16px;height:10px;color:rgba(125,185,234,.85)}
-/* Signal: circle-check */
-.tick-sg svg{width:14px;height:14px;color:rgba(107,147,220,.9)}
-/* SMS: single tick */
-.tick-sms svg{width:12px;height:9px;color:rgba(255,255,255,.45)}
+/* ── PLATFORM DELIVERY TICKS (double marks) ── */
+.btick{display:inline-flex;align-items:center;vertical-align:middle;margin-left:3px;flex-shrink:0}
+.btick svg{display:block;overflow:visible}
+.tick-wa svg{width:20px;height:12px;color:rgba(134,171,159,1)}
+.tick-tg svg{width:20px;height:12px;color:rgba(125,185,234,.9)}
+.tick-sg svg{width:15px;height:15px;color:rgba(107,147,220,.95)}
+.tick-sms svg{width:20px;height:12px;color:rgba(255,255,255,.45)}
 
 /* ── WALLPAPER PER-PLATFORM BUTTON IN CHAT HEADER ── */
 .hdr-wp-btn{
@@ -1139,8 +1149,18 @@ input,textarea{font-family:inherit;color:inherit}
 .wp-swatch-lbl{
   position:absolute;bottom:4px;left:0;right:0;
   text-align:center;font-size:9px;font-weight:700;
-  color:rgba(255,255,255,.7);text-shadow:0 1px 4px rgba(0,0,0,.7);
+  color:rgba(255,255,255,.8);text-shadow:0 1px 6px rgba(0,0,0,.9);
 }
+/* Upload wallpaper button */
+.wp-upload-btn{
+  width:100%;margin-top:10px;padding:10px;border-radius:10px;
+  background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.2);
+  color:rgba(255,255,255,.5);font-size:13px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  cursor:pointer;transition:background .15s;
+}
+.wp-upload-btn:hover{background:rgba(255,255,255,.09);color:#fff}
+.wp-upload-btn svg{width:16px;height:16px}
 
 /* ── HOME SCREEN (default when app opens) ── */
 #view-home{
@@ -1317,10 +1337,6 @@ input,textarea{font-family:inherit;color:inherit}
 .bn-btn.tg-btn::after{background:#2AABEE}
 .bn-btn.sg-btn::after{background:#3A76F0}
 .bn-btn.sms-btn::after{background:#34C759}
-.bn-btn.home-btn::after{background:rgba(255,255,255,.5)}
-.bn-btn.home-btn svg{color:rgba(255,255,255,.6)}
-.bn-btn.home-btn.active svg{color:#fff}
-.bn-btn.home-btn.active{background:rgba(255,255,255,.09)}
 </style>
 </head>
 <body>
@@ -1345,68 +1361,7 @@ input,textarea{font-family:inherit;color:inherit}
 </button>
 
 <!-- PROFILE OVERLAY -->
-<div id="profile-overlay" onclick="closeProfilePanel()"></div>
-
-<!-- PROFILE PANEL -->
-<div id="profile-panel">
-  <div class="pp-header">
-    <div class="pp-avatar">
-      <img src="/icons/icon-192.png" alt="Ariana" onerror="this.outerHTML='<svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'rgba(255,255,255,.4)\' stroke-width=\'1.5\'><circle cx=\'12\' cy=\'8\' r=\'4\'/><path d=\'M4 20c0-4 3.6-7 8-7s8 3 8 7\'/></svg>'">
-    </div>
-    <div>
-      <div class="pp-name">Ariana</div>
-      <div class="pp-sub">AI Assistant</div>
-    </div>
-    <button class="pp-close" onclick="closeProfilePanel()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
-  </div>
-
-  <div class="pp-section">
-    <div class="pp-section-label">Tools</div>
-    <div class="pp-item brain-col" onclick="closeProfilePanel();navTo({dataset:{view:'brain'}})">
-      <div class="pp-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3L9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3L14.5 2Z"/></svg></div>
-      <div class="pp-item-text">
-        <div class="pp-item-label">Brain Editor</div>
-        <div class="pp-item-sub">Edit Ariana's memory & personality</div>
-      </div>
-    </div>
-    <div class="pp-item media-col" onclick="closeProfilePanel();navTo({dataset:{view:'media'}})">
-      <div class="pp-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
-      <div class="pp-item-text">
-        <div class="pp-item-label">Media Library</div>
-        <div class="pp-item-sub">Photos, videos & generated media</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="pp-divider"></div>
-
-  <div class="pp-section">
-    <div class="pp-section-label">Settings</div>
-    <div class="pp-item notif-col" onclick="closeProfilePanel();requestPush()">
-      <div class="pp-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
-      <div class="pp-item-text">
-        <div class="pp-item-label">Notifications</div>
-        <div class="pp-item-sub">Enable push notifications</div>
-      </div>
-    </div>
-    <div class="pp-item wall-col" onclick="closeProfilePanel();openWallpaperModal()">
-      <div class="pp-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
-      <div class="pp-item-text">
-        <div class="pp-item-label">Wallpapers</div>
-        <div class="pp-item-sub">Global chat background</div>
-      </div>
-    </div>
-    <div class="pp-item api-col" onclick="closeProfilePanel();openSettingsModal()">
-      <div class="pp-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3h-3a2 2 0 0 0-2 2v2"/><path d="M8 3h3a2 2 0 0 1 2 2v2"/></svg></div>
-      <div class="pp-item-text">
-        <div class="pp-item-label">API Keys</div>
-        <div class="pp-item-sub">ElevenLabs, Dashboard key</div>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- removed - profile is now its own view -->
 
 <!-- CONTACTS PERMISSION BANNER -->
 <div id="contacts-banner">
@@ -1437,6 +1392,13 @@ input,textarea{font-family:inherit;color:inherit}
 
   <!-- Tools section -->
   <div class="sb-section">
+    <div class="sb-section-label">Navigation</div>
+    <div class="sb-item" data-view="home" onclick="navTo(this)">
+      <div class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></div>
+      <div class="sb-label">Home</div>
+    </div>
+  </div>
+  <div class="sb-section">
     <div class="sb-section-label">Tools</div>
     <div class="sb-item talk-item" data-view="talk" onclick="navTo(this)">
       <div class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
@@ -1456,6 +1418,93 @@ input,textarea{font-family:inherit;color:inherit}
 <!-- MAIN APP -->
 <div id="app">
   <div id="views">
+
+    <!-- ══════════ PROFILE ══════════ -->
+    <div id="view-profile" class="view">
+      <div class="pv-topbar">
+        <button class="pv-back" onclick="goBack()">
+          <svg viewBox="0 0 10 16" fill="none"><path d="M8.5 1L1.5 8L8.5 15" stroke="#3a9df8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Back
+        </button>
+        <div class="pv-topbar-title">Profile</div>
+        <div class="pv-topbar-spacer"></div>
+      </div>
+      <div class="pv-hero">
+        <div class="pv-avatar">
+          <img src="/icons/icon-192.png" alt="Ariana" onerror="this.outerHTML='<svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'rgba(255,255,255,.35)\' stroke-width=\'1.4\'><circle cx=\'12\' cy=\'8\' r=\'4\'/><path d=\'M4 20c0-4 3.6-7 8-7s8 3 8 7\'/></svg>'">
+        </div>
+        <div class="pv-name">Ariana</div>
+        <div class="pv-tagline">Your AI companion — always here for you</div>
+      </div>
+      <div class="pv-body">
+        <div class="pv-section">
+          <div class="pv-section-label">Tools</div>
+          <div class="pv-card">
+            <div class="pv-row" onclick="navTo({dataset:{view:'brain'}})">
+              <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3L9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3L14.5 2Z"/></svg></div>
+              <div class="pv-row-text">
+                <div class="pv-row-label">Brain Editor</div>
+                <div class="pv-row-sub">Edit Ariana's memory & personality</div>
+              </div>
+              <div class="pv-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+            </div>
+            <div class="pv-row" onclick="navTo({dataset:{view:'media'}})">
+              <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
+              <div class="pv-row-text">
+                <div class="pv-row-label">Media Library</div>
+                <div class="pv-row-sub">Photos, videos & generated media</div>
+              </div>
+              <div class="pv-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+            </div>
+            <div class="pv-row" onclick="navTo({dataset:{view:'generate'}})">
+              <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+              <div class="pv-row-text">
+                <div class="pv-row-label">Generate</div>
+                <div class="pv-row-sub">AI image & video generation</div>
+              </div>
+              <div class="pv-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+            </div>
+          </div>
+        </div>
+        <div class="pv-section">
+          <div class="pv-section-label">Settings</div>
+          <div class="pv-card">
+            <div class="pv-row" onclick="requestPush()">
+              <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+              <div class="pv-row-text">
+                <div class="pv-row-label">Notifications</div>
+                <div class="pv-row-sub">Enable push notifications</div>
+              </div>
+              <div class="pv-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+            </div>
+            <div class="pv-row" onclick="openWallpaperModal()">
+              <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
+              <div class="pv-row-text">
+                <div class="pv-row-label">Global Wallpaper</div>
+                <div class="pv-row-sub">Default background for all chats</div>
+              </div>
+              <div class="pv-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+            </div>
+            <div class="pv-row" onclick="openSettingsModal()">
+              <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3h-3a2 2 0 0 0-2 2v2"/><path d="M8 3h3a2 2 0 0 1 2 2v2"/></svg></div>
+              <div class="pv-row-text">
+                <div class="pv-row-label">API Keys</div>
+                <div class="pv-row-sub">ElevenLabs, Dashboard key</div>
+              </div>
+              <div class="pv-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+            </div>
+            <div class="pv-row" onclick="doRequestContacts()">
+              <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+              <div class="pv-row-text">
+                <div class="pv-row-label">Contacts</div>
+                <div class="pv-row-sub">Sync device contacts</div>
+              </div>
+              <div class="pv-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- ══════════ HOME ══════════ -->
     <div id="view-home" class="view active">
@@ -2010,6 +2059,11 @@ input,textarea{font-family:inherit;color:inherit}
     <h3 id="plat-wp-modal-title">Set Wallpaper</h3>
     <p style="font-size:12px;color:var(--t2);margin-bottom:4px" id="plat-wp-modal-sub">Choose a background for this chat</p>
     <div class="wp-grid" id="plat-wp-grid"></div>
+    <label class="wp-upload-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+      Use your own photo
+      <input type="file" accept="image/*" style="display:none" onchange="handleWpImageUpload(event)">
+    </label>
     <div class="modal-btns" style="margin-top:16px">
       <button class="mbtn cancel" onclick="closeModal('plat-wp-modal')">Cancel</button>
       <button class="mbtn confirm accent" onclick="savePlatWallpaper()">Apply</button>
@@ -2110,6 +2164,8 @@ let genKeys={};try{genKeys=JSON.parse(localStorage.getItem("_genKeys")||"{}")}ca
 try{avatars=JSON.parse(localStorage.getItem("_av")||"{}")}catch{}
 try{wallpaper=localStorage.getItem("_wp")||"w0"}catch{}
 try{const pwp=localStorage.getItem("_pwp");if(pwp)platformWallpapers={...platformWallpapers,...JSON.parse(pwp)}}catch{}
+// Load any custom image wallpapers
+["wa","tg","sg","sms"].forEach(k=>{try{const img=localStorage.getItem("_pwp_img_"+k);if(img)platformWallpapers[k]=img}catch{}});
 
 if("serviceWorker" in navigator){
   navigator.serviceWorker.register("/sw.js").then(reg=>{
@@ -2139,18 +2195,27 @@ function closeSidebar(){
 // ══════════════════════════════════════════════
 // NAV
 // ══════════════════════════════════════════════
+let _prevView="home"; // track where to go back to from profile
 function navTo(el){
   if(!el)return;
   const view=el.dataset?el.dataset.view:el;
   const filter=el.dataset?el.dataset.filter:null;
-  // update active state — covers both sidebar items and bottom nav buttons
+  // If navigating away from a chat, close it first
+  if(currentPhone && view!=="chats"){closeChat();}
+  // Store prev view for back navigation from profile
+  if(view==="profile"){_prevView=currentView;}
+  _applyView(view,filter,el);
+}
+function _applyView(view,filter,el){
   document.querySelectorAll(".sb-item,.bn-btn").forEach(i=>i.classList.remove("active"));
-  if(el.classList)el.classList.add("active");
-  // switch view
+  if(el&&el.classList)el.classList.add("active");
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   const vEl=document.getElementById(`view-${view}`);
   if(vEl)vEl.classList.add("active");
   currentView=view;
+  // Update body class for CSS-based nav hiding
+  document.body.className=document.body.className.replace(/\bview-\S+/g,"").trim();
+  document.body.classList.add("view-"+view);
   if(filter){activePlatFilter=filter;renderList();updateChatBackLabel()}
   closeSidebar();
   if(view==="brain")initBrainView();
@@ -2159,19 +2224,25 @@ function navTo(el){
   if(view==="extras"){window._cachedConvos=convos;initExtras();}
   if(view==="talk"){window._cachedConvos=convos;talkInit();}
 }
-
+function goBack(){
+  // Used by profile back button and chat back button
+  if(currentView==="profile"){navTo({dataset:{view:_prevView}});}
+  else closeChat();
+}
+function openProfilePanel(){navTo({dataset:{view:"profile"}});}
+function closeProfilePanel(){navTo({dataset:{view:_prevView}});}
 function navToPlatform(plat){
-  // Find the bottom nav button for this platform and activate it
-  const btns=document.querySelectorAll(".bn-btn");
-  let found=null;
-  btns.forEach(b=>{if(b.dataset.filter===plat)found=b});
-  if(found){navTo(found)}else{
-    activePlatFilter=plat;
-    document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
-    document.getElementById("view-chats").classList.add("active");
-    currentView="chats";
-    renderList();updateChatBackLabel();
-  }
+  // Close current chat if any, then navigate to that platform's chat list
+  if(currentPhone)closeChat();
+  activePlatFilter=plat;
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  document.getElementById("view-chats").classList.add("active");
+  currentView="chats";
+  document.body.className=document.body.className.replace(/\bview-\S+/g,"").trim();
+  document.body.classList.add("view-chats");
+  renderList();updateChatBackLabel();
+  // Activate correct bottom nav button
+  document.querySelectorAll(".bn-btn").forEach(b=>{b.classList.toggle("active",b.dataset.filter===plat)});
 }
 
 
@@ -2281,6 +2352,7 @@ function openChat(phone){
   const msgs=document.getElementById("messages");msgs.innerHTML="";let lastDate="";
   (Array.isArray(c.messages)?c.messages:[]).forEach(m=>{const d=new Date(m.time||Date.now()).toDateString();if(d!==lastDate){msgs.innerHTML+=`<div class="date-div">${fmtDate(m.time)}</div>`;lastDate=d}msgs.innerHTML+=bubble(m)});
   scrollBottom();updateTakeoverUI();applyWallpaper();renderList();updateChatBackLabel();
+  document.body.classList.add("in-chat");
   if(emojiOpen){emojiOpen=false;document.getElementById("emoji-picker").classList.remove("open")}
   if(window.innerWidth<=700)document.getElementById("chat-list-pane").classList.add("hidden");
 }
@@ -2291,14 +2363,19 @@ function closeChat(){
   document.getElementById("messages").style.display="none";
   document.getElementById("input-area").style.display="none";
   document.getElementById("chat-list-pane").classList.remove("hidden");
+  document.body.classList.remove("in-chat");
   closeDrawer();
   if(emojiOpen){emojiOpen=false;document.getElementById("emoji-picker").classList.remove("open")}
 }
 function platTickSvg(p){
-  if(p==="wa") return`<span class="btick tick-wa"><svg viewBox="0 0 18 11" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 5.5L5.5 10L17 1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 9L17 1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" opacity=".7"/></svg></span>`;
-  if(p==="tg") return`<span class="btick tick-tg"><svg viewBox="0 0 18 11" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 5.5L5.5 10L17 1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 9L17 1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" opacity=".6"/></svg></span>`;
-  if(p==="sg") return`<span class="btick tick-sg"><svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M4.5 7L6.5 9L9.5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
-  return`<span class="btick tick-sms"><svg viewBox="0 0 13 9" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 4.5L5 8.5L12 1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+  // WhatsApp: classic double tick — two overlapping checkmarks side by side
+  if(p==="wa") return`<span class="btick tick-wa"><svg viewBox="0 0 22 13" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 6.5L5.5 11L13 2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 6.5L13.5 11L21 2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+  // Telegram: double tick in Telegram blue
+  if(p==="tg") return`<span class="btick tick-tg"><svg viewBox="0 0 22 13" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 6.5L5.5 11L13 2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 6.5L13.5 11L21 2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+  // Signal: circle with double tick inside
+  if(p==="sg") return`<span class="btick tick-sg"><svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M4.5 9L7.5 12L13.5 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+  // SMS: double tick
+  return`<span class="btick tick-sms"><svg viewBox="0 0 22 13" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 6.5L5.5 11L13 2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 6.5L13.5 11L21 2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
 }
 function bubble(msg){
   const isIn=msg.role==="user";
@@ -4500,30 +4577,27 @@ async function initExtras() {
 }
 
 // ══════════════════════════════════════════════
-// PROFILE PANEL
+// PROFILE (now a view — functions kept for compat)
 // ══════════════════════════════════════════════
-function openProfilePanel(){
-  document.getElementById("profile-panel").classList.add("open");
-  document.getElementById("profile-overlay").classList.add("show");
-}
-function closeProfilePanel(){
-  document.getElementById("profile-panel").classList.remove("open");
-  document.getElementById("profile-overlay").classList.remove("show");
-}
+// openProfilePanel() and closeProfilePanel() now handled in navTo section above
 
 // ══════════════════════════════════════════════
 // PER-PLATFORM WALLPAPER
 // ══════════════════════════════════════════════
-let _platWpTarget=null; // which platform we're setting wp for
+let _platWpTarget=null;
 
 function applyWallpaper(){
   const el=document.getElementById("messages");
   if(!el)return;
   const p=currentPhone?getPlat(currentPhone):null;
   const wp=p?(platformWallpapers[p]||wallpaper):wallpaper;
-  const found=WALLPAPERS.find(w=>w.id===wp);
-  if(found)el.style.background=found.bg;
-  else el.style.background="#000";
+  // wp can be a preset ID or a data URL
+  if(wp&&wp.startsWith("data:")){
+    el.style.background=`url(${wp}) center/cover no-repeat`;
+  } else {
+    const found=WALLPAPERS.find(w=>w.id===wp);
+    el.style.background=found?found.bg:"#000";
+  }
 }
 
 function openPlatWallpaperModal(){
@@ -4532,25 +4606,65 @@ function openPlatWallpaperModal(){
   _platWpTarget=p;
   const platNames={wa:"WhatsApp",tg:"Telegram",sg:"Signal",sms:"SMS"};
   document.getElementById("plat-wp-modal-title").textContent=`${platNames[p]||p} Wallpaper`;
-  document.getElementById("plat-wp-modal-sub").textContent=`Choose a background for ${platNames[p]||p} chats`;
+  document.getElementById("plat-wp-modal-sub").textContent=`Background for ${platNames[p]||p} chats`;
   const current=platformWallpapers[p]||"w0";
   document.getElementById("plat-wp-grid").innerHTML=WALLPAPERS.map(w=>{
-    return`<div class="wp-swatch${w.id===current?" sel":""}" style="background:${w.bg};border-color:${w.id===current?"var(--accent)":"rgba(255,255,255,.1)"}" onclick="selectPlatWp(this,'${w.id}')"><div class="wp-swatch-lbl">${w.label}</div></div>`;
-  }).join("");
+    const isSel=(w.id===current);
+    return`<div class="wp-swatch${isSel?" sel":""}" style="background:${w.bg};border-color:${isSel?"var(--accent)":"rgba(255,255,255,.08)"}" onclick="selectPlatWp(this,'${w.id}')"><div class="wp-swatch-lbl">${w.label}</div></div>`;
+  }).join("") +
+  // If current is a custom image, add a preview swatch
+  (current.startsWith("data:") ? `<div class="wp-swatch sel" style="background-image:url(${current});background-size:cover;border-color:var(--accent)"><div class="wp-swatch-lbl">Custom</div></div>` : "");
   pendingPlatWp=current;
   document.getElementById("plat-wp-modal").classList.remove("hidden");
 }
 
 function selectPlatWp(el,id){
-  document.querySelectorAll(".wp-swatch").forEach(s=>{s.classList.remove("sel");s.style.borderColor="rgba(255,255,255,.1)"});
+  document.querySelectorAll(".wp-swatch").forEach(s=>{s.classList.remove("sel");s.style.borderColor="rgba(255,255,255,.08)"});
   el.classList.add("sel");el.style.borderColor="var(--accent)";
   pendingPlatWp=id;
+}
+
+function handleWpImageUpload(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    const dataUrl=ev.target.result;
+    pendingPlatWp=dataUrl;
+    // Add custom swatch to grid
+    const grid=document.getElementById("plat-wp-grid");
+    document.querySelectorAll(".wp-swatch").forEach(s=>{s.classList.remove("sel");s.style.borderColor="rgba(255,255,255,.08)"});
+    const swatch=document.createElement("div");
+    swatch.className="wp-swatch sel";
+    swatch.style.cssText=`background-image:url(${dataUrl});background-size:cover;border-color:var(--accent)`;
+    swatch.innerHTML=`<div class="wp-swatch-lbl">Custom</div>`;
+    swatch.onclick=()=>{
+      document.querySelectorAll(".wp-swatch").forEach(s=>{s.classList.remove("sel");s.style.borderColor="rgba(255,255,255,.08)"});
+      swatch.classList.add("sel");swatch.style.borderColor="var(--accent)";
+      pendingPlatWp=dataUrl;
+    };
+    grid.appendChild(swatch);
+  };
+  r.readAsDataURL(f);
+  e.target.value="";
 }
 
 function savePlatWallpaper(){
   if(!_platWpTarget||!pendingPlatWp)return;
   platformWallpapers[_platWpTarget]=pendingPlatWp;
-  try{localStorage.setItem("_pwp",JSON.stringify(platformWallpapers))}catch{}
+  // Store — skip storing large data URLs in the combined key; store per-platform separately
+  try{
+    const toStore={};
+    Object.keys(platformWallpapers).forEach(k=>{
+      if(!platformWallpapers[k].startsWith("data:"))toStore[k]=platformWallpapers[k];
+    });
+    localStorage.setItem("_pwp",JSON.stringify(toStore));
+    // Store custom images separately
+    Object.keys(platformWallpapers).forEach(k=>{
+      if(platformWallpapers[k].startsWith("data:")){
+        try{localStorage.setItem("_pwp_img_"+k,platformWallpapers[k])}catch{}
+      }
+    });
+  }catch{}
   closeModal("plat-wp-modal");
   applyWallpaper();
   showToast("Wallpaper updated");
@@ -4600,16 +4714,15 @@ async function doRequestContacts(){
 document.addEventListener("touchstart",e=>{_tx=e.touches[0].clientX;_ty=e.touches[0].clientY},{passive:true});
 document.addEventListener("touchend",e=>{const dx=e.changedTouches[0].clientX-_tx;const dy=Math.abs(e.changedTouches[0].clientY-_ty);if(_tx<35&&dx>65&&dy<80&&window.innerWidth<=700){if(document.getElementById("sidebar").classList.contains("open"))closeSidebar();else if(currentPhone)closeChat()}},{passive:true});
 
-// Show contacts banner on startup (after 1.5s delay)
-document.addEventListener("DOMContentLoaded",()=>{showContactsBanner();});
+// Initialize body class and contacts banner on load
+document.addEventListener("DOMContentLoaded",()=>{
+  document.body.classList.add("view-home");
+  showContactsBanner();
+});
 </script>
 
 <!-- FLOATING BOTTOM NAV -->
 <div id="bottom-nav">
-  <!-- Home -->
-  <button class="bn-btn home-btn" data-view="home" onclick="navTo(this)" aria-label="Home">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
-  </button>
   <!-- WhatsApp -->
   <button class="bn-btn wa-btn" data-view="chats" data-filter="wa" onclick="navTo(this)" aria-label="WhatsApp">
     <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" fill="#25D366"/></svg>
