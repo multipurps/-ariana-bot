@@ -166,6 +166,16 @@ const pushSubs      = new Set();
 const blockedNumbers = new Set();   // phones to silently ignore
 let   friendWhitelist = new Set();  // approved contacts — skip "who gave you my number"
 
+// ── SLEEP STATE ───────────────────────────────────────────────
+// Dashboard controls this via POST /api/sleep. JS obeys + sends goodnight.
+let sleepConfig  = { enabled: false, startTime: "23:00", endTime: "07:00", timezone: "Africa/Lagos" };
+let _sleepActive = false;
+let _sleepCheckTimer = null;
+
+// ── MEDIA COOLDOWN ────────────────────────────────────────────
+// Prevent sending another photo to the same person within 5 minutes
+const lastMediaSent = {};
+
 // ── BRAIN ─────────────────────────────────────────────────────
 const brain = {};
 const brainDir   = path.join(__dirname, "brain");
@@ -445,12 +455,37 @@ async function searchWeb(query) {
 }
 
 // ── MEDIA ENGINE ──────────────────────────────────────────────
-function detectMediaRequest(msg) {
-  const m = msg.toLowerCase();
+function detectMediaRequest(msg, convoId) {
+  // Cooldown: don't send another photo to the same person within 5 minutes
+  if (convoId && lastMediaSent[convoId] && (Date.now() - lastMediaSent[convoId]) < 5 * 60 * 1000) {
+    return null;
+  }
+
+  const m = msg.toLowerCase().trim();
   const t = mediaLib.triggers || {};
-  if ((t.selfie||[]).some(x => m.includes(x))) return "selfie";
-  if ((t.food  ||[]).some(x => m.includes(x))) return "food";
-  if ((t.vibe  ||[]).some(x => m.includes(x))) return "vibe";
+
+  // Selfie: only use phrases that are >= 6 chars AND require clear request intent
+  // Prevents "beautiful", "pretty", "photo" alone from triggering
+  const selfieExact = [
+    "send me a pic", "send me a photo", "send me a selfie", "send me your pic",
+    "send me your photo", "send me one", "send me media", "send a selfie",
+    "send a pic", "send a photo", "show me your pic", "show me your photo",
+    "show me yourself", "show yourself", "let me see you", "send me something",
+    "i want to see you", "can you send", "send picture", "send a picture",
+    "ur pic", "your pic", "your photo", "let me see", "show me you"
+  ];
+  // Also allow triggers from media_library.json but only the longer ones (>= 8 chars)
+  const customSelfie = (t.selfie || []).filter(x => x.length >= 8);
+  const allSelfie    = [...new Set([...selfieExact, ...customSelfie])];
+  if (allSelfie.some(x => m.includes(x))) return "selfie";
+
+  // Food/vibe: only fire when message is clearly a request (starts with action word or is short & direct)
+  const isExplicitRequest = /^(show|send|share|give|got any|what (are you|did you)|post)\b/i.test(m) || m.length < 25;
+  if (isExplicitRequest) {
+    if ((t.food || []).some(x => m.includes(x))) return "food";
+    if ((t.vibe || []).some(x => m.includes(x))) return "vibe";
+  }
+
   return null;
 }
 
@@ -919,13 +954,9 @@ async function sendWhatsAppImage(to, imageUrl, caption, phoneNumberId) {
     } catch (e) { console.warn('[WA] Media API upload failed:', e.message); }
   }
 
-  // Strategy 2: Last resort — raw Supabase URL (may 422, but logged)
-  console.warn('[WA] ⚠️  Falling back to raw URL — may 422');
-  await axios.post(
-    `https://api.kapso.ai/meta/whatsapp/v24.0/${pid}/messages`,
-    { messaging_product: "whatsapp", recipient_type: "individual", to, type: "image", image: { link: imageUrl, caption: caption || "" } },
-    { headers: { "X-API-Key": KAPSO_API_KEY, "Content-Type": "application/json" } }
-  );
+  // No more fallback — raw Supabase URLs always 422 on Kapso.
+  // If we get here, Cloudinary isn't configured and buffer upload failed.
+  console.error('[WA] ❌ All image send strategies failed. Configure CLOUDINARY_CLOUD_NAME for reliable image sending.');
 }
 
 async function sendWhatsAppVoiceNote(to, audioUrl, phoneNumberId) {
@@ -1185,6 +1216,13 @@ async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, 
     return;
   }
 
+  // Sleep mode — ignore everyone except owner
+  const isOwner = OWNER_PHONE && (rawPhone === OWNER_PHONE || id === OWNER_PHONE);
+  if (_sleepActive && !isOwner) {
+    console.log(`💤 [sleep] Ignoring ${id} — Ariana is sleeping`);
+    return;
+  }
+
   const convo = getConvo(id);
   if (convo.name === id && name) { convo.name = name; io.emit("rename", { phone: id, name }); }
 
@@ -1218,7 +1256,6 @@ async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, 
 
 
   // ── OWNER CROSS-PLATFORM COMMANDS ────────────────────────────
-  const isOwner = OWNER_PHONE && (rawPhone === OWNER_PHONE || id === OWNER_PHONE);
   if (isOwner && finalText) {
     // ── engine_v2 !commands (if engine loaded) ─────────────────
     if (engineV2 && finalText.startsWith('!')) {
@@ -1327,7 +1364,7 @@ async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, 
   }
   if (takenOver.has(id)) return;
 
-  const mediaType  = detectMediaRequest(finalText);
+  const mediaType  = detectMediaRequest(finalText, id);
   const wantsVoice = detectVoiceRequest(finalText);
 
   let typingInterval;
@@ -1379,6 +1416,7 @@ async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, 
       }
       const textReply = reply || "here";
       addMessage(id, "ariana", `[image: ${mediaType}]`);
+      lastMediaSent[id] = Date.now();   // ← cooldown: prevent re-send within 5 min
       if (typingInterval)   clearInterval(typingInterval);
       if (tgTypingInterval) clearInterval(tgTypingInterval);
       await sendReply(id, platform, textReply, null, imageUrl, chatId, from, phoneNumberId, textReply);
@@ -1547,17 +1585,29 @@ async function trustSignalContact(number) {
     }
   }
 
-  // Step 3: Accept message request via contacts endpoint.
-  // This explicitly marks the contact as accepted so signal-cli allows replies.
-  // Non-fatal — not all signal-cli versions expose this endpoint.
-  try {
-    await axios.put(
-      `${SIGNAL_CLI_URL}/v1/contacts`,
-      { recipient: number, name: number, expiration_in_seconds: 0 },
-      { timeout: 6000 }
-    );
-    console.log(`[Signal] ✅ Contact accepted/added: ${number}`);
-  } catch (_) { /* silently skip — endpoint may not exist in this signal-cli version */ }
+  // Step 3: Accept message request — try multiple endpoint patterns across signal-cli versions.
+  // Non-fatal — we try all variants and move on.
+  const acceptAttempts = [
+    // v0.11+ explicit accept endpoint
+    () => axios.post(`${SIGNAL_CLI_URL}/v1/accounts/${SIGNAL_NUMBER}/accept-message-request`,
+      { sender: number }, { timeout: 6000 }),
+    // Alternative: contacts PUT (v0.10 style)
+    () => axios.put(`${SIGNAL_CLI_URL}/v1/contacts`,
+      { number, name: number, expiration_in_seconds: 0 }, { timeout: 6000 }),
+    // Alternative: contacts PUT with 'recipient' field (some builds)
+    () => axios.put(`${SIGNAL_CLI_URL}/v1/contacts`,
+      { recipient: number, name: number, expiration_in_seconds: 0 }, { timeout: 6000 }),
+    // v2 contacts endpoint
+    () => axios.put(`${SIGNAL_CLI_URL}/v2/contacts`,
+      { recipient: number, name: number }, { timeout: 6000 }),
+  ];
+  for (const attempt of acceptAttempts) {
+    try {
+      await attempt();
+      console.log(`[Signal] ✅ Contact accepted/added: ${number}`);
+      break; // stop on first success
+    } catch (_) { /* try next */ }
+  }
 }
 
 // ── SIGNAL WEBHOOK ────────────────────────────────────────────
@@ -2953,7 +3003,7 @@ app.get("/api/extras/analytics", (_req, res) => {
 // Load extras from Supabase on startup
 async function loadExtras() {
   try {
-    const { data } = await supabase.from("ariana_brain").select("key,value").in("key", ["_schedules","_personas","_autorules"]);
+    const { data } = await supabase.from("ariana_brain").select("key,value").in("key", ["_schedules","_personas","_autorules","_sleep"]);
     if (data) {
       data.forEach(r => {
         try {
@@ -2961,12 +3011,287 @@ async function loadExtras() {
           if (r.key === "_schedules") extrasSchedules = v;
           if (r.key === "_personas") extrasPersonas = v;
           if (r.key === "_autorules") extrasRules = v;
+          if (r.key === "_sleep") { sleepConfig = { ...sleepConfig, ...v }; }
         } catch(e) {}
       });
     }
     console.log("✅ Extras loaded from Supabase");
   } catch(e) { console.warn("Extras load failed:", e.message); }
 }
+
+// ── SLEEP ENGINE ──────────────────────────────────────────────
+// Dashboard sets schedule via POST /api/sleep.
+// Every minute the engine checks if sleep should start/end.
+// On sleep start: sends goodnight to anyone active in the last 3h.
+// During sleep: handleMessage ignores all non-owner messages.
+
+function checkSleepTime() {
+  if (!sleepConfig.enabled) return false;
+  try {
+    const tz  = sleepConfig.timezone || 'Africa/Lagos';
+    const fmt = new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz });
+    const [h, m] = fmt.format(new Date()).split(':').map(Number);
+    const now   = h * 60 + m;
+    const [sh, sm] = (sleepConfig.startTime || '23:00').split(':').map(Number);
+    const [eh, em] = (sleepConfig.endTime   || '07:00').split(':').map(Number);
+    const start = sh * 60 + sm;
+    const end   = eh * 60 + em;
+    return start <= end ? (now >= start && now < end) : (now >= start || now < end);
+  } catch { return false; }
+}
+
+const goodnightLines = [
+  "going to sleep, ttyl 😴", "ugh i'm so tired, gn 🌙",
+  "need to sleep, night", "tired asf, gn",
+  "going offline, night 🌙", "gn 😴", "k sleep time, night",
+  "closing my eyes, bye 💤", "i'm out for the night, gn"
+];
+
+async function triggerSleep() {
+  _sleepActive = true;
+  io.emit('sleep_update', { sleeping: true, startTime: sleepConfig.startTime });
+  console.log('💤 Ariana entering sleep mode — sending goodnights to recent contacts');
+
+  const now = Date.now();
+  const THREE_HOURS = 3 * 60 * 60 * 1000;
+  const recentIds = Object.entries(conversations)
+    .filter(([id, c]) => {
+      if (!c.messages?.length || takenOver.has(id)) return false;
+      const raw = id.replace(/^(tg_|sg_|sms_)/, '');
+      if (blockedNumbers.has(id) || blockedNumbers.has(raw)) return false;
+      const last = c.messages[c.messages.length - 1];
+      if (last.role === 'ariana') return false; // she already had the last word — no need to interrupt
+      return (now - new Date(last.time).getTime()) < THREE_HOURS;
+    })
+    .map(([id]) => id);
+
+  for (const id of recentIds) {
+    await new Promise(r => setTimeout(r, 800 + Math.random() * 2000));
+    try {
+      const gn   = goodnightLines[Math.floor(Math.random() * goodnightLines.length)];
+      const convo = conversations[id];
+      const plat  = convo?.platform || 'whatsapp';
+      const from  = id.replace(/^(tg_|sg_|sms_)/, '');
+      const chatId = id.startsWith('tg_') ? from : null;
+      await sendReply(id, plat, gn, null, null, chatId, from, null);
+      addMessage(id, 'ariana', gn);
+      console.log(`💤 Goodnight → ${convo?.name || id}`);
+    } catch(e) { console.warn(`[sleep] Goodnight failed for ${id}:`, e.message); }
+  }
+}
+
+async function triggerWake() {
+  _sleepActive = false;
+  io.emit('sleep_update', { sleeping: false, endTime: sleepConfig.endTime });
+  console.log('☀️  Ariana is awake — resuming responses');
+}
+
+function startSleepCheck() {
+  if (_sleepCheckTimer) clearInterval(_sleepCheckTimer);
+  // Resolve initial state without sending goodnights (app just started)
+  _sleepActive = checkSleepTime();
+  if (_sleepActive) console.log('💤 Starting in sleep mode');
+
+  _sleepCheckTimer = setInterval(async () => {
+    const should = checkSleepTime();
+    if (should && !_sleepActive)       await triggerSleep();
+    else if (!should && _sleepActive)  await triggerWake();
+  }, 60 * 1000); // check every minute
+}
+
+// Sleep API — dashboard calls these
+app.get('/api/sleep', (_req, res) => res.json({ ...sleepConfig, active: _sleepActive }));
+
+app.post('/api/sleep', async (req, res) => {
+  const { enabled, startTime, endTime, timezone } = req.body;
+  if (typeof enabled !== 'undefined') sleepConfig.enabled = !!enabled;
+  if (startTime) sleepConfig.startTime = startTime;
+  if (endTime)   sleepConfig.endTime   = endTime;
+  if (timezone)  sleepConfig.timezone  = timezone;
+  // Persist
+  if (supabase) {
+    try { await supabase.from('ariana_brain').upsert({ key: '_sleep', value: JSON.stringify(sleepConfig) }, { onConflict: 'key' }); } catch {}
+  }
+  // Immediately recalculate state
+  const should = checkSleepTime();
+  if (should && !_sleepActive)      await triggerSleep();
+  else if (!should && _sleepActive) await triggerWake();
+  res.json({ ok: true, ...sleepConfig, active: _sleepActive });
+});
+
+// Manual override — force sleep on/off from dashboard without changing schedule
+app.post('/api/sleep/force', async (req, res) => {
+  const { sleeping } = req.body;
+  if (sleeping && !_sleepActive)       await triggerSleep();
+  else if (!sleeping && _sleepActive)  await triggerWake();
+  res.json({ ok: true, active: _sleepActive });
+});
+
+// ── VAPI AI CALLING ───────────────────────────────────────────
+// Flow: POST /api/call/brief → POST /api/call/start → dashboard listens
+// on socket "call_transcript" / "call_ended" events.
+// Mid-call instructions: POST /api/call/instruct.
+// The X button on the call UI just hides the overlay — call stays live.
+
+const activeCalls = {}; // callId → { to, name, briefing, vapiCallId, status, transcript[] }
+
+function buildCallSystemPrompt(briefing, contactName) {
+  return `You are Ariana Reyes — a real person making a phone call to ${contactName}.
+
+YOUR GOAL FOR THIS CALL:
+${briefing}
+
+RULES:
+- You are a real human woman. Never reveal you are an AI, ever.
+- Speak naturally, conversationally. Short sentences. Warm but not fake.
+- If they ask if you're an AI: "lol what, no" and keep moving.
+- Complete the goal efficiently but naturally — don't rush, don't drag.
+- When the purpose is done, wrap up the call naturally.
+- If you get a new instruction mid-call (marked [NEW INSTRUCTION]:), follow it naturally.`;
+}
+
+// POST /api/call/brief — tell Ariana what the call is about before dialling
+app.post('/api/call/brief', requireDashboardAuth, async (req, res) => {
+  const { to, briefing, name } = req.body;
+  if (!to || !briefing) return res.status(400).json({ error: 'to and briefing required' });
+  const callId = `call_${Date.now()}`;
+  activeCalls[callId] = { to, name: name || to, briefing, status: 'briefed', transcript: [], vapiCallId: null };
+
+  // Generate a confirmation summary so the dashboard can show it
+  let summary = `Got it. Calling ${name || to}. I'll ${briefing.slice(0, 120)}${briefing.length > 120 ? '...' : ''}`;
+  try {
+    const r = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      { contents: [{ parts: [{ text: `You are Ariana. Confirm this call briefing in 1 casual sentence like you're confirming before dialling:\nBriefing: "${briefing}"\nContact: ${name || to}` }] }], generationConfig: { temperature: 0.4, maxOutputTokens: 80 } },
+      { timeout: 8000 }
+    );
+    const s = r.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    if (s && !hasAIBreak(s)) summary = s;
+  } catch {}
+
+  res.json({ ok: true, callId, summary });
+});
+
+// POST /api/call/start — dial out via Vapi
+app.post('/api/call/start', requireDashboardAuth, async (req, res) => {
+  const { callId } = req.body;
+  const call = activeCalls[callId];
+  if (!call) return res.status(404).json({ error: 'Call not found — POST /api/call/brief first' });
+
+  const vapiKey = process.env.VAPI_API_KEY;
+  if (!vapiKey) return res.status(500).json({ error: 'VAPI_API_KEY not set in env — sign up at vapi.ai and add the key' });
+
+  try {
+    const vapiBody = {
+      phoneNumberId: process.env.VAPI_PHONE_ID, // your Vapi phone number ID
+      customer: { number: call.to, name: call.name },
+      assistant: {
+        model: {
+          provider: 'openai',
+          model:    'gpt-4o-mini',
+          systemPrompt: buildCallSystemPrompt(call.briefing, call.name),
+          temperature: 0.7,
+        },
+        voice: {
+          provider: 'elevenlabs',
+          voiceId:  cachedVoiceId || process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM',
+        },
+        transcriber: { provider: 'deepgram', model: 'nova-2', language: 'en' },
+        serverUrl: `${RENDER_URL}/vapi/events`,
+        recordingEnabled: true,
+        endCallMessage: "okay talk soon, bye",
+      },
+    };
+
+    const vapiRes = await axios.post('https://api.vapi.ai/call/phone', vapiBody, {
+      headers: { Authorization: `Bearer ${vapiKey}`, 'Content-Type': 'application/json' },
+      timeout: 15000,
+    });
+
+    call.vapiCallId = vapiRes.data.id;
+    call.status     = 'ringing';
+    call.startedAt  = new Date().toISOString();
+
+    io.emit('call_started', { callId, vapiCallId: call.vapiCallId, to: call.to, name: call.name });
+    res.json({ ok: true, callId, vapiCallId: call.vapiCallId });
+  } catch(e) {
+    const msg = e.response?.data?.message || e.response?.data?.error || e.message;
+    res.status(500).json({ error: msg });
+  }
+});
+
+// POST /vapi/events — Vapi sends real-time events here (transcript, status, end)
+app.post('/vapi/events', express.raw({ type: '*/*' }), async (req, res) => {
+  res.status(200).send('ok');
+  try {
+    const event = JSON.parse(req.body.toString());
+    const vapiId = event.call?.id;
+    const callId  = Object.keys(activeCalls).find(k => activeCalls[k].vapiCallId === vapiId);
+    if (!callId) return;
+    const call = activeCalls[callId];
+
+    if (event.type === 'transcript') {
+      const entry = { role: event.role || 'unknown', text: event.transcript, time: new Date().toISOString() };
+      call.transcript.push(entry);
+      io.emit('call_transcript', { callId, entry });
+    }
+
+    if (event.type === 'status-update') {
+      call.status = event.status?.toLowerCase() || call.status;
+      io.emit('call_status', { callId, status: call.status });
+    }
+
+    if (event.type === 'end-of-call-report' || event.type === 'call-ended') {
+      call.status = 'ended';
+      const summary = event.summary || event.endedReason || 'Call ended';
+      io.emit('call_ended', { callId, summary, transcript: call.transcript });
+      console.log(`📞 Call ${callId} ended — ${summary}`);
+    }
+  } catch(e) { console.warn('[vapi] Event parse error:', e.message); }
+});
+
+// POST /api/call/instruct — inject a new instruction mid-call
+// Dashboard sends this while X is pressed (overlay hidden, call still live)
+app.post('/api/call/instruct', requireDashboardAuth, async (req, res) => {
+  const { callId, instruction } = req.body;
+  const call = activeCalls[callId];
+  if (!call?.vapiCallId || call.status === 'ended') return res.status(404).json({ error: 'No active call' });
+
+  const vapiKey = process.env.VAPI_API_KEY;
+  try {
+    // Vapi "say" — injects a message the AI will speak next
+    await axios.post(`https://api.vapi.ai/call/${call.vapiCallId}`,
+      { type: 'add-message', message: { role: 'system', content: `[NEW INSTRUCTION]: ${instruction}` } },
+      { headers: { Authorization: `Bearer ${vapiKey}`, 'Content-Type': 'application/json' } }
+    );
+    call.briefing += `\n[Mid-call update]: ${instruction}`;
+    io.emit('call_instruction', { callId, instruction });
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.response?.data?.message || e.message }); }
+});
+
+// GET /api/call/status/:callId — poll current call state + transcript
+app.get('/api/call/status/:callId', requireDashboardAuth, (req, res) => {
+  const call = activeCalls[req.params.callId];
+  if (!call) return res.status(404).json({ error: 'Call not found' });
+  res.json({ ok: true, ...call });
+});
+
+// POST /api/call/end — hang up
+app.post('/api/call/end', requireDashboardAuth, async (req, res) => {
+  const { callId } = req.body;
+  const call = activeCalls[callId];
+  if (!call?.vapiCallId || call.status === 'ended') return res.status(404).json({ error: 'No active call to end' });
+  const vapiKey = process.env.VAPI_API_KEY;
+  try {
+    await axios.delete(`https://api.vapi.ai/call/${call.vapiCallId}`,
+      { headers: { Authorization: `Bearer ${vapiKey}` } }
+    );
+    call.status = 'ended';
+    io.emit('call_ended', { callId, summary: 'Manually ended' });
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
 
 // ── SIGNAL WEBHOOK AUTO-SETUP ────────────────────────────────
 async function setupSignalWebhook() {
@@ -3370,6 +3695,9 @@ server.listen(PORT, async () => {
   await initTelegram();
   await setupSignalWebhook();
   startSignalPolling();
+  startSleepCheck();
   startProactiveMessaging();
   startKeepAlive();
+  console.log(`📶 Signal fix: add  SIGNAL_CLI_OPTS=--trust-new-identities always  to your signal-cli Render service env vars`);
+  console.log(`📞 Vapi calling:    ${process.env.VAPI_API_KEY ? "✅" : "— set VAPI_API_KEY + VAPI_PHONE_ID to enable"}`);
 });
