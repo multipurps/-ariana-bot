@@ -265,7 +265,7 @@ input,textarea{font-family:inherit;color:inherit}
    BRAIN VIEW
 ═════════════════════════════════ */
 #view-brain{flex-direction:row}
-#brain-file-pane{width:220px;min-width:220px;background:rgba(8,8,12,.98);border-right:1px solid var(--b1);display:flex;flex-direction:column;overflow-y:auto;padding-top:calc(58px + env(safe-area-inset-top))}
+#brain-file-pane{width:220px;min-width:220px;background:rgba(8,8,12,.98);border-right:1px solid var(--b1);display:flex;flex-direction:column;overflow-y:auto;padding-top:calc(52px + env(safe-area-inset-top))}
 #brain-file-pane::-webkit-scrollbar{width:0}
 .bfp-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--t3);padding:12px 16px 6px}
 .bfp-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-left:2px solid transparent;transition:background .12s,border-color .12s}
@@ -280,7 +280,7 @@ input,textarea{font-family:inherit;color:inherit}
 .bfp-item.active .bfp-name{color:#fff}
 .bfp-dot{width:5px;height:5px;border-radius:50%;background:var(--amber);flex-shrink:0;display:none}
 .bfp-item.dirty .bfp-dot{display:block}
-#brain-edit-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;padding-top:calc(58px + env(safe-area-inset-top))}
+#brain-edit-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;padding-top:calc(52px + env(safe-area-inset-top))}
 #brain-empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--t2)}
 #brain-empty-state svg{width:48px;height:48px;color:rgba(255,255,255,.1)}
 #brain-empty-state p{font-size:14px}
@@ -303,7 +303,7 @@ input,textarea{font-family:inherit;color:inherit}
    MEDIA VIEW
 ═════════════════════════════════ */
 #view-media{flex-direction:column}
-#media-topbar{display:flex;align-items:center;gap:10px;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top) + 58px);border-bottom:1px solid var(--b1);flex-shrink:0;background:rgba(0,0,0,.6)}
+#media-topbar{display:flex;align-items:center;gap:10px;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top) + 52px);border-bottom:1px solid var(--b1);flex-shrink:0;background:rgba(0,0,0,.6)}
 #media-upload-btn{display:flex;align-items:center;gap:7px;padding:9px 16px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);border-radius:10px;color:var(--amber);font-size:13px;font-weight:600;cursor:pointer;transition:background .15s;flex-shrink:0}
 #media-upload-btn:hover{background:rgba(245,158,11,.22)}
 #media-upload-btn svg{width:15px;height:15px}
@@ -343,7 +343,7 @@ input,textarea{font-family:inherit;color:inherit}
    GENERATE VIEW
 ═════════════════════════════════ */
 #view-generate{flex-direction:column}
-#gen-topbar{display:flex;align-items:center;gap:12px;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top) + 58px);border-bottom:1px solid var(--b1);flex-shrink:0;background:rgba(0,0,0,.6)}
+#gen-topbar{display:flex;align-items:center;gap:12px;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top) + 52px);border-bottom:1px solid var(--b1);flex-shrink:0;background:rgba(0,0,0,.6)}
 #gen-topbar-title{font-size:16px;font-weight:700;flex:1}
 #gen-type-toggle{display:flex;background:var(--s2);border-radius:10px;padding:3px;gap:2px;border:1px solid var(--b1);flex-shrink:0}
 .gen-type-btn{padding:6px 16px;border-radius:8px;font-size:13px;font-weight:600;color:var(--t2);transition:all .18s;cursor:pointer;border:none}
@@ -892,7 +892,7 @@ input,textarea{font-family:inherit;color:inherit}
    EXTRA FEATURES VIEW (Thing 7)
 ═══════════════════════════════════ */
 #view-extras{flex-direction:column}
-#extras-topbar{display:flex;align-items:center;gap:12px;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top));border-bottom:1px solid var(--b1);flex-shrink:0;background:rgba(8,8,12,0.98)}
+#extras-topbar{display:flex;align-items:center;gap:12px;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top) + 40px);border-bottom:1px solid var(--b1);flex-shrink:0;background:rgba(8,8,12,0.98)}
 #extras-topbar-spacer{width:40px;flex-shrink:0}
 #extras-tabs-wrap{display:flex;gap:3px;overflow-x:auto;flex:1}
 #extras-tabs-wrap::-webkit-scrollbar{display:none}
@@ -1033,81 +1033,109 @@ input,textarea{font-family:inherit;color:inherit}
 #profile-btn img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 #profile-btn svg{width:22px;height:22px}
 
-/* ── HIDE NAV/TOGGLE IN CHAT VIEWS (body class approach) ── */
-body.view-chats #bottom-nav,
-body.view-chats #profile-btn { display:none !important; }
-body.view-talk #bottom-nav,
-body.view-talk #profile-btn,
-body.view-talk #sidebar-toggle { display:none !important; }
-body.view-profile #bottom-nav { display:none !important; }
-/* Hide sidebar toggle when chat is open on mobile */
-body.in-chat #sidebar-toggle { display:none !important; }
+/* ── NAV VISIBILITY — SINGLE SOURCE OF TRUTH ──
+   Bottom nav + profile btn: HOME only
+   Sidebar toggle: HOME + CHATS list (not in-chat)
+   Global back ←: everywhere else                ── */
+#bottom-nav  { display:flex }               /* default show */
+#profile-btn { display:flex }
+#sidebar-toggle { display:flex }
+#global-back { display:none }
 
-/* ── PROFILE VIEW (full page) ── */
+/* hide nav everywhere except home */
+body:not(.view-home) #bottom-nav,
+body:not(.view-home) #profile-btn { display:none !important; }
+
+/* hide sidebar toggle in all tool/inner views */
+body.view-brain    #sidebar-toggle,
+body.view-media    #sidebar-toggle,
+body.view-generate #sidebar-toggle,
+body.view-extras   #sidebar-toggle,
+body.view-talk     #sidebar-toggle,
+body.view-profile  #sidebar-toggle,
+body.in-chat       #sidebar-toggle { display:none !important; }
+
+/* show global back in all non-home views + when in-chat */
+body:not(.view-home):not(.view-chats) #global-back,
+body.view-chats.in-chat              #global-back { display:flex !important; }
+
+/* ── GLOBAL BACK BUTTON (← arrow only, no text) ── */
+#global-back{
+  position:fixed;top:calc(10px + env(safe-area-inset-top));left:12px;z-index:510;
+  width:36px;height:36px;border-radius:50%;
+  align-items:center;justify-content:center;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+#global-back svg{display:block}
+#global-back:active{opacity:.5}
+
+/* ── PROFILE VIEW — Ss5 style (clean settings page) ── */
 #view-profile{
   flex-direction:column;overflow-y:auto;
-  background:rgba(8,8,12,1);
+  background:#000;
 }
 #view-profile::-webkit-scrollbar{display:none}
-.pv-topbar{
-  display:flex;align-items:center;gap:10px;
-  padding:calc(12px + env(safe-area-inset-top)) 16px 12px;
-  background:rgba(8,8,12,.95);
-  border-bottom:1px solid rgba(255,255,255,.07);
-  flex-shrink:0;position:sticky;top:0;z-index:10;
-}
-.pv-back{
-  display:flex;align-items:center;gap:4px;
-  color:#3a9df8;font-size:16px;font-weight:500;
-  padding:6px 8px 6px 2px;border-radius:8px;cursor:pointer;
-  transition:opacity .15s;-webkit-tap-highlight-color:transparent;
-  flex-shrink:0;
-}
-.pv-back:active{opacity:.5}
-.pv-back svg{width:10px;height:16px;flex-shrink:0}
-.pv-topbar-title{font-size:17px;font-weight:700;flex:1;text-align:center}
-.pv-topbar-spacer{width:60px;flex-shrink:0}
-.pv-hero{
-  display:flex;flex-direction:column;align-items:center;
-  padding:32px 24px 24px;gap:10px;
+
+/* Profile user card */
+.pv-user-section{
+  padding:calc(env(safe-area-inset-top) + 58px) 20px 24px;
+  display:flex;align-items:center;gap:16px;
 }
 .pv-avatar{
-  width:88px;height:88px;border-radius:50%;flex-shrink:0;
-  border:2px solid rgba(255,255,255,0.12);
-  background:linear-gradient(135deg,rgba(167,139,250,.2),rgba(37,211,102,.15));
-  display:flex;align-items:center;justify-content:center;overflow:hidden;
-  box-shadow:0 0 40px 8px rgba(147,51,234,0.15);
+  width:68px;height:68px;border-radius:50%;
+  overflow:hidden;flex-shrink:0;
+  background:rgba(255,255,255,.08);
 }
-.pv-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
-.pv-avatar svg{width:40px;height:40px;color:rgba(255,255,255,.4)}
-.pv-name{font-size:22px;font-weight:700;letter-spacing:-.4px;margin-top:4px}
-.pv-tagline{font-size:13px;color:rgba(255,255,255,.38);text-align:center}
-.pv-body{padding:0 14px 40px;flex:1}
-.pv-section{margin-bottom:10px}
-.pv-section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:rgba(255,255,255,.28);padding:12px 4px 6px}
-.pv-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:14px;overflow:hidden}
+.pv-avatar img{width:100%;height:100%;object-fit:cover}
+.pv-avatar-placeholder{
+  width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+}
+.pv-avatar-placeholder svg{width:34px;height:34px;color:rgba(255,255,255,.3)}
+.pv-user-info{flex:1;min-width:0}
+.pv-user-name{font-size:20px;font-weight:700;letter-spacing:-.3px;margin-bottom:2px}
+.pv-user-sub{font-size:13px;color:rgba(255,255,255,.4);margin-bottom:4px}
+.pv-user-id{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11px;color:rgba(255,255,255,.28);
+}
+
+/* Profile sections */
+.pv-section-wrap{padding:0 16px 6px}
+.pv-section-label{
+  font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.9px;
+  color:rgba(255,255,255,.3);
+  padding:22px 4px 8px;
+}
+.pv-list{
+  background:rgba(255,255,255,.06);
+  border-radius:14px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.08);
+}
 .pv-row{
-  display:flex;align-items:center;gap:13px;
-  padding:14px 16px;cursor:pointer;
-  transition:background .14s;
-  border-bottom:1px solid rgba(255,255,255,.05);
+  display:flex;align-items:center;gap:14px;
+  padding:13px 16px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+  transition:background .12s;
 }
 .pv-row:last-child{border-bottom:none}
-.pv-row:hover{background:rgba(255,255,255,.04)}
 .pv-row:active{background:rgba(255,255,255,.08)}
-/* ALL icons same color — clean uniform style */
+/* icon — same size+color for ALL items (no colored variants) */
 .pv-icon{
-  width:36px;height:36px;border-radius:10px;
-  background:rgba(255,255,255,.07);
+  width:32px;height:32px;border-radius:8px;
+  background:rgba(255,255,255,.08);
   border:1px solid rgba(255,255,255,.1);
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
 }
-.pv-icon svg{width:17px;height:17px;color:rgba(255,255,255,.6)}
-.pv-row-text{flex:1}
-.pv-row-label{font-size:15px;font-weight:500;color:rgba(255,255,255,.88)}
-.pv-row-sub{font-size:12px;color:rgba(255,255,255,.3);margin-top:1px}
-.pv-chevron{color:rgba(255,255,255,.2)}
-.pv-chevron svg{width:14px;height:14px}
+.pv-icon svg{width:16px;height:16px;color:rgba(255,255,255,.55);display:block}
+.pv-row-text{flex:1;min-width:0}
+.pv-row-label{font-size:15px;color:rgba(255,255,255,.88);font-weight:400}
+.pv-row-sub{font-size:12px;color:rgba(255,255,255,.32);margin-top:1px}
+.pv-arrow{flex-shrink:0;color:rgba(255,255,255,.2)}
+.pv-arrow svg{width:14px;height:14px;display:block}
+.pv-bottom-space{height:calc(34px + env(safe-area-inset-bottom))}
 
 /* ── PLATFORM-SPECIFIC BUBBLE COLORS ── */
 .plat-wa #messages .msg-wrap.out .bubble{background:var(--sent-wa);border-color:var(--sent-wa-b)}
@@ -1345,14 +1373,18 @@ body.in-chat #sidebar-toggle { display:none !important; }
 <button id="sidebar-toggle" onclick="toggleSidebar()" aria-label="Menu">
   <div class="toggle-icon">
     <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- Outer rounded rect (the window frame) -->
       <rect x="1.5" y="2.5" width="17" height="15" rx="2.5" stroke="white" stroke-width="1.5" fill="none"/>
-      <!-- Left sidebar panel fill -->
       <rect x="1.5" y="2.5" width="6" height="15" rx="2.5" fill="white" fill-opacity="0.9"/>
-      <!-- Vertical divider line -->
       <line x1="7.5" y1="2.5" x2="7.5" y2="17.5" stroke="white" stroke-width="1.5" opacity="0.15"/>
     </svg>
   </div>
+</button>
+
+<!-- GLOBAL BACK ← (shows in all inner views — arrow only, no text) -->
+<button id="global-back" onclick="goBack()" aria-label="Back">
+  <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M17 8L11 14L17 20" stroke="#3a9df8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
 </button>
 
 <!-- PROFILE BUTTON (top-right, Ariana logo) -->
@@ -1421,89 +1453,75 @@ body.in-chat #sidebar-toggle { display:none !important; }
 
     <!-- ══════════ PROFILE ══════════ -->
     <div id="view-profile" class="view">
-      <div class="pv-topbar">
-        <button class="pv-back" onclick="goBack()">
-          <svg viewBox="0 0 10 16" fill="none"><path d="M8.5 1L1.5 8L8.5 15" stroke="#3a9df8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Back
-        </button>
-        <div class="pv-topbar-title">Profile</div>
-        <div class="pv-topbar-spacer"></div>
-      </div>
-      <div class="pv-hero">
+
+      <!-- user card -->
+      <div class="pv-user-section">
         <div class="pv-avatar">
-          <img src="/icons/icon-192.png" alt="Ariana" onerror="this.outerHTML='<svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'rgba(255,255,255,.35)\' stroke-width=\'1.4\'><circle cx=\'12\' cy=\'8\' r=\'4\'/><path d=\'M4 20c0-4 3.6-7 8-7s8 3 8 7\'/></svg>'">
+          <img src="/icons/icon-192.png" alt="Ariana"
+            onerror="this.outerHTML='<div class=\'pv-avatar-placeholder\'><svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.4\'><circle cx=\'12\' cy=\'8\' r=\'4\'/><path d=\'M4 20c0-4 3.6-7 8-7s8 3 8 7\'/></svg></div>'">
         </div>
-        <div class="pv-name">Ariana</div>
-        <div class="pv-tagline">Your AI companion — always here for you</div>
+        <div class="pv-user-info">
+          <div class="pv-user-name">Ariana</div>
+          <div class="pv-user-sub">AI Assistant</div>
+          <div class="pv-user-id">v1.0 &nbsp;·&nbsp; Ariana OS</div>
+        </div>
       </div>
-      <div class="pv-body">
-        <div class="pv-section">
-          <div class="pv-section-label">Tools</div>
-          <div class="pv-card">
-            <div class="pv-row" onclick="navTo({dataset:{view:'brain'}})">
-              <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3L9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3L14.5 2Z"/></svg></div>
-              <div class="pv-row-text">
-                <div class="pv-row-label">Brain Editor</div>
-                <div class="pv-row-sub">Edit Ariana's memory & personality</div>
-              </div>
-              <div class="pv-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </div>
-            <div class="pv-row" onclick="navTo({dataset:{view:'media'}})">
-              <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
-              <div class="pv-row-text">
-                <div class="pv-row-label">Media Library</div>
-                <div class="pv-row-sub">Photos, videos & generated media</div>
-              </div>
-              <div class="pv-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </div>
-            <div class="pv-row" onclick="navTo({dataset:{view:'generate'}})">
-              <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
-              <div class="pv-row-text">
-                <div class="pv-row-label">Generate</div>
-                <div class="pv-row-sub">AI image & video generation</div>
-              </div>
-              <div class="pv-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </div>
+
+      <!-- TOOLS section -->
+      <div class="pv-section-wrap">
+        <div class="pv-section-label">Tools</div>
+        <div class="pv-list">
+          <div class="pv-row" onclick="navTo({dataset:{view:'brain'}})">
+            <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3L9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3L14.5 2Z"/></svg></div>
+            <div class="pv-row-text"><div class="pv-row-label">Brain Editor</div></div>
+            <div class="pv-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg></div>
           </div>
-        </div>
-        <div class="pv-section">
-          <div class="pv-section-label">Settings</div>
-          <div class="pv-card">
-            <div class="pv-row" onclick="requestPush()">
-              <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
-              <div class="pv-row-text">
-                <div class="pv-row-label">Notifications</div>
-                <div class="pv-row-sub">Enable push notifications</div>
-              </div>
-              <div class="pv-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </div>
-            <div class="pv-row" onclick="openWallpaperModal()">
-              <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
-              <div class="pv-row-text">
-                <div class="pv-row-label">Global Wallpaper</div>
-                <div class="pv-row-sub">Default background for all chats</div>
-              </div>
-              <div class="pv-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </div>
-            <div class="pv-row" onclick="openSettingsModal()">
-              <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3h-3a2 2 0 0 0-2 2v2"/><path d="M8 3h3a2 2 0 0 1 2 2v2"/></svg></div>
-              <div class="pv-row-text">
-                <div class="pv-row-label">API Keys</div>
-                <div class="pv-row-sub">ElevenLabs, Dashboard key</div>
-              </div>
-              <div class="pv-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </div>
-            <div class="pv-row" onclick="doRequestContacts()">
-              <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-              <div class="pv-row-text">
-                <div class="pv-row-label">Contacts</div>
-                <div class="pv-row-sub">Sync device contacts</div>
-              </div>
-              <div class="pv-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </div>
+          <div class="pv-row" onclick="navTo({dataset:{view:'media'}})">
+            <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
+            <div class="pv-row-text"><div class="pv-row-label">Media Library</div></div>
+            <div class="pv-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg></div>
+          </div>
+          <div class="pv-row" onclick="navTo({dataset:{view:'generate'}})">
+            <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+            <div class="pv-row-text"><div class="pv-row-label">Generate</div></div>
+            <div class="pv-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg></div>
+          </div>
+          <div class="pv-row" onclick="navTo({dataset:{view:'talk'}})">
+            <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
+            <div class="pv-row-text"><div class="pv-row-label">Live Talk</div></div>
+            <div class="pv-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg></div>
           </div>
         </div>
       </div>
+
+      <!-- SETTINGS section -->
+      <div class="pv-section-wrap">
+        <div class="pv-section-label">Settings</div>
+        <div class="pv-list">
+          <div class="pv-row" onclick="requestPush()">
+            <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+            <div class="pv-row-text"><div class="pv-row-label">Notifications</div></div>
+            <div class="pv-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg></div>
+          </div>
+          <div class="pv-row" onclick="openWallpaperModal()">
+            <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
+            <div class="pv-row-text"><div class="pv-row-label">Global Wallpaper</div></div>
+            <div class="pv-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg></div>
+          </div>
+          <div class="pv-row" onclick="openSettingsModal()">
+            <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3h-3a2 2 0 0 0-2 2v2"/><path d="M8 3h3a2 2 0 0 1 2 2v2"/></svg></div>
+            <div class="pv-row-text"><div class="pv-row-label">API Keys</div></div>
+            <div class="pv-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg></div>
+          </div>
+          <div class="pv-row" onclick="doRequestContacts()">
+            <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+            <div class="pv-row-text"><div class="pv-row-label">Contacts</div></div>
+            <div class="pv-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pv-bottom-space"></div>
     </div>
 
     <!-- ══════════ HOME ══════════ -->
@@ -1559,7 +1577,6 @@ body.in-chat #sidebar-toggle { display:none !important; }
             <svg viewBox="0 0 11 18" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M9.5 1L1.5 9L9.5 17" stroke="#3a9df8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            Back
           </button>
           <div id="chat-avatar" onclick="openDrawer()"></div>
           <div id="chat-info" onclick="openDrawer()"><div id="chat-name">—</div><div id="chat-sub"></div></div>
@@ -2626,24 +2643,32 @@ function fmtTimeFull(iso){if(!iso)return"";try{return new Date(iso).toLocaleTime
 function fmtDate(iso){if(!iso)return"—";try{const d=new Date(iso),now=new Date();if(d.toDateString()===now.toDateString())return"Today";if(new Date(now-864e5).toDateString()===d.toDateString())return"Yesterday";return d.toLocaleDateString([],{month:"short",day:"numeric",year:"numeric"})}catch{return"—"}}
 let _notifTimer = null;
 function showNotif(title, body, icon, duration) {
-  duration = duration || 3800;
+  duration = duration || 3500;
   clearTimeout(_notifTimer);
   const inner = document.getElementById('notif-inner');
+  if(!inner) return;
   const iconEl = document.getElementById('notif-icon');
   const titleEl = document.getElementById('notif-title');
   const bodyEl  = document.getElementById('notif-body');
   const timeEl  = document.getElementById('notif-time');
+  if(!iconEl||!titleEl||!bodyEl||!timeEl) return;
   if (typeof icon === 'string' && icon.startsWith('<')) {
-    iconEl.parentElement.innerHTML = '<div style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">'+icon+'</div>';
+    iconEl.parentElement.innerHTML = '<div id="notif-icon-wrap" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">'+icon+'</div>';
   } else {
     iconEl.textContent = icon || '✦';
   }
   titleEl.textContent = String(title || '');
   bodyEl.textContent  = String(body  || '');
   timeEl.textContent  = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-  inner.classList.add('show');
-  inner.onclick = () => { clearTimeout(_notifTimer); inner.classList.remove('show'); };
-  _notifTimer = setTimeout(() => inner.classList.remove('show'), duration);
+  // force off first so transition replays
+  inner.classList.remove('show');
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      inner.classList.add('show');
+      inner.onclick = () => { clearTimeout(_notifTimer); inner.classList.remove('show'); };
+      _notifTimer = setTimeout(() => inner.classList.remove('show'), duration);
+    });
+  });
 }
 /* backward-compat: all existing showToast() calls route here */
 function showToast(msg) { showNotif('Ariana', msg, '✦'); }
