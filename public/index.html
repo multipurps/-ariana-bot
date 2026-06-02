@@ -995,17 +995,16 @@ input,textarea{font-family:inherit;color:inherit}
 /* ── iOS-style notification banner ── */
 #notif-banner{
   position:fixed;top:0;left:0;right:0;z-index:900;
-  padding-top:env(safe-area-inset-top);
   pointer-events:none;
-  overflow:hidden;
+  /* NO padding, NO background, NO height — invisible when idle */
 }
 #notif-inner{
-  margin:8px 12px 0;
+  margin:calc(env(safe-area-inset-top) + 8px) 12px 0;
   background:rgba(30,30,36,0.97);
   border:1px solid rgba(255,255,255,0.12);
   border-radius:16px;padding:11px 14px;
   display:flex;align-items:center;gap:11px;
-  transform:translateY(-130%);
+  transform:translateY(calc(-300% - env(safe-area-inset-top)));
   transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);
   backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);
   box-shadow:0 10px 40px rgba(0,0,0,0.55);
@@ -1340,7 +1339,7 @@ body.in-chat       #global-back { display:flex !important; }
 /* ── FLOATING BOTTOM NAV — liquid glass ── */
 #bottom-nav{
   position:fixed;
-  bottom:0;
+  bottom:10px;
   left:50%;
   transform:translateX(-50%);
   z-index:300;
