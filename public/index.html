@@ -1339,7 +1339,7 @@ body.in-chat       #global-back { display:flex !important; }
 /* ── FLOATING BOTTOM NAV — liquid glass ── */
 #bottom-nav{
   position:fixed;
-  bottom:10px;
+  bottom:0;
   left:50%;
   transform:translateX(-50%);
   z-index:300;
@@ -2371,14 +2371,15 @@ function renderList(){
 function updateChatBackLabel() {
   const btn = document.getElementById('chat-back');
   if (!btn) return;
-  const labels = { wa:'WhatsApp', tg:'Telegram', sg:'Signal', sms:'SMS', all:'Back' };
-  const label = labels[activePlatFilter] || 'Back';
+  // Arrow only — no text label ever
   btn.innerHTML = `<svg viewBox="0 0 11 18" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M9.5 1L1.5 9L9.5 17" stroke="#3a9df8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>${label}`;
+  </svg>`;
 }
 function openChat(phone){
   if(!phone)return;currentPhone=phone;
+  // Push history state so iOS swipe-back works
+  history.pushState({chat:phone},'','');
   const c=convos[phone]||{phone,messages:[],name:""};c._unread=0;
   document.getElementById("no-chat").style.display="none";
   document.getElementById("chat-header").style.display="flex";
@@ -4765,7 +4766,12 @@ async function doRequestContacts(){
 document.addEventListener("touchstart",e=>{_tx=e.touches[0].clientX;_ty=e.touches[0].clientY},{passive:true});
 document.addEventListener("touchend",e=>{const dx=e.changedTouches[0].clientX-_tx;const dy=Math.abs(e.changedTouches[0].clientY-_ty);if(_tx<35&&dx>65&&dy<80&&window.innerWidth<=700){if(document.getElementById("sidebar").classList.contains("open"))closeSidebar();else if(currentPhone)closeChat()}},{passive:true});
 
-// Initialize body class and contacts banner on load
+// iOS swipe-to-back support
+window.addEventListener('popstate', e => {
+  if(currentPhone){ closeChat(); }
+  else if(currentView !== 'home'){ navTo({dataset:{view:'home'}}); }
+});
+
 document.addEventListener("DOMContentLoaded",()=>{
   document.body.classList.add("view-home");
   showContactsBanner();
