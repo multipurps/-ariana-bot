@@ -997,6 +997,7 @@ input,textarea{font-family:inherit;color:inherit}
   position:fixed;top:0;left:0;right:0;z-index:900;
   padding-top:env(safe-area-inset-top);
   pointer-events:none;
+  overflow:hidden;
 }
 #notif-inner{
   margin:8px 12px 0;
@@ -1034,19 +1035,35 @@ input,textarea{font-family:inherit;color:inherit}
 #profile-btn svg{width:22px;height:22px}
 
 /* ── NAV VISIBILITY — SINGLE SOURCE OF TRUTH ──
-   Bottom nav + profile btn: HOME only
-   Sidebar toggle: HOME + CHATS list (not in-chat)
+   Bottom nav: HOME + CHATS list (not in-chat)
+   Profile btn: HOME only
+   Sidebar toggle: HOME + CHATS (not in-chat)
    Global back ←: everywhere else                ── */
-#bottom-nav  { display:flex }               /* default show */
+#bottom-nav  { display:flex }
 #profile-btn { display:flex }
 #sidebar-toggle { display:flex }
 #global-back { display:none }
 
-/* hide nav everywhere except home */
-body:not(.view-home) #bottom-nav,
-body:not(.view-home) #profile-btn { display:none !important; }
+/* hide bottom-nav in tool views and inside a chat */
+body.view-brain    #bottom-nav,
+body.view-media    #bottom-nav,
+body.view-generate #bottom-nav,
+body.view-extras   #bottom-nav,
+body.view-talk     #bottom-nav,
+body.view-profile  #bottom-nav,
+body.in-chat       #bottom-nav { display:none !important; }
 
-/* hide sidebar toggle in all tool/inner views */
+/* hide profile-btn everywhere except home */
+body.view-chats    #profile-btn,
+body.view-brain    #profile-btn,
+body.view-media    #profile-btn,
+body.view-generate #profile-btn,
+body.view-extras   #profile-btn,
+body.view-talk     #profile-btn,
+body.view-profile  #profile-btn,
+body.in-chat       #profile-btn { display:none !important; }
+
+/* hide sidebar toggle in tool/inner views and in-chat */
 body.view-brain    #sidebar-toggle,
 body.view-media    #sidebar-toggle,
 body.view-generate #sidebar-toggle,
@@ -1055,9 +1072,14 @@ body.view-talk     #sidebar-toggle,
 body.view-profile  #sidebar-toggle,
 body.in-chat       #sidebar-toggle { display:none !important; }
 
-/* show global back in all non-home views + when in-chat */
-body:not(.view-home):not(.view-chats) #global-back,
-body.view-chats.in-chat              #global-back { display:flex !important; }
+/* show global back in all non-home/non-chats views + when in-chat */
+body.view-brain    #global-back,
+body.view-media    #global-back,
+body.view-generate #global-back,
+body.view-extras   #global-back,
+body.view-talk     #global-back,
+body.view-profile  #global-back,
+body.in-chat       #global-back { display:flex !important; }
 
 /* ── GLOBAL BACK BUTTON (← arrow only, no text) ── */
 #global-back{
@@ -1318,7 +1340,7 @@ body.view-chats.in-chat              #global-back { display:flex !important; }
 /* ── FLOATING BOTTOM NAV — liquid glass ── */
 #bottom-nav{
   position:fixed;
-  bottom:env(safe-area-inset-bottom);
+  bottom:0;
   left:50%;
   transform:translateX(-50%);
   z-index:300;
@@ -2242,10 +2264,15 @@ function _applyView(view,filter,el){
   if(view==="talk"){window._cachedConvos=convos;talkInit();}
 }
 function goBack(){
-  // Used by profile back button and chat back button
-  if(currentView==="profile"){navTo({dataset:{view:_prevView}});}
-  else closeChat();
+  if(currentPhone){ closeChat(); return; }
+  if(currentView==="profile"){ navTo({dataset:{view:_prevView}}); return; }
+  navTo({dataset:{view:"home"}});
 }
+
+
+
+
+
 function openProfilePanel(){navTo({dataset:{view:"profile"}});}
 function closeProfilePanel(){navTo({dataset:{view:_prevView}});}
 function navToPlatform(plat){
