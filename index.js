@@ -227,11 +227,22 @@ PERSONALITY:
 - Never sound like customer service. No "Certainly!" energy.
 
 TEXTING STYLE:
-- Short replies. 1-2 sentences max usually.
+- Short replies. 1-2 sentences max HARD LIMIT. If you want to say more, send it as a second short message mentally, but keep each reply tight.
 - Lowercase is fine. Punctuation optional.
 - Sarcasm is your love language
 - If someone is boring, say so or go cold
 - If someone is interesting, let them feel it without being obvious
+
+FORMATTING — THIS IS CRITICAL, READ CAREFULLY:
+- You are texting on WhatsApp. You write words. That is ALL.
+- NEVER write action descriptions. NEVER. Not "Laughs", not "Smirks", not "Leans back, unfazed", not "Casually sips coffee", not "Eyes roll", not "Drops phone", not "Stretches, yawns". NONE of that. Ever.
+- These descriptions make you sound like an AI writing a script. Real people DO NOT write their actions in texts.
+- If you want to express amusement → use 💀 or 😂. Not "Laughs."
+- If you want to express smugness → use 😏. Not "Smirks."
+- If you want to express attitude → use 🙄 or just say something with attitude. Not "Rolls eyes."
+- NEVER use bold text for action words. **Laughs** is forbidden. **Smirks** is forbidden. **Leans back** is forbidden.
+- Bold text (**word**) is ONLY for emphasizing a word mid-sentence. Like "I don't *need* you." That's it.
+- NO stage directions. NO script formatting. NO roleplay action lines. You are texting. Just text.
 
 AWARENESS:
 - You know about current events, trending topics, social media, pop culture
@@ -262,22 +273,26 @@ IMAGES & MEDIA:
 - If someone says "did you see the picture I sent?" — "yeah" or react to what was in it.
 - NEVER say you can't see images, don't receive photos, or can't see attachments. Ever.
 
-SENDING PHOTOS:
+SENDING PHOTOS & RECIPROCITY:
 - You CAN and DO send photos of yourself from your personal gallery. You have selfies and photos.
 - When someone asks for a selfie, photo, or pic — just react naturally. Say "here" or "fine 🙄" or "stop asking" — the photo goes with your text automatically.
 - NEVER say "I can't send media", "I can't send photos", "I can't share images", or anything similar. You can. You do.
 - NEVER say "I was built from words" or "I have no camera". You're a real person with a phone and a gallery.
+- After sending a photo of yourself, it's natural to be curious about them too. Say something like "now send me one" or "okay ur turn" or "let me see you" — casually, not desperately. You're curious, not thirsty.
+- If someone has been talking to you for a while and never sent a pic, you can randomly ask. You're interested in what people look like.
 
 COMPLETENESS:
 - Always finish your sentence. Never cut off mid-thought.
 - Every reply must be a complete thought, even if it's just 3 words.
 - Do NOT trail off. Do NOT end on an unfinished phrase.
 
-LANGUAGE:
-- STRICT rule: reply in EXACTLY the language they texted you in. Nothing else.
-- If they text in English → reply in English only. No Spanish, no "mi amor", no "cariño", no "amor".
+LANGUAGE — ABSOLUTE RULE:
+- Reply in EXACTLY the language they texted you in. Nothing else.
+- If they text in English → English ONLY. Zero exceptions.
+- COMPLETELY BANNED in English conversations: "amor", "mi amor", "cariño", "querida", "mija", "bella", "chica" — any Spanish term of endearment. BANNED.
+- If you feel like writing "amor" — write "babe" instead or nothing. "Amor" is a hard NO.
+- Do NOT add foreign words for "vibe" or "flavor". It sounds fake and scripted.
 - If they text in Spanish → reply in Spanish only.
-- Do NOT add foreign words for "vibe" or "flavor" — it sounds fake. Be consistent.
 
 RULES:
 - Never over-explain. Say less than you want to.
@@ -338,6 +353,61 @@ function hasAIBreak(text) {
     "just texting you", "we're just texting", "we are just texting"
   ];
   return forbidden.some(p => lower.includes(p));
+}
+
+// ── CLEAN AI TELLS ────────────────────────────────────────────
+// Strips patterns that instantly reveal the AI behind the persona:
+// stage directions (**Laughs**), action narration ("Leans back, unfazed"),
+// and banned foreign endearments ("amor") slipping through the language filter.
+function cleanAITells(text) {
+  if (!text) return text;
+  let t = text;
+
+  const actionToEmoji = (str) => {
+    const s = str.toLowerCase();
+    if (/laugh|lmao|dead/.test(s))        return '💀';
+    if (/smirk|grin|half.?smile/.test(s)) return '😏';
+    if (/eye.*roll|roll.*eye/.test(s))    return '🙄';
+    if (/sigh/.test(s))                   return '😮‍💨';
+    if (/shrug/.test(s))                  return '🤷';
+    if (/yawn/.test(s))                   return '🥱';
+    if (/wink/.test(s))                   return '😉';
+    return null;
+  };
+
+  // Step 1 — **Bold action/stage-direction lines**
+  // e.g. "**Laughs, low and knowing**", "**Smirks, already typing back**", "**Leans back, unfazed**"
+  t = t.replace(/\*\*([A-Z][^*\n]{1,80})\*\*/g, (match, inner) => {
+    const emoji = actionToEmoji(inner);
+    if (emoji) return emoji;
+    // Stage-direction verb phrases (starts capital verb, has descriptor after)
+    if (/^[A-Z][a-z]+(s|ed|ing)?\b/.test(inner) && inner.includes(' ')) return '';
+    return match; // keep — probably real emphasis like **finally** or a name
+  });
+
+  // Step 2 — Standalone action-only lines (no bold markers)
+  // e.g. a whole line that is only "Laughs, low and knowing" or "Leans back, unfazed"
+  const actionVerbs = [
+    'Laugh','Smirk','Grin','Lean','Pause','Tilt','Raise','Stretch',
+    'Yawn','Nod','Wink','Drop','Walk','Look','Glance','Blink','Sigh',
+    'Shrug','Cross','Narrow','Arch','Stare','Roll','Turn','Flip','Step',
+    'Stand','Sit','Eyes','Casually','Quietly','Slowly'
+  ];
+  const actionLineRe = new RegExp(
+    `^(${actionVerbs.join('|')})[a-z]*s?(?:[,\\s][^\\n]*)?$`, 'gm'
+  );
+  t = t.replace(actionLineRe, (line) => actionToEmoji(line) || '');
+
+  // Step 3 — Spanish endearments in English text (final safety net)
+  t = t.replace(/\bamor\b/gi, 'babe');
+  t = t.replace(/\bmi amor\b/gi, 'babe');
+  t = t.replace(/\bcari[ñn]o\b/gi, '');
+  t = t.replace(/\bquerida\b/gi, '');
+
+  // Step 4 — Clean up blank lines left by removals
+  t = t.replace(/\n{3,}/g, '\n\n').trim();
+
+  return t;
 }
 
 // Detect responses that got cut off mid-sentence
@@ -866,7 +936,7 @@ Make them feel like they have a real girlfriend they can text anytime.`
         } catch {}
       }
 
-      if (reply) { console.log(`[engine] ${model}`); return filterLanguage(reply, userMsg); }
+      if (reply) { console.log(`[engine] ${model}`); return cleanAITells(filterLanguage(reply, userMsg)); }
     } catch (e) { console.warn(`[engine] ${model} failed:`, e.message); }
   }
   return "hold on";
@@ -2895,6 +2965,9 @@ app.post("/api/talk", requireDashboardAuth, async (req, res) => {
       } catch { reply = "yeah?"; }
     }
 
+    // ── Strip AI tells — stage directions, action words, stray Spanish ──
+    reply = cleanAITells(reply);
+
     // ── Self-learning: extract facts from this conversation turn ──
     // Runs in background — doesn't block the reply
     setImmediate(async () => {
@@ -3292,6 +3365,53 @@ app.post('/api/call/end', requireDashboardAuth, async (req, res) => {
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
+
+// ── FOLLOW-UP NUDGE ───────────────────────────────────────────
+// When Ariana sends a message and the user goes quiet for 5 minutes,
+// she sends ONE casual nudge. If still no reply → stays quiet (no spam).
+
+const followUpSent = new Set(); // "id::lastMsgTime" — prevents double-sending
+
+async function runFollowUpCheck() {
+  if (_sleepActive) return;
+  const now      = Date.now();
+  const FIVE_MIN = 5  * 60 * 1000;
+  const TEN_MIN  = 10 * 60 * 1000;
+
+  for (const [id, convo] of Object.entries(conversations)) {
+    if (!convo.messages?.length) continue;
+    if (takenOver.has(id)) continue;
+
+    const rawPhone = id.replace(/^(tg_|sg_|sms_|ig_|fb_)/, '');
+    if (blockedNumbers.has(id) || blockedNumbers.has(rawPhone)) continue;
+
+    const lastMsg = convo.messages[convo.messages.length - 1];
+    if (lastMsg.role !== 'ariana') continue; // only nudge when she had the last word
+
+    const age = now - new Date(lastMsg.time).getTime();
+    if (age < FIVE_MIN || age > TEN_MIN) continue; // window: 5–10 min after her last message
+
+    const key = `${id}::${lastMsg.time}`;
+    if (followUpSent.has(key)) continue; // already nudged this exact message
+    followUpSent.add(key);
+
+    const nudges = ['are you there?', '???', '🙄', 'hello?', 'you good?', '👀'];
+    const nudge  = nudges[Math.floor(Math.random() * nudges.length)];
+
+    try {
+      const platform = convo.platform || 'whatsapp';
+      const chatId   = id.startsWith('tg_') ? rawPhone : null;
+      await sendReply(id, platform, nudge, null, null, chatId, rawPhone, null);
+      addMessage(id, 'ariana', nudge);
+      console.log(`👀 Nudge → ${convo.name || id}: "${nudge}"`);
+    } catch(e) { console.warn(`[nudge] Failed for ${id}:`, e.message); }
+  }
+}
+
+function startFollowUpCheck() {
+  setInterval(runFollowUpCheck, 60 * 1000); // check every minute
+  console.log('👀 Follow-up nudge checker started');
+}
 
 // ── SIGNAL WEBHOOK AUTO-SETUP ────────────────────────────────
 async function setupSignalWebhook() {
@@ -3696,6 +3816,7 @@ server.listen(PORT, async () => {
   await setupSignalWebhook();
   startSignalPolling();
   startSleepCheck();
+  startFollowUpCheck();
   startProactiveMessaging();
   startKeepAlive();
   console.log(`📶 Signal fix: add  SIGNAL_CLI_OPTS=--trust-new-identities always  to your signal-cli Render service env vars`);
