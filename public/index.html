@@ -1049,7 +1049,6 @@ body.view-media    #bottom-nav,
 body.view-generate #bottom-nav,
 body.view-extras   #bottom-nav,
 body.view-talk     #bottom-nav,
-body.view-call     #bottom-nav,
 body.view-profile  #bottom-nav,
 body.in-chat       #bottom-nav { display:none !important; }
 
@@ -1060,7 +1059,6 @@ body.view-media    #profile-btn,
 body.view-generate #profile-btn,
 body.view-extras   #profile-btn,
 body.view-talk     #profile-btn,
-body.view-call     #profile-btn,
 body.view-profile  #profile-btn,
 body.in-chat       #profile-btn { display:none !important; }
 
@@ -1341,7 +1339,7 @@ body.in-chat       #global-back { display:flex !important; }
 /* ── FLOATING BOTTOM NAV — liquid glass ── */
 #bottom-nav{
   position:fixed;
-  bottom: calc(22px + env(safe-area-inset-bottom));
+  bottom: calc(20px + env(safe-area-inset-bottom));
   left:50%;
   transform:translateX(-50%);
   z-index:300;
@@ -1388,49 +1386,6 @@ body.in-chat       #global-back { display:flex !important; }
 .bn-btn.tg-btn::after{background:#2AABEE}
 .bn-btn.sg-btn::after{background:#3A76F0}
 .bn-btn.sms-btn::after{background:#34C759}
-
-/* ── CALL VIEW ── */
-@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.5)}}
-.sb-item.active.call-item{background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.2)}
-#view-call{flex-direction:column;background:var(--bg)}
-.call-pre{display:flex;flex-direction:column;height:100%;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom)}
-.call-pre-hd{padding:calc(16px + env(safe-area-inset-top)) 20px 14px;border-bottom:1px solid var(--b1);flex-shrink:0}
-.call-pre-hd h2{font-size:18px;font-weight:700}
-.call-pre-hd p{font-size:13px;color:var(--t2);margin-top:3px}
-.call-form{padding:18px 20px;display:flex;flex-direction:column;gap:14px}
-.cf-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--t3);margin-bottom:6px;display:block}
-.cf-input,.cf-ta{width:100%;background:var(--s1);border:1px solid var(--b1);border-radius:12px;padding:12px 14px;color:#fff;font-size:15px;outline:none;transition:border-color .2s;resize:none}
-.cf-input:focus,.cf-ta:focus{border-color:rgba(239,68,68,.5)}
-.cf-ta{min-height:90px;line-height:1.5}
-.call-reply-bubble{background:var(--s1);border:1px solid var(--b2);border-radius:14px;padding:13px;font-size:14px;line-height:1.5;color:var(--t2);font-style:italic}
-.call-brief-btn{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.22);color:#ef4444;border-radius:14px;padding:14px;font-size:15px;font-weight:600;width:100%;transition:background .18s}
-.call-brief-btn:active{background:rgba(239,68,68,.2)}
-.call-dial-btn{background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;border-radius:14px;padding:14px;font-size:15px;font-weight:700;width:100%;box-shadow:0 4px 20px rgba(239,68,68,.3);transition:opacity .18s}
-.call-dial-btn:disabled{opacity:.38;pointer-events:none}
-.call-dial-btn:active{opacity:.85}
-/* live overlay */
-#call-live-overlay{position:fixed;inset:0;background:rgba(4,4,10,.97);z-index:800;display:none;flex-direction:column}
-#call-live-overlay.show{display:flex}
-.clo-header{display:flex;align-items:center;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top)) 20px 12px;flex-shrink:0}
-.clo-back{width:36px;height:36px;border-radius:50%;background:var(--s2);border:1px solid var(--b1);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--t1)}
-.clo-back:active{transform:scale(.9)}
-.clo-who{text-align:center}
-.clo-name{font-size:16px;font-weight:700}
-.clo-status{font-size:12px;color:var(--t2);margin-top:2px}
-.clo-timer{font-size:13px;font-weight:600;color:#ef4444;font-variant-numeric:tabular-nums;min-width:40px;text-align:right}
-.clo-transcript{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:8px}
-.ctb{max-width:78%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.5}
-.ctb.ariana{align-self:flex-start;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.18)}
-.ctb.them{align-self:flex-end;background:var(--s2);border:1px solid var(--b1)}
-.ctb.sys{align-self:center;font-size:12px;color:var(--t3);font-style:italic}
-.clo-end-row{display:flex;justify-content:center;padding:10px 16px 6px;flex-shrink:0}
-.clo-end-btn{width:66px;height:66px;border-radius:50%;background:#ef4444;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 24px rgba(239,68,68,.45)}
-.clo-end-btn:active{transform:scale(.9)}
-.clo-instruct{display:flex;gap:10px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--b1);flex-shrink:0}
-.clo-instruct input{flex:1;background:var(--s1);border:1px solid var(--b1);border-radius:22px;padding:10px 16px;color:#fff;font-size:14px;outline:none}
-.clo-instruct button{width:42px;height:42px;border-radius:50%;background:#ef4444;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.clo-instruct button:active{transform:scale(.9)}
-#call-live-pip{position:fixed;bottom:calc(100px + env(safe-area-inset-bottom));right:16px;background:#ef4444;border-radius:24px;padding:8px 14px;font-size:13px;font-weight:600;color:#fff;z-index:700;display:none;align-items:center;gap:6px;box-shadow:0 4px 16px rgba(239,68,68,.4)}
 </style>
 </head>
 <body>
@@ -1501,11 +1456,6 @@ body.in-chat       #global-back { display:flex !important; }
     <div class="sb-item talk-item" data-view="talk" onclick="navTo(this)">
       <div class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
       <div class="sb-label">Live Talk</div>
-    </div>
-    <div class="sb-item call-item" data-view="call" onclick="navTo(this)">
-      <div class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.44 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.56a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
-      <div class="sb-label">AI Call</div>
-      <span id="call-live-badge" style="display:none;width:8px;height:8px;border-radius:50%;background:#ef4444;animation:pulse-dot 1.5s infinite"></span>
     </div>
     <div class="sb-item gen-item" data-view="generate" onclick="navTo(this)">
       <div class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
@@ -2112,24 +2062,6 @@ body.in-chat       #global-back { display:flex !important; }
     </div>
 
   </div><!-- #views -->
-
-  <!-- ── CALL VIEW (AI Call — Mitra style) ── -->
-  <div id="view-call" class="view">
-    <div class="call-pre" id="call-pre-screen">
-      <div class="call-pre-hd">
-        <h2>📞 AI Call</h2>
-        <p>Brief Ariana first, then she makes the call</p>
-      </div>
-      <div class="call-form">
-        <div><label class="cf-label">Phone Number</label><input class="cf-input" id="call-to-number" type="tel" inputmode="tel" placeholder="+2348012345678"></div>
-        <div><label class="cf-label">Their Name</label><input class="cf-input" id="call-to-name" type="text" placeholder="Contact name"></div>
-        <div><label class="cf-label">Brief Ariana — what's this call about?</label><textarea class="cf-ta" id="call-briefing" rows="5" placeholder="Tell her exactly what to say, ask, or negotiate. Be specific."></textarea></div>
-        <div id="call-reply-bubble" style="display:none" class="call-reply-bubble"></div>
-        <button class="call-brief-btn" id="call-brief-btn" onclick="callBrief()">Brief Ariana</button>
-        <button class="call-dial-btn" id="call-dial-btn" disabled onclick="callStart()">📞 Call Now</button>
-      </div>
-    </div>
-  </div>
 </div><!-- #app -->
 
 <div id="drop-overlay">Drop to upload</div>
@@ -4831,187 +4763,13 @@ async function doRequestContacts(){
   }
 }
 
-<!-- LIVE CALL OVERLAY (fixed, on top of everything) -->
-<div id="call-live-overlay">
-  <div class="clo-header">
-    <button class="clo-back" onclick="callHideOverlay()" title="Back — call stays live">✕</button>
-    <div class="clo-who">
-      <div class="clo-name" id="clo-name">Calling…</div>
-      <div class="clo-status" id="clo-status">Connecting</div>
-    </div>
-    <div class="clo-timer" id="clo-timer">0:00</div>
-  </div>
-  <div class="clo-transcript" id="clo-transcript">
-    <div class="ctb sys">Waiting for connection…</div>
-  </div>
-  <div class="clo-end-row">
-    <button class="clo-end-btn" onclick="callEnd()">
-      <svg viewBox="0 0 24 24" fill="white" width="28" height="28"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.27-.27.67-.35 1.02-.22 1.1.4 2.28.62 3.58.62.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C6.48 21 2 16.52 2 11c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.3.22 2.48.62 3.58.13.35.05.75-.22 1.02L6.6 10.8z"/></svg>
-    </button>
-  </div>
-  <div class="clo-instruct">
-    <input id="clo-instruct-input" placeholder="Tell Ariana something mid-call…" onkeydown="if(event.key==='Enter'){event.preventDefault();callInstruct()}">
-    <button onclick="callInstruct()"><svg viewBox="0 0 24 24" fill="white" width="18" height="18"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
-  </div>
-</div>
-
-<!-- Mini PiP badge when call is live but overlay is hidden -->
-<div id="call-live-pip" onclick="callShowOverlay()">
-  <span style="width:8px;height:8px;border-radius:50%;background:#fff;display:inline-block;animation:pulse-dot 1.5s infinite"></span>
-  Call live — tap to return
-</div>
-
-<script>
-// ══════════════════════════════════════════════════════
-// AI CALL  (works with Vapi backend added to index.js)
-// ══════════════════════════════════════════════════════
-let _cCallId=null, _cTimer=null, _cSecs=0;
-
-function callBrief(){
-  const num=(document.getElementById('call-to-number').value||'').trim();
-  const name=(document.getElementById('call-to-name').value||'').trim();
-  const brief=(document.getElementById('call-briefing').value||'').trim();
-  if(!num){showToast('Enter a phone number');return}
-  if(!brief){showToast('Write the briefing first');return}
-  const btn=document.getElementById('call-brief-btn');
-  btn.textContent='Briefing…';btn.disabled=true;
-  fetch('/api/call/brief',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({to:num,name:name||num,briefing:brief})})
-  .then(r=>r.json()).then(d=>{
-    if(!d.ok)throw new Error(d.error||'Failed');
-    _cCallId=d.callId;
-    const el=document.getElementById('call-reply-bubble');
-    el.textContent=d.summary||'Got it. Ready to call.';el.style.display='block';
-    document.getElementById('call-dial-btn').disabled=false;
-    btn.textContent='✓ Briefed';btn.disabled=false;
-  }).catch(e=>{showToast('Brief failed: '+e.message);btn.textContent='Brief Ariana';btn.disabled=false});
-}
-
-function callStart(){
-  if(!_cCallId){showToast('Brief Ariana first');return}
-  const btn=document.getElementById('call-dial-btn');
-  const name=(document.getElementById('call-to-name').value||document.getElementById('call-to-number').value||'').trim();
-  btn.textContent='Dialling…';btn.disabled=true;
-  fetch('/api/call/start',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({callId:_cCallId})})
-  .then(r=>r.json()).then(d=>{
-    if(!d.ok)throw new Error(d.error||'Failed');
-    callShowOverlay(name);
-    btn.textContent='📞 Call Now';btn.disabled=false;
-    const badge=document.getElementById('call-live-badge');if(badge)badge.style.display='inline-block';
-  }).catch(e=>{showToast('Call failed: '+e.message);btn.textContent='📞 Call Now';btn.disabled=false});
-}
-
-function callShowOverlay(name){
-  document.getElementById('clo-name').textContent=name||'Call';
-  document.getElementById('clo-status').textContent='Ringing…';
-  document.getElementById('clo-transcript').innerHTML='<div class="ctb sys">Connecting…</div>';
-  document.getElementById('call-live-overlay').classList.add('show');
-  document.getElementById('call-live-pip').style.display='none';
-  _cSecs=0;clearInterval(_cTimer);
-  _cTimer=setInterval(()=>{_cSecs++;const m=Math.floor(_cSecs/60),s=_cSecs%60;document.getElementById('clo-timer').textContent=m+':'+(s<10?'0':'')+s},1000);
-}
-
-function callHideOverlay(){
-  document.getElementById('call-live-overlay').classList.remove('show');
-  document.getElementById('call-live-pip').style.display='flex';
-}
-
-function callEnd(){
-  if(_cCallId)fetch('/api/call/end',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({callId:_cCallId})}).catch(()=>{});
-  clearInterval(_cTimer);
-  document.getElementById('call-live-overlay').classList.remove('show');
-  document.getElementById('call-live-pip').style.display='none';
-  const badge=document.getElementById('call-live-badge');if(badge)badge.style.display='none';
-  document.getElementById('call-dial-btn').disabled=true;
-  document.getElementById('call-reply-bubble').style.display='none';
-  _cCallId=null;_cSecs=0;
-  showToast('Call ended');
-}
-
-function callInstruct(){
-  if(!_cCallId){showToast('No active call');return}
-  const inp=document.getElementById('clo-instruct-input');
-  const inst=(inp.value||'').trim();if(!inst)return;inp.value='';
-  fetch('/api/call/instruct',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({callId:_cCallId,instruction:inst})})
-  .then(r=>r.json()).then(d=>{if(d.ok)_cBubble('sys','You: "'+inst+'"');else showToast(d.error||'Failed')})
-  .catch(e=>showToast(e.message));
-}
-
-function _cBubble(role,text){
-  const el=document.createElement('div');el.className='ctb '+role;el.textContent=text;
-  const box=document.getElementById('clo-transcript');if(box){box.appendChild(el);box.scrollTop=box.scrollHeight}
-}
-
-// Socket events — runs after socket is initialized
-setTimeout(()=>{
-  if(typeof socket==='undefined')return;
-  socket.on('call_started',d=>{if(d.callId!==_cCallId)return;document.getElementById('clo-status').textContent='Connected';_cBubble('sys','Connected to '+(d.name||d.to||'them'))});
-  socket.on('call_transcript',d=>{if(d.callId!==_cCallId)return;const e=d.entry||{};if(e.text)_cBubble(e.role==='assistant'?'ariana':'them',e.text)});
-  socket.on('call_status',d=>{if(d.callId!==_cCallId)return;document.getElementById('clo-status').textContent=d.status||'Active'});
-  socket.on('call_ended',d=>{if(d.callId!==_cCallId)return;clearInterval(_cTimer);_cBubble('sys','Call ended'+(d.summary?' — '+d.summary:''));document.getElementById('clo-status').textContent='Ended';const b=document.getElementById('call-live-badge');if(b)b.style.display='none';showNotif('Call ended',d.summary||'Done','📞')});
-  socket.on('call_instruction',d=>{if(d.callId!==_cCallId)return;_cBubble('sys','Sent: "'+d.instruction+'"')});
-},1500);
-
-// ══════════════════════════════════════════════════════
-// NOTIFICATION FIX — void offsetHeight reflow (reliable transition reset)
-// ══════════════════════════════════════════════════════
-(function(){
-  let _nTimer=null,_nBusy=false,_nQ=[];
-  function _drain(){
-    if(_nBusy||!_nQ.length)return;
-    _nBusy=true;
-    const {title,body,icon,dur}=_nQ.shift();
-    const inner=document.getElementById('notif-inner');if(!inner){_nBusy=false;return}
-    const iconEl=document.getElementById('notif-icon');
-    const titleEl=document.getElementById('notif-title');
-    const bodyEl=document.getElementById('notif-body');
-    const timeEl=document.getElementById('notif-time');
-    if(!titleEl||!bodyEl||!timeEl){_nBusy=false;return}
-    if(typeof icon==='string'&&icon.startsWith('<')){if(iconEl)iconEl.parentElement.innerHTML='<div id="notif-icon-wrap" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">'+icon+'</div>'}
-    else if(iconEl)iconEl.textContent=icon||'✦';
-    titleEl.textContent=String(title||'');
-    bodyEl.textContent=String(body||'');
-    timeEl.textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    inner.classList.remove('show');
-    void inner.offsetHeight; // force reflow — reliably resets transition
-    inner.classList.add('show');
-    const done=()=>{inner.classList.remove('show');setTimeout(()=>{_nBusy=false;_drain()},420)};
-    inner.onclick=()=>{clearTimeout(_nTimer);done()};
-    clearTimeout(_nTimer);_nTimer=setTimeout(done,dur||3500);
-  }
-  window.showNotif=function(title,body,icon,dur){_nQ=[{title,body,icon,dur}];if(!_nBusy)_drain()};
-  window.showToast=function(msg){showNotif('Ariana',msg,'✦')};
-})();
-
-// ══════════════════════════════════════════════════════
-// CONTACTS FIX — hide banner on iOS (unsupported)
-// ══════════════════════════════════════════════════════
-(function(){
-  const supported='contacts'in navigator&&'ContactsManager'in window;
-  const origShow=window.showContactsBanner;
-  window.showContactsBanner=function(){if(!supported)return;if(origShow)origShow()};
-  window.doRequestContacts=async function(){
-    window.dismissContactsBanner&&window.dismissContactsBanner();
-    localStorage.setItem('_contacts_asked','1');
-    if(!supported){showToast('Not available on iOS — long-press a chat to set a name manually');return}
-    try{
-      const contacts=await navigator.contacts.select(['name','tel'],{multiple:true});
-      if(contacts&&contacts.length){
-        contacts.forEach(ct=>{const tel=(ct.tel||[]).find(t=>t);const name=(ct.name||[]).find(n=>n);if(tel&&name){const c=tel.replace(/\D/g,'');if(c&&convos[c]&&!convos[c].name)convos[c].name=name}});
-        if(typeof renderList==='function')renderList();
-        showToast('Loaded '+contacts.length+' contact'+(contacts.length>1?'s':''));
-      }
-    }catch(e){showToast('Contacts access denied')}
-  };
-})();
-
 document.addEventListener("touchstart",e=>{_tx=e.touches[0].clientX;_ty=e.touches[0].clientY},{passive:true});
 document.addEventListener("touchend",e=>{const dx=e.changedTouches[0].clientX-_tx;const dy=Math.abs(e.changedTouches[0].clientY-_ty);if(_tx<35&&dx>65&&dy<80&&window.innerWidth<=700){if(document.getElementById("sidebar").classList.contains("open"))closeSidebar();else if(currentPhone)closeChat()}},{passive:true});
 
-window.addEventListener('popstate',e=>{
-  if(currentPhone){closeChat();}
-  else if(currentView!=='home'){navTo({dataset:{view:'home'}});}
+// iOS swipe-to-back support
+window.addEventListener('popstate', e => {
+  if(currentPhone){ closeChat(); }
+  else if(currentView !== 'home'){ navTo({dataset:{view:'home'}}); }
 });
 
 document.addEventListener("DOMContentLoaded",()=>{
