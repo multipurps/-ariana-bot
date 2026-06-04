@@ -1,5 +1,5 @@
-const CACHE = "ariana-v1";
-const ASSETS = ["/", "/manifest.json", "/icons/icon-192.svg", "/icons/icon-512.svg"];
+const CACHE = "ariana-v2";
+const ASSETS = ["/manifest.json", "/icons/icon-192.svg", "/icons/icon-512.svg"];
 
 // ── INSTALL ───────────────────────────────────────────────────
 self.addEventListener("install", e => {
@@ -15,12 +15,32 @@ self.addEventListener("activate", e => {
   self.clients.claim();
 });
 
-// ── FETCH (cache-first for assets) ───────────────────────────
+// ── FETCH ─────────────────────────────────────────────────────
+// HTML (index.html / "/") → network-first so updates always reach the browser
+// Everything else         → cache-first for speed
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
-  e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request))
-  );
+
+  const url = new URL(e.request.url);
+  const isHTML = url.pathname === "/" || url.pathname.endsWith(".html");
+
+  if (isHTML) {
+    // Network-first: try server, fall back to cache only if offline
+    e.respondWith(
+      fetch(e.request)
+        .then(res => {
+          const copy = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, copy));
+          return res;
+        })
+        .catch(() => caches.match(e.request))
+    );
+  } else {
+    // Cache-first for static assets (icons, manifest)
+    e.respondWith(
+      caches.match(e.request).then(cached => cached || fetch(e.request))
+    );
+  }
 });
 
 // ── PUSH NOTIFICATION ─────────────────────────────────────────
