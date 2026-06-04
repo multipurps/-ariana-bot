@@ -25,8 +25,13 @@
   --danger:#ef4444;--accent:#a78bfa;--amber:#f59e0b;
   --blur:blur(32px) saturate(180%);
   --sidebar-w:260px;
+  /* per-platform sent bubble colors */
+  --sent-wa:#005c4b;--sent-wa-b:rgba(37,211,102,0.3);
+  --sent-tg:#2b5278;--sent-tg-b:rgba(42,171,238,0.35);
+  --sent-sg:#1d3461;--sent-sg-b:rgba(58,118,240,0.35);
+  --sent-sms:#1a4d1e;--sent-sms-b:rgba(52,199,89,0.3);
 }
-html,body{height:100%;height:100dvh;background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;overflow:hidden;overscroll-behavior:none}
+html,body{height:100%;background:#010818;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;overflow:hidden;overscroll-behavior:none}
 button{cursor:pointer;border:none;background:none;color:inherit;font-family:inherit}
 input,textarea{font-family:inherit;color:inherit}
 
@@ -104,7 +109,7 @@ input,textarea{font-family:inherit;color:inherit}
 .sb-footer-item svg{width:16px;height:16px;flex-shrink:0}
 
 /* ── MAIN LAYOUT ── */
-#app{height:100vh;height:100dvh;display:flex;flex-direction:column;transition:none}
+#app{position:fixed;inset:0;display:flex;flex-direction:column;transition:none}
 
 /* ── VIEWS ── */
 #views{flex:1;overflow:hidden;display:flex;flex-direction:column}
@@ -201,7 +206,7 @@ input,textarea{font-family:inherit;color:inherit}
 .msg-sender.you{color:rgba(83,189,235,.8)}
 .date-div{align-self:center;background:rgba(255,255,255,.06);border:1px solid var(--b1);color:var(--t2);font-size:11px;padding:4px 12px;border-radius:10px;margin:8px 0}
 /* input */
-#input-area{display:flex;align-items:flex-end;gap:8px;padding:10px 14px;padding-bottom:calc(10px + env(safe-area-inset-bottom));background:rgba(0,0,0,0.88);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-top:1px solid var(--b1);min-height:60px;z-index:2;position:relative;flex-shrink:0}
+#input-area{display:flex;align-items:flex-end;gap:8px;padding:10px 14px;background:rgba(0,0,0,0.88);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-top:1px solid var(--b1);min-height:60px;z-index:2;position:relative;flex-shrink:0}
 #takeover-notice{display:none;position:absolute;top:-34px;left:0;right:0;background:rgba(239,68,68,.9);color:#fff;font-size:12px;font-weight:700;padding:8px 16px;text-align:center;z-index:5}
 #takeover-notice.show{display:block}
 .inp-btn{width:38px;height:38px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06);border:1px solid var(--b1);color:var(--t2);transition:background .15s}
@@ -260,7 +265,7 @@ input,textarea{font-family:inherit;color:inherit}
    BRAIN VIEW
 ═════════════════════════════════ */
 #view-brain{flex-direction:row}
-#brain-file-pane{width:220px;min-width:220px;background:rgba(8,8,12,.98);border-right:1px solid var(--b1);display:flex;flex-direction:column;overflow-y:auto;padding-top:calc(58px + env(safe-area-inset-top))}
+#brain-file-pane{width:220px;min-width:220px;background:rgba(8,8,12,.98);border-right:1px solid var(--b1);display:flex;flex-direction:column;overflow-y:auto;padding-top:calc(52px + env(safe-area-inset-top))}
 #brain-file-pane::-webkit-scrollbar{width:0}
 .bfp-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--t3);padding:12px 16px 6px}
 .bfp-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-left:2px solid transparent;transition:background .12s,border-color .12s}
@@ -275,7 +280,7 @@ input,textarea{font-family:inherit;color:inherit}
 .bfp-item.active .bfp-name{color:#fff}
 .bfp-dot{width:5px;height:5px;border-radius:50%;background:var(--amber);flex-shrink:0;display:none}
 .bfp-item.dirty .bfp-dot{display:block}
-#brain-edit-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;padding-top:calc(58px + env(safe-area-inset-top))}
+#brain-edit-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;padding-top:calc(52px + env(safe-area-inset-top))}
 #brain-empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--t2)}
 #brain-empty-state svg{width:48px;height:48px;color:rgba(255,255,255,.1)}
 #brain-empty-state p{font-size:14px}
@@ -298,7 +303,7 @@ input,textarea{font-family:inherit;color:inherit}
    MEDIA VIEW
 ═════════════════════════════════ */
 #view-media{flex-direction:column}
-#media-topbar{display:flex;align-items:center;gap:10px;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top) + 58px);border-bottom:1px solid var(--b1);flex-shrink:0;background:rgba(0,0,0,.6)}
+#media-topbar{display:flex;align-items:center;gap:10px;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top) + 52px);border-bottom:1px solid var(--b1);flex-shrink:0;background:rgba(0,0,0,.6)}
 #media-upload-btn{display:flex;align-items:center;gap:7px;padding:9px 16px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);border-radius:10px;color:var(--amber);font-size:13px;font-weight:600;cursor:pointer;transition:background .15s;flex-shrink:0}
 #media-upload-btn:hover{background:rgba(245,158,11,.22)}
 #media-upload-btn svg{width:15px;height:15px}
@@ -338,7 +343,7 @@ input,textarea{font-family:inherit;color:inherit}
    GENERATE VIEW
 ═════════════════════════════════ */
 #view-generate{flex-direction:column}
-#gen-topbar{display:flex;align-items:center;gap:12px;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top) + 58px);border-bottom:1px solid var(--b1);flex-shrink:0;background:rgba(0,0,0,.6)}
+#gen-topbar{display:flex;align-items:center;gap:12px;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top) + 52px);border-bottom:1px solid var(--b1);flex-shrink:0;background:rgba(0,0,0,.6)}
 #gen-topbar-title{font-size:16px;font-weight:700;flex:1}
 #gen-type-toggle{display:flex;background:var(--s2);border-radius:10px;padding:3px;gap:2px;border:1px solid var(--b1);flex-shrink:0}
 .gen-type-btn{padding:6px 16px;border-radius:8px;font-size:13px;font-weight:600;color:var(--t2);transition:all .18s;cursor:pointer;border:none}
@@ -563,7 +568,7 @@ input,textarea{font-family:inherit;color:inherit}
   position:absolute;bottom:0;left:0;right:0;z-index:60;
   display:none;
   flex-direction:column;align-items:center;
-  padding-bottom:calc(36px + env(safe-area-inset-bottom));
+  padding-bottom:36px;
   pointer-events:none;
 }
 #talk-orb-btm.show{ display:flex; }
@@ -608,8 +613,8 @@ input,textarea{font-family:inherit;color:inherit}
 #talk-chat-log{
   flex:1;overflow-y:auto;overflow-x:hidden;
   display:flex;flex-direction:column;gap:4px;
-  /* padding-bottom must clear the absolutely-positioned #talk-bottom bar + safe area */
-  padding:14px 14px calc(160px + env(safe-area-inset-bottom));
+  /* padding-bottom must clear the absolutely-positioned #talk-bottom bar */
+  padding:14px 14px 160px;
   scrollbar-width:none;
 }
 #talk-chat-log::-webkit-scrollbar{display:none}
@@ -714,7 +719,7 @@ input,textarea{font-family:inherit;color:inherit}
 #talk-bottom{
   position:absolute;bottom:0;left:0;right:0;z-index:30;
   padding:10px 14px;
-  padding-bottom:calc(12px + env(safe-area-inset-bottom));
+  padding-bottom:12px;
   background:linear-gradient(to top,rgba(0,0,0,.9) 60%,transparent 100%);
 }
 /* standard bar */
@@ -887,7 +892,7 @@ input,textarea{font-family:inherit;color:inherit}
    EXTRA FEATURES VIEW (Thing 7)
 ═══════════════════════════════════ */
 #view-extras{flex-direction:column}
-#extras-topbar{display:flex;align-items:center;gap:12px;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top));border-bottom:1px solid var(--b1);flex-shrink:0;background:rgba(8,8,12,0.98)}
+#extras-topbar{display:flex;align-items:center;gap:12px;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top) + 40px);border-bottom:1px solid var(--b1);flex-shrink:0;background:rgba(8,8,12,0.98)}
 #extras-topbar-spacer{width:40px;flex-shrink:0}
 #extras-tabs-wrap{display:flex;gap:3px;overflow-x:auto;flex:1}
 #extras-tabs-wrap::-webkit-scrollbar{display:none}
@@ -987,9 +992,313 @@ input,textarea{font-family:inherit;color:inherit}
 .wp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
 .wp-thumb{aspect-ratio:9/16;border-radius:10px;cursor:pointer;border:2px solid transparent;display:flex;align-items:center;justify-content:center;font-size:12px;color:rgba(255,255,255,.4);transition:border-color .2s}
 .wp-thumb.active{border-color:var(--wa)}
-/* toast */
-#toast{position:fixed;bottom:86px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(20,20,26,.96);border:1px solid var(--b2);color:#fff;border-radius:10px;padding:10px 18px;font-size:13px;opacity:0;transition:all .25s;z-index:700;white-space:nowrap;pointer-events:none;max-width:88vw;overflow:hidden;text-overflow:ellipsis}
-#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* ── iOS-style notification banner ── */
+#notif-banner{
+  position:fixed;top:0;left:0;right:0;z-index:900;
+  pointer-events:none;
+  /* NO padding, NO background, NO height — invisible when idle */
+}
+#notif-inner{
+  margin:calc(env(safe-area-inset-top) + 8px) 12px 0;
+  background:rgba(30,30,36,0.97);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:16px;padding:11px 14px;
+  display:flex;align-items:center;gap:11px;
+  transform:translateY(calc(-300% - env(safe-area-inset-top)));
+  transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);
+  backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);
+  box-shadow:0 10px 40px rgba(0,0,0,0.55);
+  pointer-events:all;
+}
+#notif-inner.show{transform:translateY(0)}
+#notif-icon-wrap{width:36px;height:36px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.08)}
+#notif-title{font-size:13px;font-weight:600;color:#fff;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#notif-body{font-size:13px;color:rgba(255,255,255,0.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#notif-time{font-size:11px;color:rgba(255,255,255,0.3);flex-shrink:0;align-self:flex-start;margin-top:1px}
+
+/* ── PROFILE BUTTON (top-right) ── */
+#profile-btn{
+  position:fixed;top:calc(14px + env(safe-area-inset-top));right:14px;z-index:500;
+  width:40px;height:40px;border-radius:50%;
+  background:rgba(18,18,22,0.92);
+  border:1.5px solid rgba(255,255,255,0.15);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 24px rgba(0,0,0,0.5);
+  transition:transform .1s,border-color .2s;
+  cursor:pointer;overflow:hidden;
+}
+#profile-btn:active{transform:scale(.91)}
+#profile-btn:hover{border-color:rgba(255,255,255,0.3)}
+#profile-btn img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+#profile-btn svg{width:22px;height:22px}
+
+/* ── NAV VISIBILITY — SINGLE SOURCE OF TRUTH ──
+   Bottom nav: HOME + CHATS list (not in-chat)
+   Profile btn: HOME only
+   Sidebar toggle: HOME + CHATS (not in-chat)
+   Global back ←: everywhere else                ── */
+#bottom-nav  { display:flex }
+#profile-btn { display:flex }
+#sidebar-toggle { display:flex }
+#global-back { display:none }
+
+/* hide bottom-nav in tool views and inside a chat */
+body.view-brain    #bottom-nav,
+body.view-media    #bottom-nav,
+body.view-generate #bottom-nav,
+body.view-extras   #bottom-nav,
+body.view-talk     #bottom-nav,
+body.view-profile  #bottom-nav,
+body.in-chat       #bottom-nav { display:none !important; }
+
+/* hide profile-btn everywhere except home */
+body.view-chats    #profile-btn,
+body.view-brain    #profile-btn,
+body.view-media    #profile-btn,
+body.view-generate #profile-btn,
+body.view-extras   #profile-btn,
+body.view-talk     #profile-btn,
+body.view-profile  #profile-btn,
+body.in-chat       #profile-btn { display:none !important; }
+
+/* hide sidebar toggle in tool/inner views and in-chat */
+body.view-brain    #sidebar-toggle,
+body.view-media    #sidebar-toggle,
+body.view-generate #sidebar-toggle,
+body.view-extras   #sidebar-toggle,
+body.view-talk     #sidebar-toggle,
+body.view-profile  #sidebar-toggle,
+body.in-chat       #sidebar-toggle { display:none !important; }
+
+/* show global back in all non-home/non-chats views + when in-chat */
+body.view-brain    #global-back,
+body.view-media    #global-back,
+body.view-generate #global-back,
+body.view-extras   #global-back,
+body.view-talk     #global-back,
+body.view-profile  #global-back,
+body.in-chat       #global-back { display:flex !important; }
+
+/* ── GLOBAL BACK BUTTON (← arrow only, no text) ── */
+#global-back{
+  position:fixed;top:calc(10px + env(safe-area-inset-top));left:12px;z-index:510;
+  width:36px;height:36px;border-radius:50%;
+  align-items:center;justify-content:center;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+#global-back svg{display:block}
+#global-back:active{opacity:.5}
+
+/* ── PROFILE VIEW — Ss5 style (clean settings page) ── */
+#view-profile{
+  flex-direction:column;overflow-y:auto;
+  background:#000;
+}
+#view-profile::-webkit-scrollbar{display:none}
+
+/* Profile user card */
+.pv-user-section{
+  padding:calc(env(safe-area-inset-top) + 58px) 20px 24px;
+  display:flex;align-items:center;gap:16px;
+}
+.pv-avatar{
+  width:68px;height:68px;border-radius:50%;
+  overflow:hidden;flex-shrink:0;
+  background:rgba(255,255,255,.08);
+}
+.pv-avatar img{width:100%;height:100%;object-fit:cover}
+.pv-avatar-placeholder{
+  width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+}
+.pv-avatar-placeholder svg{width:34px;height:34px;color:rgba(255,255,255,.3)}
+.pv-user-info{flex:1;min-width:0}
+.pv-user-name{font-size:20px;font-weight:700;letter-spacing:-.3px;margin-bottom:2px}
+.pv-user-sub{font-size:13px;color:rgba(255,255,255,.4);margin-bottom:4px}
+.pv-user-id{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11px;color:rgba(255,255,255,.28);
+}
+
+/* Profile sections */
+.pv-section-wrap{padding:0 16px 6px}
+.pv-section-label{
+  font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.9px;
+  color:rgba(255,255,255,.3);
+  padding:22px 4px 8px;
+}
+.pv-list{
+  background:rgba(255,255,255,.06);
+  border-radius:14px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.08);
+}
+.pv-row{
+  display:flex;align-items:center;gap:14px;
+  padding:13px 16px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+  transition:background .12s;
+}
+.pv-row:last-child{border-bottom:none}
+.pv-row:active{background:rgba(255,255,255,.08)}
+/* icon — same size+color for ALL items (no colored variants) */
+.pv-icon{
+  width:32px;height:32px;border-radius:8px;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.1);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.pv-icon svg{width:16px;height:16px;color:rgba(255,255,255,.55);display:block}
+.pv-row-text{flex:1;min-width:0}
+.pv-row-label{font-size:15px;color:rgba(255,255,255,.88);font-weight:400}
+.pv-row-sub{font-size:12px;color:rgba(255,255,255,.32);margin-top:1px}
+.pv-arrow{flex-shrink:0;color:rgba(255,255,255,.2)}
+.pv-arrow svg{width:14px;height:14px;display:block}
+.pv-bottom-space{height:34px}
+
+/* ── PLATFORM-SPECIFIC BUBBLE COLORS ── */
+.plat-wa #messages .msg-wrap.out .bubble{background:var(--sent-wa);border-color:var(--sent-wa-b)}
+.plat-tg #messages .msg-wrap.out .bubble{background:var(--sent-tg);border-color:var(--sent-tg-b)}
+.plat-sg #messages .msg-wrap.out .bubble{background:var(--sent-sg);border-color:var(--sent-sg-b)}
+.plat-sms #messages .msg-wrap.out .bubble{background:var(--sent-sms);border-color:var(--sent-sms-b)}
+.plat-wa #messages .msg-wrap.in .bubble{background:rgba(18,28,18,0.92);border-color:rgba(37,211,102,.12)}
+.plat-tg #messages .msg-wrap.in .bubble{background:rgba(22,32,44,0.92);border-color:rgba(42,171,238,.12)}
+.plat-sg #messages .msg-wrap.in .bubble{background:rgba(14,24,44,0.92);border-color:rgba(58,118,240,.12)}
+
+/* ── PLATFORM DELIVERY TICKS (double marks) ── */
+.btick{display:inline-flex;align-items:center;vertical-align:middle;margin-left:3px;flex-shrink:0}
+.btick svg{display:block;overflow:visible}
+.tick-wa svg{width:20px;height:12px;color:rgba(134,171,159,1)}
+.tick-tg svg{width:20px;height:12px;color:rgba(125,185,234,.9)}
+.tick-sg svg{width:15px;height:15px;color:rgba(107,147,220,.95)}
+.tick-sms svg{width:20px;height:12px;color:rgba(255,255,255,.45)}
+
+/* ── WALLPAPER PER-PLATFORM BUTTON IN CHAT HEADER ── */
+.hdr-wp-btn{
+  width:30px;height:30px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:rgba(255,255,255,.35);
+  transition:background .15s,color .15s;
+}
+.hdr-wp-btn:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7)}
+.hdr-wp-btn svg{width:16px;height:16px}
+
+/* ── PLATFORM WALLPAPER MODAL ── */
+#plat-wp-modal .modal{max-width:340px}
+.wp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.wp-swatch{
+  border-radius:10px;aspect-ratio:1;cursor:pointer;
+  border:2px solid transparent;transition:border-color .15s,transform .1s;
+  position:relative;overflow:hidden;
+}
+.wp-swatch:hover{transform:scale(.97)}
+.wp-swatch.sel{border-color:var(--accent) !important}
+.wp-swatch-lbl{
+  position:absolute;bottom:4px;left:0;right:0;
+  text-align:center;font-size:9px;font-weight:700;
+  color:rgba(255,255,255,.8);text-shadow:0 1px 6px rgba(0,0,0,.9);
+}
+/* Upload wallpaper button */
+.wp-upload-btn{
+  width:100%;margin-top:10px;padding:10px;border-radius:10px;
+  background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.2);
+  color:rgba(255,255,255,.5);font-size:13px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  cursor:pointer;transition:background .15s;
+}
+.wp-upload-btn:hover{background:rgba(255,255,255,.09);color:#fff}
+.wp-upload-btn svg{width:16px;height:16px}
+
+/* ── HOME SCREEN (default when app opens) ── */
+#view-home{
+  padding-bottom:calc(90px + env(safe-area-inset-bottom));
+  flex-direction:column;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse 120% 80% at 50% 110%,rgba(15,40,100,0.85) 0%,transparent 65%),
+    linear-gradient(180deg,#000 0%,#010818 100%);
+  gap:0;position:relative;overflow:hidden;
+}
+#home-logo{
+  width:80px;height:80px;border-radius:22px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 0 60px 20px rgba(147,51,234,0.2);
+  animation:float 4s ease-in-out infinite;
+  margin-bottom:18px;
+}
+#home-logo img{width:100%;height:100%;object-fit:cover}
+#home-title{font-size:28px;font-weight:700;letter-spacing:-.5px;margin-bottom:6px}
+#home-sub{font-size:14px;color:rgba(255,255,255,.35);margin-bottom:40px;text-align:center;max-width:220px;line-height:1.5}
+.home-plat-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;
+  width:100%;max-width:300px;padding:0 24px;
+}
+.home-plat-card{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  padding:20px 12px;border-radius:18px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.04);
+  cursor:pointer;
+  transition:background .2s,border-color .2s,transform .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.home-plat-card:hover{background:rgba(255,255,255,.08);transform:translateY(-2px)}
+.home-plat-card:active{transform:scale(.95)}
+.home-plat-card svg{width:32px;height:32px}
+.home-plat-name{font-size:12px;font-weight:600;color:rgba(255,255,255,.6)}
+.home-plat-card.wa-card{border-color:rgba(37,211,102,.15)}
+.home-plat-card.wa-card:hover{background:rgba(37,211,102,.07);border-color:rgba(37,211,102,.3)}
+.home-plat-card.tg-card{border-color:rgba(42,171,238,.15)}
+.home-plat-card.tg-card:hover{background:rgba(42,171,238,.07);border-color:rgba(42,171,238,.3)}
+.home-plat-card.sg-card{border-color:rgba(58,118,240,.15)}
+.home-plat-card.sg-card:hover{background:rgba(58,118,240,.07);border-color:rgba(58,118,240,.3)}
+.home-plat-card.sms-card{border-color:rgba(52,199,89,.15)}
+.home-plat-card.sms-card:hover{background:rgba(52,199,89,.07);border-color:rgba(52,199,89,.3)}
+#home-talk-btn{
+  margin-top:28px;padding:14px 36px;
+  border-radius:30px;
+  background:linear-gradient(135deg,rgba(167,139,250,.25),rgba(37,211,102,.15));
+  border:1px solid rgba(167,139,250,.3);
+  color:#fff;font-size:15px;font-weight:600;cursor:pointer;
+  transition:background .2s,transform .1s;
+  display:flex;align-items:center;gap:8px;
+}
+#home-talk-btn:active{transform:scale(.95)}
+#home-talk-btn svg{width:18px;height:18px;color:var(--accent)}
+
+/* ── CONTACTS PERMISSION BANNER ── */
+#contacts-banner{
+  position:fixed;bottom:60px;
+  left:14px;right:14px;z-index:200;
+  background:rgba(16,16,22,0.95);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:16px;padding:14px 16px;
+  display:flex;align-items:center;gap:12px;
+  box-shadow:0 8px 32px rgba(0,0,0,.6);
+  transform:translateY(20px);opacity:0;
+  transition:transform .35s cubic-bezier(.4,0,.2,1),opacity .35s;
+  pointer-events:none;
+}
+#contacts-banner.show{transform:translateY(0);opacity:1;pointer-events:all}
+.cb-icon{width:38px;height:38px;border-radius:10px;background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cb-icon svg{width:18px;height:18px;color:var(--wa)}
+.cb-text{flex:1}
+.cb-title{font-size:13px;font-weight:600;margin-bottom:2px}
+.cb-sub{font-size:11px;color:rgba(255,255,255,.4)}
+.cb-actions{display:flex;gap:6px;flex-shrink:0}
+.cb-btn{padding:7px 13px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid}
+.cb-btn.allow{background:rgba(37,211,102,.15);color:var(--wa);border-color:rgba(37,211,102,.3)}
+.cb-btn.deny{background:transparent;color:rgba(255,255,255,.3);border-color:rgba(255,255,255,.1)}
+
+#talk-media-preview{display:none;align-items:center;gap:10px;padding:8px 14px;background:rgba(0,0,0,0.96);border-top:1px solid rgba(255,255,255,0.1)}
+#talk-media-preview.show{display:flex}
+#talk-preview-thumb{width:52px;height:52px;border-radius:9px;overflow:hidden;flex-shrink:0;background:rgba(255,255,255,.08)}
+#talk-preview-thumb img,#talk-preview-thumb video{width:100%;height:100%;object-fit:cover}
+#talk-preview-label{flex:1;font-size:12px;color:rgba(255,255,255,.45)}
+#talk-preview-cancel{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.7);font-size:16px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+
+/* ── settings modal layout ── */
+.settings-field-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--t3);margin-bottom:5px;margin-top:12px;display:block}
 
 /* ── RESPONSIVE ── */
 @media(max-width:700px){
@@ -1011,6 +1320,73 @@ input,textarea{font-family:inherit;color:inherit}
 
 /* force-hide fallback orb layers when canvas is rendering */
 #talk-orb.canvas-active .ol { display:none !important; }
+
+/* ── quick-action chips on idle screen ── */
+.talk-chip{
+  background:rgba(255,255,255,0.07);
+  border:1px solid rgba(255,255,255,0.13);
+  color:rgba(255,255,255,0.75);
+  border-radius:20px;padding:7px 14px;
+  font-size:13px;cursor:pointer;
+  transition:background .18s,border-color .18s;
+  white-space:nowrap;
+}
+.talk-chip:hover,.talk-chip:active{background:rgba(255,255,255,0.14);border-color:rgba(255,255,255,0.25)}
+
+/* muted state for orb control buttons */
+.orb-ctrl-btn.muted{background:rgba(239,68,68,.18)!important;border-color:rgba(239,68,68,.35)!important}
+.orb-ctrl-btn.muted svg{stroke:#ef4444}
+
+/* ── FLOATING BOTTOM NAV — liquid glass ── */
+#bottom-nav{
+  position:fixed;
+  bottom: 20px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:300;
+  display:flex;
+  align-items:center;
+  gap:2px;
+  padding:6px 8px;
+  background:rgba(16,16,22,0.55);
+  backdrop-filter:blur(56px) saturate(240%) brightness(1.1);
+  -webkit-backdrop-filter:blur(56px) saturate(240%) brightness(1.1);
+  border-radius:40px;
+  border:1px solid rgba(255,255,255,0.13);
+  box-shadow:
+    0 12px 48px rgba(0,0,0,0.6),
+    0 2px 8px rgba(0,0,0,0.35),
+    inset 0 1.5px 0 rgba(255,255,255,0.14),
+    inset 0 -1px 0 rgba(0,0,0,0.25);
+}
+.bn-btn{
+  width:46px;height:46px;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:none;border:none;cursor:pointer;
+  position:relative;
+  transition:background .18s,transform .12s;
+  -webkit-tap-highlight-color:transparent;
+}
+.bn-btn svg{
+  width:24px;height:24px;display:block;
+  transition:filter .2s,transform .2s;
+  filter:saturate(0.5) brightness(0.7) grayscale(0.2);
+}
+.bn-btn.active{background:rgba(255,255,255,0.09)}
+.bn-btn.active svg{filter:saturate(1) brightness(1);transform:scale(1.08)}
+.bn-btn:active{transform:scale(0.86)}
+.bn-btn::after{
+  content:'';position:absolute;
+  bottom:4px;left:50%;transform:translateX(-50%);
+  width:3px;height:3px;border-radius:50%;
+  opacity:0;transition:opacity .2s;
+}
+.bn-btn.active::after{opacity:1}
+.bn-btn.wa-btn::after{background:#25D366}
+.bn-btn.tg-btn::after{background:#2AABEE}
+.bn-btn.sg-btn::after{background:#3A76F0}
+.bn-btn.sms-btn::after{background:#34C759}
 </style>
 </head>
 <body>
@@ -1019,15 +1395,42 @@ input,textarea{font-family:inherit;color:inherit}
 <button id="sidebar-toggle" onclick="toggleSidebar()" aria-label="Menu">
   <div class="toggle-icon">
     <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- Outer rounded rect (the window frame) -->
       <rect x="1.5" y="2.5" width="17" height="15" rx="2.5" stroke="white" stroke-width="1.5" fill="none"/>
-      <!-- Left sidebar panel fill -->
       <rect x="1.5" y="2.5" width="6" height="15" rx="2.5" fill="white" fill-opacity="0.9"/>
-      <!-- Vertical divider line -->
       <line x1="7.5" y1="2.5" x2="7.5" y2="17.5" stroke="white" stroke-width="1.5" opacity="0.15"/>
     </svg>
   </div>
 </button>
+
+<!-- GLOBAL BACK ← (shows in all inner views — arrow only, no text) -->
+<button id="global-back" onclick="goBack()" aria-label="Back">
+  <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M17 8L11 14L17 20" stroke="#3a9df8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</button>
+
+<!-- PROFILE BUTTON (top-right, Ariana logo) -->
+<button id="profile-btn" onclick="openProfilePanel()" aria-label="Profile">
+  <img src="/icons/icon-192.png" alt="Ariana" onerror="this.outerHTML='<svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'rgba(255,255,255,.5)\' stroke-width=\'1.5\'><circle cx=\'12\' cy=\'8\' r=\'4\'/><path d=\'M4 20c0-4 3.6-7 8-7s8 3 8 7\'/></svg>'">
+</button>
+
+<!-- PROFILE OVERLAY -->
+<!-- removed - profile is now its own view -->
+
+<!-- CONTACTS PERMISSION BANNER -->
+<div id="contacts-banner">
+  <div class="cb-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+  </div>
+  <div class="cb-text">
+    <div class="cb-title">Allow Contacts Access</div>
+    <div class="cb-sub">Ariana can match your contacts to conversations</div>
+  </div>
+  <div class="cb-actions">
+    <button class="cb-btn allow" onclick="doRequestContacts()">Allow</button>
+    <button class="cb-btn deny" onclick="dismissContactsBanner()">Later</button>
+  </div>
+</div>
 
 <!-- SIDEBAR OVERLAY -->
 <div id="sidebar-overlay" onclick="closeSidebar()"></div>
@@ -1037,83 +1440,31 @@ input,textarea{font-family:inherit;color:inherit}
   <div class="sb-header">
     <div class="sb-logo">
       <div class="sb-logo-icon"><img src="/icons/icon-192.png" onerror="this.parentElement.innerHTML='<svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'rgba(255,255,255,.4)\' stroke-width=\'1.5\'><path d=\'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z\'/><path d=\'M12 6v6l4 2\'/></svg>'"></div>
-      <div><div class="sb-logo-name">Ariana</div><div class="sb-logo-sub">Dashboard</div></div>
+      <div><div class="sb-logo-name">Ariana</div><div class="sb-logo-sub">Navigation</div></div>
     </div>
   </div>
-
-  <!-- Chats section -->
-  <div class="sb-section">
-    <div class="sb-section-label">Chats</div>
-    <div class="sb-item active" data-view="chats" data-filter="all" onclick="navTo(this)">
-      <div class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-      <div class="sb-label">All Chats</div>
-    </div>
-    <!-- WhatsApp -->
-    <div class="sb-item wa-item" data-view="chats" data-filter="wa" onclick="navTo(this)">
-      <div class="sb-icon">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" fill="#25D366"/></svg>
-      </div>
-      <div class="sb-label">WhatsApp</div>
-    </div>
-    <!-- Telegram -->
-    <div class="sb-item tg-item" data-view="chats" data-filter="tg" onclick="navTo(this)">
-      <div class="sb-icon">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-.943-.62-.332-1.062.207-1.676.142-.148 2.607-2.39 2.653-2.594.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" fill="#2AABEE"/></svg>
-      </div>
-      <div class="sb-label">Telegram</div>
-    </div>
-    <!-- Signal -->
-    <div class="sb-item sg-item" data-view="chats" data-filter="sg" onclick="navTo(this)">
-      <div class="sb-icon">
-        <svg viewBox="0 0 24 24" fill="#3A76F0" xmlns="http://www.w3.org/2000/svg"><path d="M12 0q-.934 0-1.83.139l.17 1.111a11 11 0 0 1 3.32 0l.172-1.111A12 12 0 0 0 12 0M9.152.34A12 12 0 0 0 5.77 1.742l.584.961a10.8 10.8 0 0 1 3.066-1.27zm5.696 0-.268 1.094a10.8 10.8 0 0 1 3.066 1.27l.584-.962A12 12 0 0 0 14.848.34M12 2.25a9.75 9.75 0 0 0-8.539 14.459c.074.134.1.292.064.441l-1.013 4.338 4.338-1.013a.62.62 0 0 1 .441.064A9.7 9.7 0 0 0 12 21.75c5.385 0 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25m-7.092.068a12 12 0 0 0-2.59 2.59l.909.664a11 11 0 0 1 2.345-2.345zm14.184 0-.664.909a11 11 0 0 1 2.345 2.345l.909-.664a12 12 0 0 0-2.59-2.59M1.742 5.77A12 12 0 0 0 .34 9.152l1.094.268a10.8 10.8 0 0 1 1.269-3.066zm20.516 0-.961.584a10.8 10.8 0 0 1 1.27 3.066l1.093-.268a12 12 0 0 0-1.402-3.383M.138 10.168A12 12 0 0 0 0 12q0 .934.139 1.83l1.111-.17A11 11 0 0 1 1.125 12q0-.848.125-1.66zm23.723.002-1.111.17q.125.812.125 1.66c0 .848-.042 1.12-.125 1.66l1.111.172a12.1 12.1 0 0 0 0-3.662M1.434 14.58l-1.094.268a12 12 0 0 0 .96 2.591l-.265 1.14 1.096.255.36-1.539-.188-.365a10.8 10.8 0 0 1-.87-2.35m21.133 0a10.8 10.8 0 0 1-1.27 3.067l.962.584a12 12 0 0 0 1.402-3.383zm-1.793 3.848a11 11 0 0 1-2.345 2.345l.664.909a12 12 0 0 0 2.59-2.59zm-19.959 1.1L.357 21.48a1.8 1.8 0 0 0 2.162 2.161l1.954-.455-.256-1.095-1.953.455a.675.675 0 0 1-.81-.81l.454-1.954zm16.832 1.769a10.8 10.8 0 0 1-3.066 1.27l.268 1.093a12 12 0 0 0 3.382-1.402zm-10.94.213-1.54.36.256 1.095 1.139-.266c.814.415 1.683.74 2.591.961l.268-1.094a10.8 10.8 0 0 1-2.35-.869zm3.634 1.24-.172 1.111a12.1 12.1 0 0 0 3.662 0l-.17-1.111q-.812.125-1.66.125a11 11 0 0 1-1.66-.125"/></svg>
-      </div>
-      <div class="sb-label">Signal</div>
-    </div>
-    <!-- SMS -->
-    <div class="sb-item sms-item" data-view="chats" data-filter="sms" onclick="navTo(this)">
-      <div class="sb-icon">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" fill="#34C759"/></svg>
-      </div>
-      <div class="sb-label">SMS</div>
-    </div>
-  </div>
-
-  <div class="sb-divider"></div>
 
   <!-- Tools section -->
   <div class="sb-section">
-    <div class="sb-section-label">Tools</div>
-    <div class="sb-item brain-item" data-view="brain" onclick="navTo(this)">
-      <div class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3L9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3L14.5 2Z"/></svg></div>
-      <div class="sb-label">Brain Editor</div>
+    <div class="sb-section-label">Navigation</div>
+    <div class="sb-item" data-view="home" onclick="navTo(this)">
+      <div class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></div>
+      <div class="sb-label">Home</div>
     </div>
-    <div class="sb-item media-item" data-view="media" onclick="navTo(this)">
-      <div class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
-      <div class="sb-label">Media Library</div>
+  </div>
+  <div class="sb-section">
+    <div class="sb-section-label">Tools</div>
+    <div class="sb-item talk-item" data-view="talk" onclick="navTo(this)">
+      <div class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
+      <div class="sb-label">Live Talk</div>
     </div>
     <div class="sb-item gen-item" data-view="generate" onclick="navTo(this)">
       <div class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
       <div class="sb-label">Generate</div>
     </div>
-    <div class="sb-item talk-item" data-view="talk" onclick="navTo(this)">
-      <div class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
-      <div class="sb-label">Live Talk</div>
-    </div>
     <div class="sb-item extras-item" data-view="extras" onclick="navTo(this)">
       <div class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14M12 2v2M12 20v2M2 12h2M20 12h2"/></svg></div>
       <div class="sb-label">Extras</div>
-    </div>
-  </div>
-
-  <!-- Footer actions -->
-  <div class="sb-footer">
-    <div class="sb-footer-item" onclick="requestPush()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-      Notifications
-    </div>
-    <div class="sb-footer-item" onclick="openWallpaperModal()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-      Wallpaper
     </div>
   </div>
 </div>
@@ -1122,8 +1473,112 @@ input,textarea{font-family:inherit;color:inherit}
 <div id="app">
   <div id="views">
 
+    <!-- ══════════ PROFILE ══════════ -->
+    <div id="view-profile" class="view">
+
+      <!-- user card -->
+      <div class="pv-user-section">
+        <div class="pv-avatar">
+          <img src="/icons/icon-192.png" alt="Ariana"
+            onerror="this.outerHTML='<div class=\'pv-avatar-placeholder\'><svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.4\'><circle cx=\'12\' cy=\'8\' r=\'4\'/><path d=\'M4 20c0-4 3.6-7 8-7s8 3 8 7\'/></svg></div>'">
+        </div>
+        <div class="pv-user-info">
+          <div class="pv-user-name">Ariana</div>
+          <div class="pv-user-sub">AI Assistant</div>
+          <div class="pv-user-id">v1.0 &nbsp;·&nbsp; Ariana OS</div>
+        </div>
+      </div>
+
+      <!-- TOOLS section -->
+      <div class="pv-section-wrap">
+        <div class="pv-section-label">Tools</div>
+        <div class="pv-list">
+          <div class="pv-row" onclick="navTo({dataset:{view:'brain'}})">
+            <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3L9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3L14.5 2Z"/></svg></div>
+            <div class="pv-row-text"><div class="pv-row-label">Brain Editor</div></div>
+            <div class="pv-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg></div>
+          </div>
+          <div class="pv-row" onclick="navTo({dataset:{view:'media'}})">
+            <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
+            <div class="pv-row-text"><div class="pv-row-label">Media Library</div></div>
+            <div class="pv-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg></div>
+          </div>
+          <div class="pv-row" onclick="navTo({dataset:{view:'generate'}})">
+            <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+            <div class="pv-row-text"><div class="pv-row-label">Generate</div></div>
+            <div class="pv-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg></div>
+          </div>
+          <div class="pv-row" onclick="navTo({dataset:{view:'talk'}})">
+            <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
+            <div class="pv-row-text"><div class="pv-row-label">Live Talk</div></div>
+            <div class="pv-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS section -->
+      <div class="pv-section-wrap">
+        <div class="pv-section-label">Settings</div>
+        <div class="pv-list">
+          <div class="pv-row" onclick="requestPush()">
+            <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+            <div class="pv-row-text"><div class="pv-row-label">Notifications</div></div>
+            <div class="pv-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg></div>
+          </div>
+          <div class="pv-row" onclick="openWallpaperModal()">
+            <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
+            <div class="pv-row-text"><div class="pv-row-label">Global Wallpaper</div></div>
+            <div class="pv-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg></div>
+          </div>
+          <div class="pv-row" onclick="openSettingsModal()">
+            <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3h-3a2 2 0 0 0-2 2v2"/><path d="M8 3h3a2 2 0 0 1 2 2v2"/></svg></div>
+            <div class="pv-row-text"><div class="pv-row-label">API Keys</div></div>
+            <div class="pv-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg></div>
+          </div>
+          <div class="pv-row" onclick="doRequestContacts()">
+            <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+            <div class="pv-row-text"><div class="pv-row-label">Contacts</div></div>
+            <div class="pv-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pv-bottom-space"></div>
+    </div>
+
+    <!-- ══════════ HOME ══════════ -->
+    <div id="view-home" class="view active">
+      <div id="home-logo">
+        <img src="/icons/icon-192.png" alt="Ariana" onerror="this.outerHTML='<div style=\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:32px\'>✦</div>'">
+      </div>
+      <div id="home-title">Ariana</div>
+      <div id="home-sub">Your AI companion. Pick a platform to start chatting.</div>
+      <div class="home-plat-grid">
+        <div class="home-plat-card wa-card" onclick="navToPlatform('wa')">
+          <svg viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          <span class="home-plat-name">WhatsApp</span>
+        </div>
+        <div class="home-plat-card tg-card" onclick="navToPlatform('tg')">
+          <svg viewBox="0 0 24 24" fill="#2AABEE"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-.943-.62-.332-1.062.207-1.676.142-.148 2.607-2.39 2.653-2.594.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+          <span class="home-plat-name">Telegram</span>
+        </div>
+        <div class="home-plat-card sg-card" onclick="navToPlatform('sg')">
+          <svg viewBox="0 0 24 24" fill="#3A76F0"><path d="M12 0q-.934 0-1.83.139l.17 1.111a11 11 0 0 1 3.32 0l.172-1.111A12 12 0 0 0 12 0M9.152.34A12 12 0 0 0 5.77 1.742l.584.961a10.8 10.8 0 0 1 3.066-1.27zm5.696 0-.268 1.094a10.8 10.8 0 0 1 3.066 1.27l.584-.962A12 12 0 0 0 14.848.34M12 2.25a9.75 9.75 0 0 0-8.539 14.459c.074.134.1.292.064.441l-1.013 4.338 4.338-1.013a.62.62 0 0 1 .441.064A9.7 9.7 0 0 0 12 21.75c5.385 0 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25m-7.092.068a12 12 0 0 0-2.59 2.59l.909.664a11 11 0 0 1 2.345-2.345zm14.184 0-.664.909a11 11 0 0 1 2.345 2.345l.909-.664a12 12 0 0 0-2.59-2.59M1.742 5.77A12 12 0 0 0 .34 9.152l1.094.268a10.8 10.8 0 0 1 1.269-3.066zm20.516 0-.961.584a10.8 10.8 0 0 1 1.27 3.066l1.093-.268a12 12 0 0 0-1.402-3.383M.138 10.168A12 12 0 0 0 0 12q0 .934.139 1.83l1.111-.17A11 11 0 0 1 1.125 12q0-.848.125-1.66zm23.723.002-1.111.17q.125.812.125 1.66c0 .848-.042 1.12-.125 1.66l1.111.172a12.1 12.1 0 0 0 0-3.662M1.434 14.58l-1.094.268a12 12 0 0 0 .96 2.591l-.265 1.14 1.096.255.36-1.539-.188-.365a10.8 10.8 0 0 1-.87-2.35m21.133 0a10.8 10.8 0 0 1-1.27 3.067l.962.584a12 12 0 0 0 1.402-3.383zm-1.793 3.848a11 11 0 0 1-2.345 2.345l.664.909a12 12 0 0 0 2.59-2.59zm-19.959 1.1L.357 21.48a1.8 1.8 0 0 0 2.162 2.161l1.954-.455-.256-1.095-1.953.455a.675.675 0 0 1-.81-.81l.454-1.954zm16.832 1.769a10.8 10.8 0 0 1-3.066 1.27l.268 1.093a12 12 0 0 0 3.382-1.402zm-10.94.213-1.54.36.256 1.095 1.139-.266c.814.415 1.683.74 2.591.961l.268-1.094a10.8 10.8 0 0 1-2.35-.869zm3.634 1.24-.172 1.111a12.1 12.1 0 0 0 3.662 0l-.17-1.111q-.812.125-1.66.125a11 11 0 0 1-1.66-.125"/></svg>
+          <span class="home-plat-name">Signal</span>
+        </div>
+        <div class="home-plat-card sms-card" onclick="navToPlatform('sms')">
+          <svg viewBox="0 0 24 24" fill="#34C759"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+          <span class="home-plat-name">SMS</span>
+        </div>
+      </div>
+      <button id="home-talk-btn" onclick="navTo({dataset:{view:'talk'}})">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        Talk to Ariana
+      </button>
+    </div>
+
     <!-- ══════════ CHATS ══════════ -->
-    <div id="view-chats" class="view active">
+    <div id="view-chats" class="view">
       <div id="chat-list-pane">
         <div id="chat-list-topbar">
           <div id="chat-list-topbar-spacer"></div>
@@ -1144,11 +1599,13 @@ input,textarea{font-family:inherit;color:inherit}
             <svg viewBox="0 0 11 18" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M9.5 1L1.5 9L9.5 17" stroke="#3a9df8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            Back
           </button>
           <div id="chat-avatar" onclick="openDrawer()"></div>
           <div id="chat-info" onclick="openDrawer()"><div id="chat-name">—</div><div id="chat-sub"></div></div>
           <div id="chat-header-actions">
+            <button class="hdr-wp-btn" id="chat-wp-btn" onclick="openPlatWallpaperModal()" title="Set wallpaper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+            </button>
             <div id="send-as-wrap">
               <button class="sa-btn active" id="sa-ariana" onclick="setSendAs('ariana')">Ariana</button>
               <button class="sa-btn" id="sa-you" onclick="setSendAs('you')">You</button>
@@ -1376,6 +1833,13 @@ input,textarea{font-family:inherit;color:inherit}
           onerror="this.style.display='none'">
         <div id="talk-idle-greeting">Hi, what's the move?</div>
         <div id="talk-idle-sub">Say something or type below</div>
+        <!-- Quick action chips -->
+        <div id="talk-quick-chips" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px;padding:0 20px">
+          <button class="talk-chip" onclick="talkQuick('give me a daily briefing')">📋 Daily briefing</button>
+          <button class="talk-chip" onclick="talkQuick('who should I block')">🚫 Who to block</button>
+          <button class="talk-chip" onclick="talkQuick('show me your photo')">📸 Show me you</button>
+          <button class="talk-chip" onclick="talkQuick('what have you been up to today')">💬 What\'s been happening</button>
+        </div>
       </div>
 
       <!-- CHAT LOG HEADER (clear button, shows when there are messages) -->
@@ -1451,6 +1915,13 @@ input,textarea{font-family:inherit;color:inherit}
 
       <!-- BOTTOM -->
       <div id="talk-bottom">
+
+        <!-- media caption preview (shown when image is attached) -->
+        <div id="talk-media-preview">
+          <div id="talk-preview-thumb"></div>
+          <span id="talk-preview-label">Tap send or type a caption</span>
+          <button id="talk-preview-cancel" onclick="talkClearMedia()">×</button>
+        </div>
 
         <!-- standard bar -->
         <div id="talk-bar-std">
@@ -1609,7 +2080,53 @@ input,textarea{font-family:inherit;color:inherit}
     <div class="modal-btns"><button class="mbtn cancel" onclick="closeModal('tag-modal')">Cancel</button><button class="mbtn confirm accent" onclick="saveTagModal()">Save Tags</button></div>
   </div>
 </div>
-<div id="toast"></div>
+<!-- iOS NOTIFICATION BANNER -->
+<div id="notif-banner">
+  <div id="notif-inner">
+    <div id="notif-icon-wrap"><span id="notif-icon" style="font-size:18px">✦</span></div>
+    <div style="flex:1;min-width:0">
+      <div id="notif-title"></div>
+      <div id="notif-body"></div>
+    </div>
+    <div id="notif-time"></div>
+  </div>
+</div>
+
+<!-- PLATFORM WALLPAPER MODAL -->
+<div class="modal-overlay hidden" id="plat-wp-modal">
+  <div class="modal">
+    <h3 id="plat-wp-modal-title">Set Wallpaper</h3>
+    <p style="font-size:12px;color:var(--t2);margin-bottom:4px" id="plat-wp-modal-sub">Choose a background for this chat</p>
+    <div class="wp-grid" id="plat-wp-grid"></div>
+    <label class="wp-upload-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+      Use your own photo
+      <input type="file" accept="image/*" style="display:none" onchange="handleWpImageUpload(event)">
+    </label>
+    <div class="modal-btns" style="margin-top:16px">
+      <button class="mbtn cancel" onclick="closeModal('plat-wp-modal')">Cancel</button>
+      <button class="mbtn confirm accent" onclick="savePlatWallpaper()">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay hidden" id="settings-modal">
+  <div class="modal">
+    <h3>API Settings</h3>
+    <p style="font-size:12px;color:var(--t2);margin-bottom:14px">Stored locally in your browser — never sent anywhere else.</p>
+    <span class="settings-field-label">ElevenLabs API Key</span>
+    <input class="modal-input" id="el-key-input" type="password" placeholder="sk_...">
+    <span class="settings-field-label">ElevenLabs Voice ID</span>
+    <input class="modal-input" id="el-voice-input" type="text" placeholder="Voice ID">
+    <span class="settings-field-label">Dashboard Secret Key</span>
+    <input class="modal-input" id="dash-key-input" type="password" placeholder="Your DASHBOARD_SECRET value from Render">
+    <div class="modal-btns">
+      <button class="mbtn cancel" onclick="closeModal('settings-modal')">Cancel</button>
+      <button class="mbtn confirm accent" onclick="saveSettingsModal()">Save</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ══════════════════════════════════════════════
@@ -1674,8 +2191,10 @@ const BRAIN_ICONS={
 // ══════════════════════════════════════════════
 const socket=io();
 let convos={},takenOverSet=new Set(),currentPhone=null,sendAs="ariana",emojiOpen=false;
-let activePlatFilter="all",currentView="chats";
+let activePlatFilter="all",currentView="home";
 let avatars={},wallpaper="w0";
+let platformWallpapers={wa:"w0",tg:"w1",sg:"w2",sms:"w0"};
+let pendingPlatWp=null;
 let brainData={},activeBrainFile=null,brainDirtySet=new Set(),brainLoaded=false;
 let mediaItems=[],activeTagFilter="all",tagModalId=null,tagModalTags=[];
 let genProvider="fal",genType="image",genResults=[];
@@ -1683,13 +2202,37 @@ let genKeys={};try{genKeys=JSON.parse(localStorage.getItem("_genKeys")||"{}")}ca
 
 try{avatars=JSON.parse(localStorage.getItem("_av")||"{}")}catch{}
 try{wallpaper=localStorage.getItem("_wp")||"w0"}catch{}
+try{const pwp=localStorage.getItem("_pwp");if(pwp)platformWallpapers={...platformWallpapers,...JSON.parse(pwp)}}catch{}
+// Load any custom image wallpapers
+["wa","tg","sg","sms"].forEach(k=>{try{const img=localStorage.getItem("_pwp_img_"+k);if(img)platformWallpapers[k]=img}catch{}});
 
 if("serviceWorker" in navigator){
+  // Force the SW to check for updates immediately on every load
+  // so a newly-deployed index.html is never served from stale cache
   navigator.serviceWorker.register("/sw.js").then(reg=>{
+    reg.update(); // kick off update check right now
     navigator.serviceWorker.addEventListener("message",e=>{
       if(e.data?.type==="OPEN_CHAT"&&e.data.phone){navTo(document.querySelector('[data-view="chats"][data-filter="all"]'));openChat(e.data.phone)}
-    })
-  }).catch(()=>{})
+    });
+    // When a new SW takes over, reload once to get fresh assets
+    navigator.serviceWorker.addEventListener("controllerchange",()=>{
+      if(!sessionStorage.getItem("_sw_reloaded")){
+        sessionStorage.setItem("_sw_reloaded","1");
+        window.location.reload();
+      }
+    });
+  }).catch(()=>{});
+  // Clear any stale cache entries that may hold an old index.html
+  if("caches" in window){
+    caches.keys().then(keys=>{
+      keys.forEach(k=>{
+        caches.open(k).then(cache=>{
+          cache.delete("/");
+          cache.delete("/index.html");
+        });
+      });
+    });
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -1712,17 +2255,27 @@ function closeSidebar(){
 // ══════════════════════════════════════════════
 // NAV
 // ══════════════════════════════════════════════
+let _prevView="home"; // track where to go back to from profile
 function navTo(el){
   if(!el)return;
-  const view=el.dataset.view;
-  const filter=el.dataset.filter||null;
-  // update active state
-  document.querySelectorAll(".sb-item").forEach(i=>i.classList.remove("active"));
-  el.classList.add("active");
-  // switch view
+  const view=el.dataset?el.dataset.view:el;
+  const filter=el.dataset?el.dataset.filter:null;
+  // If navigating away from a chat, close it first
+  if(currentPhone && view!=="chats"){closeChat();}
+  // Store prev view for back navigation from profile
+  if(view==="profile"){_prevView=currentView;}
+  _applyView(view,filter,el);
+}
+function _applyView(view,filter,el){
+  document.querySelectorAll(".sb-item,.bn-btn").forEach(i=>i.classList.remove("active"));
+  if(el&&el.classList)el.classList.add("active");
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
-  document.getElementById(`view-${view}`).classList.add("active");
+  const vEl=document.getElementById(`view-${view}`);
+  if(vEl)vEl.classList.add("active");
   currentView=view;
+  // Update body class for CSS-based nav hiding
+  document.body.className=document.body.className.replace(/\bview-\S+/g,"").trim();
+  document.body.classList.add("view-"+view);
   if(filter){activePlatFilter=filter;renderList();updateChatBackLabel()}
   closeSidebar();
   if(view==="brain")initBrainView();
@@ -1731,6 +2284,32 @@ function navTo(el){
   if(view==="extras"){window._cachedConvos=convos;initExtras();}
   if(view==="talk"){window._cachedConvos=convos;talkInit();}
 }
+function goBack(){
+  if(currentPhone){ closeChat(); return; }
+  if(currentView==="profile"){ navTo({dataset:{view:_prevView}}); return; }
+  navTo({dataset:{view:"home"}});
+}
+
+
+
+
+
+function openProfilePanel(){navTo({dataset:{view:"profile"}});}
+function closeProfilePanel(){navTo({dataset:{view:_prevView}});}
+function navToPlatform(plat){
+  // Close current chat if any, then navigate to that platform's chat list
+  if(currentPhone)closeChat();
+  activePlatFilter=plat;
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  document.getElementById("view-chats").classList.add("active");
+  currentView="chats";
+  document.body.className=document.body.className.replace(/\bview-\S+/g,"").trim();
+  document.body.classList.add("view-chats");
+  renderList();updateChatBackLabel();
+  // Activate correct bottom nav button
+  document.querySelectorAll(".bn-btn").forEach(b=>{b.classList.toggle("active",b.dataset.filter===plat)});
+}
+
 
 // ══════════════════════════════════════════════
 // PLATFORM HELPERS
@@ -1767,7 +2346,12 @@ socket.on("new_message",data=>{
     if(convo)convos[phone]=convo;
     else{if(!convos[phone])convos[phone]={phone,messages:[],name:"",lastSeen:msg.time};if(!Array.isArray(convos[phone].messages))convos[phone].messages=[];convos[phone].messages.push(msg);convos[phone].lastSeen=msg.time}
     if(phone===currentPhone){appendMsg(msg);scrollBottom()}
-    else{if(!convos[phone]._unread)convos[phone]._unread=0;convos[phone]._unread++;showToast((convos[phone].name||phone)+": "+String(msg.text||"").slice(0,40))}
+    else{
+      if(!convos[phone]._unread)convos[phone]._unread=0;convos[phone]._unread++;
+      const p=getPlat(phone);
+      const platEmoji={wa:'💬',tg:'✈️',sms:'📱',sg:'🔒'};
+      showNotif(convos[phone].name||phone, String(msg.text||'').slice(0,70)||'Sent media', platEmoji[p]||'💬', 5000);
+    }
     renderList();
   }catch(e){}
 });
@@ -1809,14 +2393,15 @@ function renderList(){
 function updateChatBackLabel() {
   const btn = document.getElementById('chat-back');
   if (!btn) return;
-  const labels = { wa:'WhatsApp', tg:'Telegram', sg:'Signal', sms:'SMS', all:'Back' };
-  const label = labels[activePlatFilter] || 'Back';
+  // Arrow only — no text label ever
   btn.innerHTML = `<svg viewBox="0 0 11 18" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M9.5 1L1.5 9L9.5 17" stroke="#3a9df8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>${label}`;
+  </svg>`;
 }
 function openChat(phone){
   if(!phone)return;currentPhone=phone;
+  // Push history state so iOS swipe-back works
+  history.pushState({chat:phone},'','');
   const c=convos[phone]||{phone,messages:[],name:""};c._unread=0;
   document.getElementById("no-chat").style.display="none";
   document.getElementById("chat-header").style.display="flex";
@@ -1825,9 +2410,15 @@ function openChat(phone){
   setAvatar(phone);
   document.getElementById("chat-name").textContent=c.name||phone;
   document.getElementById("chat-sub").textContent=c.tgUsername?"@"+c.tgUsername:c.name?phone:"";
+  // Apply platform class for themed bubbles
+  const p=getPlat(phone);
+  const chatPanel=document.getElementById("chat-panel");
+  chatPanel.className="";chatPanel.id="chat-panel";
+  document.getElementById("chat-panel").classList.add("plat-"+p);
   const msgs=document.getElementById("messages");msgs.innerHTML="";let lastDate="";
   (Array.isArray(c.messages)?c.messages:[]).forEach(m=>{const d=new Date(m.time||Date.now()).toDateString();if(d!==lastDate){msgs.innerHTML+=`<div class="date-div">${fmtDate(m.time)}</div>`;lastDate=d}msgs.innerHTML+=bubble(m)});
   scrollBottom();updateTakeoverUI();applyWallpaper();renderList();updateChatBackLabel();
+  document.body.classList.add("in-chat");
   if(emojiOpen){emojiOpen=false;document.getElementById("emoji-picker").classList.remove("open")}
   if(window.innerWidth<=700)document.getElementById("chat-list-pane").classList.add("hidden");
 }
@@ -1838,13 +2429,26 @@ function closeChat(){
   document.getElementById("messages").style.display="none";
   document.getElementById("input-area").style.display="none";
   document.getElementById("chat-list-pane").classList.remove("hidden");
+  document.body.classList.remove("in-chat");
   closeDrawer();
   if(emojiOpen){emojiOpen=false;document.getElementById("emoji-picker").classList.remove("open")}
 }
+function platTickSvg(p){
+  // WhatsApp: classic double tick — two overlapping checkmarks side by side
+  if(p==="wa") return`<span class="btick tick-wa"><svg viewBox="0 0 22 13" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 6.5L5.5 11L13 2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 6.5L13.5 11L21 2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+  // Telegram: double tick in Telegram blue
+  if(p==="tg") return`<span class="btick tick-tg"><svg viewBox="0 0 22 13" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 6.5L5.5 11L13 2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 6.5L13.5 11L21 2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+  // Signal: circle with double tick inside
+  if(p==="sg") return`<span class="btick tick-sg"><svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M4.5 9L7.5 12L13.5 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+  // SMS: double tick
+  return`<span class="btick tick-sms"><svg viewBox="0 0 22 13" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 6.5L5.5 11L13 2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 6.5L13.5 11L21 2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+}
 function bubble(msg){
   const isIn=msg.role==="user";
+  const p=currentPhone?getPlat(currentPhone):"wa";
   const sender=msg.role==="ariana"?'<div class="msg-sender ariana">Ariana</div>':msg.role==="you"?'<div class="msg-sender you">You</div>':"";
-  return`<div class="msg-wrap ${isIn?"in":"out"}">${sender}<div class="bubble">${esc(String(msg.text||"")).replace(/\n/g,"<br>")}<div class="bubble-footer"><span class="btime">${fmtTimeFull(msg.time)}</span>${!isIn?'<span class="btick">&#10003;&#10003;</span>':""}</div></div></div>`;
+  const tick=(!isIn)?platTickSvg(p):"";
+  return`<div class="msg-wrap ${isIn?"in":"out"}">${sender}<div class="bubble">${esc(String(msg.text||"")).replace(/\n/g,"<br>")}<div class="bubble-footer"><span class="btime">${fmtTimeFull(msg.time)}</span>${tick}</div></div></div>`;
 }
 function appendMsg(msg){const m=document.getElementById("messages");if(!m)return;const d=document.createElement("div");d.innerHTML=bubble(msg);while(d.firstChild)m.appendChild(d.firstChild)}
 function scrollBottom(){const m=document.getElementById("messages");if(m)m.scrollTop=m.scrollHeight}
@@ -2070,16 +2674,111 @@ function applyWp(id,bg){wallpaper=id;try{localStorage.setItem("_wp",id);localSto
 function applyWallpaper(){const m=document.getElementById("messages");if(!m)return;const bg=localStorage.getItem("_wpbg")||"#000";m.style.background=wallpaper==="w0"?"#000":bg}
 function handleWpUpload(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>applyWp("custom",`url(${ev.target.result}) center/cover`);r.readAsDataURL(f)}
 async function requestPush(){
-  if(!("Notification"in window)){showToast("Not supported");return}
-  const p=await Notification.requestPermission();if(p!=="granted"){showToast("Permission denied");return}
-  try{const reg=await navigator.serviceWorker.ready;const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64ToArr(VAPID)});await fetch("/api/push-subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(sub)});showToast("Notifications enabled");closeSidebar()}catch(e){showToast("Push failed")}
+  if(!("Notification"in window)){showNotif('Not supported','Your browser doesn\'t support push notifications','⚠️');return}
+  const p=await Notification.requestPermission();
+  if(p!=="granted"){showNotif('Blocked','Notification permission denied — check browser settings','🔕');return}
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64ToArr(VAPID)});
+    await fetch("/api/push-subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(sub)});
+    showNotif('Notifications on','You\'ll get notified even when the tab is closed','🔔');
+    closeSidebar();
+  }catch(e){showNotif('Push failed',e.message,'⚠️')}
 }
 function b64ToArr(b64){const pad="=".repeat((4-b64.length%4)%4);const raw=atob((b64+pad).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)))}
 function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 function fmtTime(iso){if(!iso)return"";try{const d=new Date(iso),now=new Date();if(d.toDateString()===now.toDateString())return d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});const diff=(now-d)/864e5;if(diff<7)return["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()];return d.toLocaleDateString([],{month:"numeric",day:"numeric"})}catch{return""}}
 function fmtTimeFull(iso){if(!iso)return"";try{return new Date(iso).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}catch{return""}}
 function fmtDate(iso){if(!iso)return"—";try{const d=new Date(iso),now=new Date();if(d.toDateString()===now.toDateString())return"Today";if(new Date(now-864e5).toDateString()===d.toDateString())return"Yesterday";return d.toLocaleDateString([],{month:"short",day:"numeric",year:"numeric"})}catch{return"—"}}
-let _tt;function showToast(msg){const el=document.getElementById("toast");el.textContent=String(msg||"");el.classList.add("show");clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove("show"),3000)}
+let _notifTimer = null;
+function showNotif(title, body, icon, duration) {
+  duration = duration || 3500;
+  clearTimeout(_notifTimer);
+  const inner = document.getElementById('notif-inner');
+  if(!inner) return;
+  const iconEl = document.getElementById('notif-icon');
+  const titleEl = document.getElementById('notif-title');
+  const bodyEl  = document.getElementById('notif-body');
+  const timeEl  = document.getElementById('notif-time');
+  if(!iconEl||!titleEl||!bodyEl||!timeEl) return;
+  if (typeof icon === 'string' && icon.startsWith('<')) {
+    iconEl.parentElement.innerHTML = '<div id="notif-icon-wrap" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">'+icon+'</div>';
+  } else {
+    iconEl.textContent = icon || '✦';
+  }
+  titleEl.textContent = String(title || '');
+  bodyEl.textContent  = String(body  || '');
+  timeEl.textContent  = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  // force off first so transition replays
+  inner.classList.remove('show');
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      inner.classList.add('show');
+      inner.onclick = () => { clearTimeout(_notifTimer); inner.classList.remove('show'); };
+      _notifTimer = setTimeout(() => inner.classList.remove('show'), duration);
+    });
+  });
+}
+/* backward-compat: all existing showToast() calls route here */
+function showToast(msg) { showNotif('Ariana', msg, '✦'); }
+
+/* ── ElevenLabs key helpers — stored in localStorage, never hardcoded ── */
+function getElevenKey()   { return localStorage.getItem('_el_key')   || ''; }
+function getElevenVoice() { return localStorage.getItem('_el_voice') || 'Uuc6s41mqYjIaMyXWGxL'; }
+function getDashKey()     { return localStorage.getItem('_dashKey')  || ''; }
+
+/* ── Settings modal ── */
+function openSettingsModal() {
+  document.getElementById('el-key-input').value   = getElevenKey();
+  document.getElementById('el-voice-input').value = getElevenVoice();
+  document.getElementById('dash-key-input').value = getDashKey();
+  document.getElementById('settings-modal').classList.remove('hidden');
+  closeSidebar();
+}
+function saveSettingsModal() {
+  const key   = document.getElementById('el-key-input').value.trim();
+  const voice = document.getElementById('el-voice-input').value.trim();
+  const dash  = document.getElementById('dash-key-input').value.trim();
+  if (key)   localStorage.setItem('_el_key',   key);
+  if (voice) localStorage.setItem('_el_voice', voice);
+  if (dash)  localStorage.setItem('_dashKey',  dash);
+  closeModal('settings-modal');
+  showNotif('Settings saved', 'API keys stored in your browser', '✓');
+}
+
+/* ── Self-learning: extract facts from conversation turn → update brain ── */
+async function talkSelfLearn(userMsg, arianaReply) {
+  if (!userMsg || !arianaReply || userMsg === '[image]') return;
+  try {
+    await fetch('/api/talk-learn', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Dashboard-Key': getDashKey() },
+      body: JSON.stringify({ userMessage: userMsg, arianaReply })
+    });
+  } catch(e) { /* silent — not critical */ }
+}
+
+/* ── Scheduler: fire due messages ── */
+async function runDueSchedules() {
+  if (!schedules.length) return;
+  const now = Date.now();
+  const due = schedules.filter(s => s.time && new Date(s.time).getTime() <= now);
+  if (!due.length) return;
+  for (const s of due) {
+    try {
+      const r = await fetch('/api/send/' + encodeURIComponent(s.phone), {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ message: s.msg || s.message })
+      });
+      const j = await r.json();
+      if (j.ok) showNotif('Scheduled message sent', (window._cachedConvos?.[s.phone]?.name || s.phone), '📅');
+    } catch(e) { console.warn('[scheduler]', e); }
+  }
+  schedules = schedules.filter(s => new Date(s.time).getTime() > now);
+  try { await fetch('/api/extras/schedules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({schedules})}); } catch(e){}
+  renderSchedules();
+}
+setInterval(runDueSchedules, 30000); // check every 30s
 
 // ══════════════════════════════════════════════
 // GENERATE
@@ -2417,6 +3116,8 @@ let talkInlineBars  = [];
 let talkWaveRaf     = null;
 let talkTypeTimer   = null;
 let talkOrbMode     = false;
+let _talkGainNode   = null;  // current ElevenLabs gain node — used for real-time volume
+let _speakerOn      = true;
 window._talkDisplayLog      = [];
 window._talkPendingMedia     = null;
 window._talkPendingMediaUrl  = null;
@@ -2760,10 +3461,16 @@ function talkPlayAudio(b64, transcript) {
   });
 }
 
-/* ── ElevenLabs Direct (called from browser — uses phone IP, not Render) ── */
+/* ── ElevenLabs Direct (called from browser — bypasses Render so key can't be rate-limited by proxy) ── */
 async function talkElevenLabsDirect(text) {
-  const ELEVEN_KEY      = "sk_ce3baf0035e207baf49c35219a9dcd6ab681e9160e0184c0";
-  const ELEVEN_VOICE_ID = "Uuc6s41mqYjIaMyXWGxL";
+  const ELEVEN_KEY      = getElevenKey();
+  const ELEVEN_VOICE_ID = getElevenVoice();
+
+  if (!ELEVEN_KEY) {
+    console.warn('[ElevenDirect] No API key — open API Keys in sidebar to set one');
+    talkSpeakWebSpeech(text);
+    return;
+  }
 
   // Disconnect mic source from analyser during playback — prevents browser echo
   // cancellation / AGC from ducking Ariana's voice output
@@ -2802,7 +3509,8 @@ async function talkElevenLabsDirect(text) {
     await audioCtx.resume();  // iOS requires explicit resume even for new contexts
     const decoded  = await audioCtx.decodeAudioData(arrayBuffer);
     const gainNode  = audioCtx.createGain();
-    gainNode.gain.value = 2.0;  // Full speaker volume (iOS may still apply system limit)
+    gainNode.gain.value = _speakerOn ? 2.0 : 0.001;  // respect mute state
+    _talkGainNode = gainNode;
     const source   = audioCtx.createBufferSource();
     source.buffer  = decoded;
     source.connect(gainNode);
@@ -2898,18 +3606,19 @@ function talkSpeakWebSpeech(text) {
   setTimeout(() => window.speechSynthesis.speak(utter), 80);
 }
 
-/* ── speaker toggle ── */
-let _speakerOn = true;
+/* ── speaker toggle — works on active gain node, not setSinkId ── */
 function talkToggleSpeaker() {
   _speakerOn = !_speakerOn;
   const btn = document.getElementById('talk-speaker-btn');
-  if (btn) btn.classList.toggle('muted', !_speakerOn);
-  // On iOS, programmatic audio routing is not available via JS.
-  // setSinkId works on desktop Chrome/Edge.
-  if (talkAudio && talkAudio.setSinkId) {
-    talkAudio.setSinkId(_speakerOn ? '' : 'default').catch(() => {});
+  if (btn) {
+    btn.classList.toggle('muted', !_speakerOn);
+    btn.innerHTML = _speakerOn
+      ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>`
+      : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>`;
   }
-  showToast(_speakerOn ? 'Speaker on' : 'Speaker off');
+  // Control live audio gain if currently playing
+  if (_talkGainNode) _talkGainNode.gain.value = _speakerOn ? 2.0 : 0.001;
+  if (talkAudio) talkAudio.volume = _speakerOn ? 1.0 : 0.001;
 }
 
 /* ── mic analyser ── */
@@ -2956,7 +3665,7 @@ async function talkToggleCamera() {
       flipBtn.classList.add('show');
       talkCameraOn = true;
     } catch(e) {
-      showToast('Camera access denied');
+      showNotif('Camera blocked', 'Allow camera access in browser settings', '📷');
     }
   }
 }
@@ -2972,7 +3681,7 @@ async function talkFlipCamera() {
     });
     document.getElementById('talk-video-bg').srcObject = talkStream;
   } catch(e) {
-    showToast('Could not switch camera');
+    showNotif('Camera error', 'Could not switch camera', '📷');
   }
 }
 
@@ -2987,11 +3696,33 @@ function talkCaptureFrame() {
   return canvas.toDataURL('image/jpeg', 0.78).split(',')[1];
 }
 
+/* ── quick-action chip tap ── */
+function talkQuick(text) {
+  if (talkProcessing) return;
+  // Show it as a user bubble immediately, then process
+  const now = Date.now();
+  talkAppendMsg('user', text, null, null, now);
+  window._talkDisplayLog.push({ role:'user', text, ts: now });
+  talkHistory.push({ role:'user', content: text });
+  talkProcess(text);
+}
+
+/* ── clear pending media (caption cancel) ── */
+function talkClearMedia() {
+  window._talkPendingMedia     = null;
+  window._talkPendingMediaUrl  = null;
+  window._talkPendingMediaType = null;
+  window._talkMediaAlreadyShown = false;
+  document.getElementById('talk-media-preview').classList.remove('show');
+  document.getElementById('talk-text-input').placeholder = 'Message Ariana...';
+  talkOnType(document.getElementById('talk-text-input').value);
+}
+
 /* ── text input ── */
 function talkOnType(val) {
   const sendBtn = document.getElementById('talk-send-btn');
   const micBtn  = document.getElementById('talk-mic-inline-btn');
-  if (val.trim().length > 0) {
+  if (val.trim().length > 0 || window._talkPendingMedia) {
     sendBtn.classList.add('show');
     micBtn.style.display = 'none';
   } else {
@@ -3166,15 +3897,34 @@ function talkLeaveOrbMode() {
 }
 
 function talkOrbMicToggle() {
+  const btn = document.getElementById('talk-orb-mic-btn');
   if (talkListening) {
-    // Mute: stop recogniser but stay in orb mode
+    // MUTE: stop recogniser, show slashed mic
     if (talkRecog) { try { talkRecog.abort(); } catch(e){} talkRecog = null; }
     talkListening = false;
-    const btn = document.getElementById('talk-orb-mic-btn');
-    if (btn) btn.style.opacity = '0.4';
+    if (btn) {
+      btn.classList.add('muted');
+      btn.title = 'Unmute';
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <line x1="1" y1="1" x2="23" y2="23"/>
+        <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
+        <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>`;
+    }
   } else {
-    const btn = document.getElementById('talk-orb-mic-btn');
-    if (btn) btn.style.opacity = '';
+    // UNMUTE: restore mic icon
+    if (btn) {
+      btn.classList.remove('muted');
+      btn.title = 'Mute';
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>`;
+    }
     talkStartListening();
   }
 }
@@ -3190,7 +3940,7 @@ async function talkToggleMic() {
 
 async function talkStartListening() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { showToast('Speech recognition not supported in this browser'); return; }
+  if (!SR) { showNotif('Not supported', 'Use Chrome or Safari for voice', '🎙️'); return; }
   if (talkAudio) { talkAudio.pause(); talkAudio = null; }
 
   // Request mic permission ONCE — reuse stream after that
@@ -3419,8 +4169,39 @@ async function talkProcess(text) {
   if (!text && !hasMedia) return;
   if (!text) text = '[image]';
 
+  // ── Clear caption bar as soon as message is sent ──
+  document.getElementById('talk-media-preview').classList.remove('show');
+  document.getElementById('talk-text-input').placeholder = 'Message Ariana...';
+
   talkProcessing = true;
   talkWatchdogStart();
+
+  // ── Try owner command first (text/send/call actions) ──
+  const dashKey = getDashKey();
+  const isAction = /^(text|message|send|call|tell|email|forward|reply|ask)\s/i.test(text.trim());
+  if (isAction && text !== '[image]') {
+    try {
+      const cmdRes = await fetch('/api/owner-command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Dashboard-Key': dashKey },
+        body: JSON.stringify({ message: text, source: 'live_talk' })
+      });
+      const cmdData = await cmdRes.json();
+      if (cmdData.handled) {
+        talkWatchdogClear();
+        talkProcessing = false;
+        const replyTs = Date.now();
+        talkAppendMsg('ariana', cmdData.confirmation, null, null, replyTs);
+        window._talkDisplayLog.push({ role:'ariana', text: cmdData.confirmation, ts: replyTs });
+        talkSaveChatLog();
+        if (talkOrbMode) {
+          talkShowState('speaking');
+          await talkElevenLabsDirect(cmdData.confirmation);
+        } else { talkShowState('idle'); }
+        return;
+      }
+    } catch(e) { console.warn('[cmd] owner-command lookup failed:', e.message); }
+  }
 
   // Use pending uploaded media OR camera frame
   const imageBase64 = window._talkPendingMedia || talkCaptureFrame();
@@ -3462,7 +4243,7 @@ async function talkProcess(text) {
   try {
     const res = await fetch('/api/talk', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Dashboard-Key': dashKey },
       body: JSON.stringify({ message: text, history: talkHistory.slice(-14), imageBase64 })
     });
     if (!res.ok) throw new Error('Server ' + res.status);
@@ -3473,15 +4254,29 @@ async function talkProcess(text) {
     talkHistory.push({ role: 'assistant', content: data.reply });
     window._talkDisplayLog.push({ role:'ariana', text: data.reply, ts: replyTs });
 
-    // Append Ariana reply to chat log
-    talkAppendMsg('ariana', data.reply, null, null, replyTs);
+    // If server returned a media image (e.g. "show me your photo" command), display it
+    if (data.imageUrl) {
+      talkAppendMsg('ariana', data.reply === 'here' ? '' : data.reply, data.imageUrl, 'image', replyTs);
+    } else {
+      // Append Ariana reply to chat log
+      talkAppendMsg('ariana', data.reply, null, null, replyTs);
+    }
     talkSaveChatLog();
+
+    // Self-learn in background (non-blocking)
+    setTimeout(() => talkSelfLearn(text, data.reply), 0);
 
     // Speak only in call/orb mode — text chat stays silent
     if (talkOrbMode) {
       talkShowState('speaking');
       talkTypeText(data.reply);
-      await talkElevenLabsDirect(data.reply);
+      if (data.audioBase64) {
+        // Server pre-generated audio — use it directly (no extra API call)
+        talkPlayAudio(data.audioBase64, data.reply);
+      } else {
+        // Browser calls ElevenLabs directly
+        await talkElevenLabsDirect(data.reply);
+      }
     } else {
       talkWatchdogClear();
       talkProcessing = false;
@@ -3543,13 +4338,21 @@ async function talkHandleMediaUpload(e) {
         window._talkPendingMediaUrl  = dataUrl;
         window._talkPendingMediaType = mtype;
 
-        // NOTE: media is NOT saved to the library here — use Media Library tab manually if needed.
-
-        // 4. Auto-trigger Ariana response to the media
-        if (!talkProcessing) {
-          const prompt = mtype === 'video' ? 'I sent you a video' : 'I just shared a photo with you';
-          setTimeout(() => talkProcess(prompt), 300);
+        // 3. Show caption preview bar — let user type caption or press send directly
+        const thumb = document.getElementById('talk-preview-thumb');
+        if (thumb) {
+          thumb.innerHTML = mtype === 'video'
+            ? `<video src="${dataUrl}" muted playsinline style="width:100%;height:100%;object-fit:cover"></video>`
+            : `<img src="${dataUrl}" alt="preview" style="width:100%;height:100%;object-fit:cover">`;
         }
+        document.getElementById('talk-media-preview').classList.add('show');
+
+        // Show send button (even with empty caption) and focus input
+        talkOnType(document.getElementById('talk-text-input').value);
+        document.getElementById('talk-text-input').placeholder = 'Add a caption...';
+        document.getElementById('talk-text-input').focus();
+
+        // NOTE: do NOT auto-trigger here — user controls when to send
 
         resolve();
       };
@@ -3675,30 +4478,56 @@ function renderSchedules() {
 function delSchedule(i) { schedules.splice(i, 1); fetch('/api/extras/schedules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ schedules }) }); renderSchedules(); }
 
 // ── Persona ──
-const PERSONAS = ['default','sweet','cold','flirty','distant'];
+const PERSONAS = ['default','sweet','cold','flirty','distant','explicit','nsfw','girlfriend'];
+const PERSONA_LABELS = {
+  default: { label: 'Default', color: '' },
+  sweet:   { label: 'Sweet',   color: '' },
+  cold:    { label: 'Cold',    color: '' },
+  flirty:  { label: 'Flirty',  color: '#f59e0b' },
+  distant: { label: 'Distant', color: '' },
+  explicit:   { label: '🔥 Explicit',   color: '#ef4444' },
+  nsfw:       { label: '🔞 NSFW',       color: '#dc2626' },
+  girlfriend: { label: '💋 GF Mode',    color: '#ec4899' },
+};
+
 function renderPersonaList() {
   const list = document.getElementById('persona-list');
   const convos = window._cachedConvos || {};
   list.innerHTML = '';
   Object.keys(convos).forEach(phone => {
-    const name = convos[phone].name || phone;
+    const name    = convos[phone].name || phone;
     const current = personas[phone] || 'default';
-    const row = document.createElement('div');
+    const row     = document.createElement('div');
     row.className = 'persona-contact-row';
-    row.innerHTML = `<div class="pc-name">${name}</div>
-      <select class="ex-select" style="width:120px;flex-shrink:0" onchange="setPersona('${phone}',this.value)">
-        ${PERSONAS.map(p => `<option value="${p}" ${p===current?'selected':''}>${p.charAt(0).toUpperCase()+p.slice(1)}</option>`).join('')}
+    row.innerHTML = `
+      <div class="pc-name">${name}</div>
+      <select class="ex-select" style="width:140px;flex-shrink:0" onchange="setPersona('${phone}',this.value)">
+        ${PERSONAS.map(p => {
+          const info  = PERSONA_LABELS[p] || { label: p, color: '' };
+          const style = info.color ? `style="color:${info.color};font-weight:600"` : '';
+          return `<option value="${p}" ${p===current?'selected':''} ${style}>${info.label}</option>`;
+        }).join('')}
       </select>`;
     list.appendChild(row);
   });
 }
 async function setPersona(phone, persona) {
   personas[phone] = persona;
-  try { await fetch('/api/extras/personas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ personas }) }); } catch(e) {}
-  showToast('Persona updated');
+  try {
+    await fetch('/api/extras/personas', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ personas })
+    });
+    const info = PERSONA_LABELS[persona] || { label: persona };
+    showNotif('Persona updated', `${(window._cachedConvos?.[phone]?.name||phone)} → ${info.label}`, '✓');
+  } catch(e) {}
 }
 async function loadPersonas() {
-  try { const res = await fetch('/api/extras/personas'); const d = await res.json(); if (d.personas) personas = d.personas; } catch(e) {}
+  try {
+    const res = await fetch('/api/extras/personas');
+    const d   = await res.json();
+    if (d.personas) personas = d.personas;
+  } catch(e) {}
 }
 
 // ── Broadcast ──
@@ -3805,15 +4634,190 @@ async function loadAnalytics() {
 // Load extras data when view activates
 const _origNavTo = navTo;
 
+async function loadSchedules() {
+  try {
+    const res = await fetch('/api/extras/schedules');
+    const d = await res.json();
+    if (d.schedules) { schedules = d.schedules; renderSchedules(); }
+  } catch(e) {}
+}
+
 // Initialize extras on first load
 async function initExtras() {
   await loadMood();
   await loadPersonas();
   await loadRules();
+  await loadSchedules();
+}
+
+// ══════════════════════════════════════════════
+// PROFILE (now a view — functions kept for compat)
+// ══════════════════════════════════════════════
+// openProfilePanel() and closeProfilePanel() now handled in navTo section above
+
+// ══════════════════════════════════════════════
+// PER-PLATFORM WALLPAPER
+// ══════════════════════════════════════════════
+let _platWpTarget=null;
+
+function applyWallpaper(){
+  const el=document.getElementById("messages");
+  if(!el)return;
+  const p=currentPhone?getPlat(currentPhone):null;
+  const wp=p?(platformWallpapers[p]||wallpaper):wallpaper;
+  // wp can be a preset ID or a data URL
+  if(wp&&wp.startsWith("data:")){
+    el.style.background=`url(${wp}) center/cover no-repeat`;
+  } else {
+    const found=WALLPAPERS.find(w=>w.id===wp);
+    el.style.background=found?found.bg:"#000";
+  }
+}
+
+function openPlatWallpaperModal(){
+  if(!currentPhone)return;
+  const p=getPlat(currentPhone);
+  _platWpTarget=p;
+  const platNames={wa:"WhatsApp",tg:"Telegram",sg:"Signal",sms:"SMS"};
+  document.getElementById("plat-wp-modal-title").textContent=`${platNames[p]||p} Wallpaper`;
+  document.getElementById("plat-wp-modal-sub").textContent=`Background for ${platNames[p]||p} chats`;
+  const current=platformWallpapers[p]||"w0";
+  document.getElementById("plat-wp-grid").innerHTML=WALLPAPERS.map(w=>{
+    const isSel=(w.id===current);
+    return`<div class="wp-swatch${isSel?" sel":""}" style="background:${w.bg};border-color:${isSel?"var(--accent)":"rgba(255,255,255,.08)"}" onclick="selectPlatWp(this,'${w.id}')"><div class="wp-swatch-lbl">${w.label}</div></div>`;
+  }).join("") +
+  // If current is a custom image, add a preview swatch
+  (current.startsWith("data:") ? `<div class="wp-swatch sel" style="background-image:url(${current});background-size:cover;border-color:var(--accent)"><div class="wp-swatch-lbl">Custom</div></div>` : "");
+  pendingPlatWp=current;
+  document.getElementById("plat-wp-modal").classList.remove("hidden");
+}
+
+function selectPlatWp(el,id){
+  document.querySelectorAll(".wp-swatch").forEach(s=>{s.classList.remove("sel");s.style.borderColor="rgba(255,255,255,.08)"});
+  el.classList.add("sel");el.style.borderColor="var(--accent)";
+  pendingPlatWp=id;
+}
+
+function handleWpImageUpload(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    const dataUrl=ev.target.result;
+    pendingPlatWp=dataUrl;
+    // Add custom swatch to grid
+    const grid=document.getElementById("plat-wp-grid");
+    document.querySelectorAll(".wp-swatch").forEach(s=>{s.classList.remove("sel");s.style.borderColor="rgba(255,255,255,.08)"});
+    const swatch=document.createElement("div");
+    swatch.className="wp-swatch sel";
+    swatch.style.cssText=`background-image:url(${dataUrl});background-size:cover;border-color:var(--accent)`;
+    swatch.innerHTML=`<div class="wp-swatch-lbl">Custom</div>`;
+    swatch.onclick=()=>{
+      document.querySelectorAll(".wp-swatch").forEach(s=>{s.classList.remove("sel");s.style.borderColor="rgba(255,255,255,.08)"});
+      swatch.classList.add("sel");swatch.style.borderColor="var(--accent)";
+      pendingPlatWp=dataUrl;
+    };
+    grid.appendChild(swatch);
+  };
+  r.readAsDataURL(f);
+  e.target.value="";
+}
+
+function savePlatWallpaper(){
+  if(!_platWpTarget||!pendingPlatWp)return;
+  platformWallpapers[_platWpTarget]=pendingPlatWp;
+  // Store — skip storing large data URLs in the combined key; store per-platform separately
+  try{
+    const toStore={};
+    Object.keys(platformWallpapers).forEach(k=>{
+      if(!platformWallpapers[k].startsWith("data:"))toStore[k]=platformWallpapers[k];
+    });
+    localStorage.setItem("_pwp",JSON.stringify(toStore));
+    // Store custom images separately
+    Object.keys(platformWallpapers).forEach(k=>{
+      if(platformWallpapers[k].startsWith("data:")){
+        try{localStorage.setItem("_pwp_img_"+k,platformWallpapers[k])}catch{}
+      }
+    });
+  }catch{}
+  closeModal("plat-wp-modal");
+  applyWallpaper();
+  showToast("Wallpaper updated");
+}
+
+// ══════════════════════════════════════════════
+// CONTACTS PERMISSION
+// ══════════════════════════════════════════════
+function showContactsBanner(){
+  const banner=document.getElementById("contacts-banner");
+  if(banner&&!localStorage.getItem("_contacts_asked")){
+    setTimeout(()=>banner.classList.add("show"),1500);
+  }
+}
+function dismissContactsBanner(){
+  document.getElementById("contacts-banner").classList.remove("show");
+  localStorage.setItem("_contacts_asked","1");
+}
+async function doRequestContacts(){
+  dismissContactsBanner();
+  localStorage.setItem("_contacts_asked","1");
+  if("contacts" in navigator&&"ContactsManager" in window){
+    try{
+      const props=["name","tel"];
+      const opts={multiple:true};
+      const contacts=await navigator.contacts.select(props,opts);
+      if(contacts&&contacts.length){
+        contacts.forEach(ct=>{
+          const tel=(ct.tel||[]).find(t=>t);
+          const name=(ct.name||[]).find(n=>n);
+          if(tel&&name){
+            const clean=tel.replace(/\D/g,"");
+            if(clean&&convos[clean]&&!convos[clean].name){
+              convos[clean].name=name;
+            }
+          }
+        });
+        renderList();
+        showToast(`Loaded ${contacts.length} contact${contacts.length>1?"s":""}`);
+      }
+    }catch(e){showToast("Contacts access denied")}
+  } else {
+    showToast("Contacts API not supported on this browser");
+  }
 }
 
 document.addEventListener("touchstart",e=>{_tx=e.touches[0].clientX;_ty=e.touches[0].clientY},{passive:true});
 document.addEventListener("touchend",e=>{const dx=e.changedTouches[0].clientX-_tx;const dy=Math.abs(e.changedTouches[0].clientY-_ty);if(_tx<35&&dx>65&&dy<80&&window.innerWidth<=700){if(document.getElementById("sidebar").classList.contains("open"))closeSidebar();else if(currentPhone)closeChat()}},{passive:true});
+
+// iOS swipe-to-back support
+window.addEventListener('popstate', e => {
+  if(currentPhone){ closeChat(); }
+  else if(currentView !== 'home'){ navTo({dataset:{view:'home'}}); }
+});
+
+document.addEventListener("DOMContentLoaded",()=>{
+  document.body.classList.add("view-home");
+  showContactsBanner();
+});
 </script>
+
+<!-- FLOATING BOTTOM NAV -->
+<div id="bottom-nav">
+  <!-- WhatsApp -->
+  <button class="bn-btn wa-btn" data-view="chats" data-filter="wa" onclick="navTo(this)" aria-label="WhatsApp">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" fill="#25D366"/></svg>
+  </button>
+  <!-- Telegram -->
+  <button class="bn-btn tg-btn" data-view="chats" data-filter="tg" onclick="navTo(this)" aria-label="Telegram">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-.943-.62-.332-1.062.207-1.676.142-.148 2.607-2.39 2.653-2.594.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" fill="#2AABEE"/></svg>
+  </button>
+  <!-- Signal -->
+  <button class="bn-btn sg-btn" data-view="chats" data-filter="sg" onclick="navTo(this)" aria-label="Signal">
+    <svg viewBox="0 0 24 24" fill="#3A76F0" xmlns="http://www.w3.org/2000/svg"><path d="M12 0q-.934 0-1.83.139l.17 1.111a11 11 0 0 1 3.32 0l.172-1.111A12 12 0 0 0 12 0M9.152.34A12 12 0 0 0 5.77 1.742l.584.961a10.8 10.8 0 0 1 3.066-1.27zm5.696 0-.268 1.094a10.8 10.8 0 0 1 3.066 1.27l.584-.962A12 12 0 0 0 14.848.34M12 2.25a9.75 9.75 0 0 0-8.539 14.459c.074.134.1.292.064.441l-1.013 4.338 4.338-1.013a.62.62 0 0 1 .441.064A9.7 9.7 0 0 0 12 21.75c5.385 0 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25m-7.092.068a12 12 0 0 0-2.59 2.59l.909.664a11 11 0 0 1 2.345-2.345zm14.184 0-.664.909a11 11 0 0 1 2.345 2.345l.909-.664a12 12 0 0 0-2.59-2.59M1.742 5.77A12 12 0 0 0 .34 9.152l1.094.268a10.8 10.8 0 0 1 1.269-3.066zm20.516 0-.961.584a10.8 10.8 0 0 1 1.27 3.066l1.093-.268a12 12 0 0 0-1.402-3.383M.138 10.168A12 12 0 0 0 0 12q0 .934.139 1.83l1.111-.17A11 11 0 0 1 1.125 12q0-.848.125-1.66zm23.723.002-1.111.17q.125.812.125 1.66c0 .848-.042 1.12-.125 1.66l1.111.172a12.1 12.1 0 0 0 0-3.662M1.434 14.58l-1.094.268a12 12 0 0 0 .96 2.591l-.265 1.14 1.096.255.36-1.539-.188-.365a10.8 10.8 0 0 1-.87-2.35m21.133 0a10.8 10.8 0 0 1-1.27 3.067l.962.584a12 12 0 0 0 1.402-3.383zm-1.793 3.848a11 11 0 0 1-2.345 2.345l.664.909a12 12 0 0 0 2.59-2.59zm-19.959 1.1L.357 21.48a1.8 1.8 0 0 0 2.162 2.161l1.954-.455-.256-1.095-1.953.455a.675.675 0 0 1-.81-.81l.454-1.954zm16.832 1.769a10.8 10.8 0 0 1-3.066 1.27l.268 1.093a12 12 0 0 0 3.382-1.402zm-10.94.213-1.54.36.256 1.095 1.139-.266c.814.415 1.683.74 2.591.961l.268-1.094a10.8 10.8 0 0 1-2.35-.869zm3.634 1.24-.172 1.111a12.1 12.1 0 0 0 3.662 0l-.17-1.111q-.812.125-1.66.125a11 11 0 0 1-1.66-.125"/></svg>
+  </button>
+  <!-- SMS -->
+  <button class="bn-btn sms-btn" data-view="chats" data-filter="sms" onclick="navTo(this)" aria-label="SMS">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" fill="#34C759"/></svg>
+  </button>
+</div>
 </body>
 </html>
