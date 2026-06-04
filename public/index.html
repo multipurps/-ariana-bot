@@ -31,7 +31,7 @@
   --sent-sg:#1d3461;--sent-sg-b:rgba(58,118,240,0.35);
   --sent-sms:#1a4d1e;--sent-sms-b:rgba(52,199,89,0.3);
 }
-html,body{height:100%;background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;overflow:hidden;overscroll-behavior:none}
+html,body{height:100%;background:#010818;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;overflow:hidden;overscroll-behavior:none}
 button{cursor:pointer;border:none;background:none;color:inherit;font-family:inherit}
 input,textarea{font-family:inherit;color:inherit}
 
@@ -2206,11 +2206,32 @@ try{const pwp=localStorage.getItem("_pwp");if(pwp)platformWallpapers={...platfor
 ["wa","tg","sg","sms"].forEach(k=>{try{const img=localStorage.getItem("_pwp_img_"+k);if(img)platformWallpapers[k]=img}catch{}});
 
 if("serviceWorker" in navigator){
+  // Force the SW to check for updates immediately on every load
+  // so a newly-deployed index.html is never served from stale cache
   navigator.serviceWorker.register("/sw.js").then(reg=>{
+    reg.update(); // kick off update check right now
     navigator.serviceWorker.addEventListener("message",e=>{
       if(e.data?.type==="OPEN_CHAT"&&e.data.phone){navTo(document.querySelector('[data-view="chats"][data-filter="all"]'));openChat(e.data.phone)}
-    })
-  }).catch(()=>{})
+    });
+    // When a new SW takes over, reload once to get fresh assets
+    navigator.serviceWorker.addEventListener("controllerchange",()=>{
+      if(!sessionStorage.getItem("_sw_reloaded")){
+        sessionStorage.setItem("_sw_reloaded","1");
+        window.location.reload();
+      }
+    });
+  }).catch(()=>{});
+  // Clear any stale cache entries that may hold an old index.html
+  if("caches" in window){
+    caches.keys().then(keys=>{
+      keys.forEach(k=>{
+        caches.open(k).then(cache=>{
+          cache.delete("/");
+          cache.delete("/index.html");
+        });
+      });
+    });
+  }
 }
 
 // ══════════════════════════════════════════════
