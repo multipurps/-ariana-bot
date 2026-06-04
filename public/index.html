@@ -987,40 +987,9 @@ input,textarea{font-family:inherit;color:inherit}
 .wp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
 .wp-thumb{aspect-ratio:9/16;border-radius:10px;cursor:pointer;border:2px solid transparent;display:flex;align-items:center;justify-content:center;font-size:12px;color:rgba(255,255,255,.4);transition:border-color .2s}
 .wp-thumb.active{border-color:var(--wa)}
-/* ── iOS-style notification banner ── */
-#notif-banner{
-  position:fixed;top:0;left:0;right:0;z-index:900;
-  padding-top:env(safe-area-inset-top);
-  pointer-events:none;
-}
-#notif-inner{
-  margin:8px 12px 0;
-  background:rgba(30,30,36,0.97);
-  border:1px solid rgba(255,255,255,0.12);
-  border-radius:16px;padding:11px 14px;
-  display:flex;align-items:center;gap:11px;
-  transform:translateY(-130%);
-  transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);
-  backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);
-  box-shadow:0 10px 40px rgba(0,0,0,0.55);
-  pointer-events:all;
-}
-#notif-inner.show{transform:translateY(0)}
-#notif-icon-wrap{width:36px;height:36px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.08)}
-#notif-title{font-size:13px;font-weight:600;color:#fff;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#notif-body{font-size:13px;color:rgba(255,255,255,0.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#notif-time{font-size:11px;color:rgba(255,255,255,0.3);flex-shrink:0;align-self:flex-start;margin-top:1px}
-
-/* ── talk media caption preview bar ── */
-#talk-media-preview{display:none;align-items:center;gap:10px;padding:8px 14px;background:rgba(0,0,0,0.96);border-top:1px solid rgba(255,255,255,0.1)}
-#talk-media-preview.show{display:flex}
-#talk-preview-thumb{width:52px;height:52px;border-radius:9px;overflow:hidden;flex-shrink:0;background:rgba(255,255,255,.08)}
-#talk-preview-thumb img,#talk-preview-thumb video{width:100%;height:100%;object-fit:cover}
-#talk-preview-label{flex:1;font-size:12px;color:rgba(255,255,255,.45)}
-#talk-preview-cancel{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.7);font-size:16px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
-
-/* ── settings modal layout ── */
-.settings-field-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--t3);margin-bottom:5px;margin-top:12px;display:block}
+/* toast */
+#toast{position:fixed;bottom:86px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(20,20,26,.96);border:1px solid var(--b2);color:#fff;border-radius:10px;padding:10px 18px;font-size:13px;opacity:0;transition:all .25s;z-index:700;white-space:nowrap;pointer-events:none;max-width:88vw;overflow:hidden;text-overflow:ellipsis}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* ── RESPONSIVE ── */
 @media(max-width:700px){
@@ -1042,73 +1011,6 @@ input,textarea{font-family:inherit;color:inherit}
 
 /* force-hide fallback orb layers when canvas is rendering */
 #talk-orb.canvas-active .ol { display:none !important; }
-
-/* ── quick-action chips on idle screen ── */
-.talk-chip{
-  background:rgba(255,255,255,0.07);
-  border:1px solid rgba(255,255,255,0.13);
-  color:rgba(255,255,255,0.75);
-  border-radius:20px;padding:7px 14px;
-  font-size:13px;cursor:pointer;
-  transition:background .18s,border-color .18s;
-  white-space:nowrap;
-}
-.talk-chip:hover,.talk-chip:active{background:rgba(255,255,255,0.14);border-color:rgba(255,255,255,0.25)}
-
-/* muted state for orb control buttons */
-.orb-ctrl-btn.muted{background:rgba(239,68,68,.18)!important;border-color:rgba(239,68,68,.35)!important}
-.orb-ctrl-btn.muted svg{stroke:#ef4444}
-
-/* ── FLOATING BOTTOM NAV — liquid glass ── */
-#bottom-nav{
-  position:fixed;
-  bottom:calc(16px + env(safe-area-inset-bottom));
-  left:50%;
-  transform:translateX(-50%);
-  z-index:300;
-  display:flex;
-  align-items:center;
-  gap:2px;
-  padding:6px 8px;
-  background:rgba(16,16,22,0.55);
-  backdrop-filter:blur(56px) saturate(240%) brightness(1.1);
-  -webkit-backdrop-filter:blur(56px) saturate(240%) brightness(1.1);
-  border-radius:40px;
-  border:1px solid rgba(255,255,255,0.13);
-  box-shadow:
-    0 12px 48px rgba(0,0,0,0.6),
-    0 2px 8px rgba(0,0,0,0.35),
-    inset 0 1.5px 0 rgba(255,255,255,0.14),
-    inset 0 -1px 0 rgba(0,0,0,0.25);
-}
-.bn-btn{
-  width:46px;height:46px;
-  border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  background:none;border:none;cursor:pointer;
-  position:relative;
-  transition:background .18s,transform .12s;
-  -webkit-tap-highlight-color:transparent;
-}
-.bn-btn svg{
-  width:24px;height:24px;display:block;
-  transition:filter .2s,transform .2s;
-  filter:saturate(0.5) brightness(0.7) grayscale(0.2);
-}
-.bn-btn.active{background:rgba(255,255,255,0.09)}
-.bn-btn.active svg{filter:saturate(1) brightness(1);transform:scale(1.08)}
-.bn-btn:active{transform:scale(0.86)}
-.bn-btn::after{
-  content:'';position:absolute;
-  bottom:4px;left:50%;transform:translateX(-50%);
-  width:3px;height:3px;border-radius:50%;
-  opacity:0;transition:opacity .2s;
-}
-.bn-btn.active::after{opacity:1}
-.bn-btn.wa-btn::after{background:#25D366}
-.bn-btn.tg-btn::after{background:#2AABEE}
-.bn-btn.sg-btn::after{background:#3A76F0}
-.bn-btn.sms-btn::after{background:#34C759}
 </style>
 </head>
 <body>
@@ -1146,7 +1048,37 @@ input,textarea{font-family:inherit;color:inherit}
       <div class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
       <div class="sb-label">All Chats</div>
     </div>
+    <!-- WhatsApp -->
+    <div class="sb-item wa-item" data-view="chats" data-filter="wa" onclick="navTo(this)">
+      <div class="sb-icon">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" fill="#25D366"/></svg>
+      </div>
+      <div class="sb-label">WhatsApp</div>
+    </div>
+    <!-- Telegram -->
+    <div class="sb-item tg-item" data-view="chats" data-filter="tg" onclick="navTo(this)">
+      <div class="sb-icon">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-.943-.62-.332-1.062.207-1.676.142-.148 2.607-2.39 2.653-2.594.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" fill="#2AABEE"/></svg>
+      </div>
+      <div class="sb-label">Telegram</div>
+    </div>
+    <!-- Signal -->
+    <div class="sb-item sg-item" data-view="chats" data-filter="sg" onclick="navTo(this)">
+      <div class="sb-icon">
+        <svg viewBox="0 0 24 24" fill="#3A76F0" xmlns="http://www.w3.org/2000/svg"><path d="M12 0q-.934 0-1.83.139l.17 1.111a11 11 0 0 1 3.32 0l.172-1.111A12 12 0 0 0 12 0M9.152.34A12 12 0 0 0 5.77 1.742l.584.961a10.8 10.8 0 0 1 3.066-1.27zm5.696 0-.268 1.094a10.8 10.8 0 0 1 3.066 1.27l.584-.962A12 12 0 0 0 14.848.34M12 2.25a9.75 9.75 0 0 0-8.539 14.459c.074.134.1.292.064.441l-1.013 4.338 4.338-1.013a.62.62 0 0 1 .441.064A9.7 9.7 0 0 0 12 21.75c5.385 0 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25m-7.092.068a12 12 0 0 0-2.59 2.59l.909.664a11 11 0 0 1 2.345-2.345zm14.184 0-.664.909a11 11 0 0 1 2.345 2.345l.909-.664a12 12 0 0 0-2.59-2.59M1.742 5.77A12 12 0 0 0 .34 9.152l1.094.268a10.8 10.8 0 0 1 1.269-3.066zm20.516 0-.961.584a10.8 10.8 0 0 1 1.27 3.066l1.093-.268a12 12 0 0 0-1.402-3.383M.138 10.168A12 12 0 0 0 0 12q0 .934.139 1.83l1.111-.17A11 11 0 0 1 1.125 12q0-.848.125-1.66zm23.723.002-1.111.17q.125.812.125 1.66c0 .848-.042 1.12-.125 1.66l1.111.172a12.1 12.1 0 0 0 0-3.662M1.434 14.58l-1.094.268a12 12 0 0 0 .96 2.591l-.265 1.14 1.096.255.36-1.539-.188-.365a10.8 10.8 0 0 1-.87-2.35m21.133 0a10.8 10.8 0 0 1-1.27 3.067l.962.584a12 12 0 0 0 1.402-3.383zm-1.793 3.848a11 11 0 0 1-2.345 2.345l.664.909a12 12 0 0 0 2.59-2.59zm-19.959 1.1L.357 21.48a1.8 1.8 0 0 0 2.162 2.161l1.954-.455-.256-1.095-1.953.455a.675.675 0 0 1-.81-.81l.454-1.954zm16.832 1.769a10.8 10.8 0 0 1-3.066 1.27l.268 1.093a12 12 0 0 0 3.382-1.402zm-10.94.213-1.54.36.256 1.095 1.139-.266c.814.415 1.683.74 2.591.961l.268-1.094a10.8 10.8 0 0 1-2.35-.869zm3.634 1.24-.172 1.111a12.1 12.1 0 0 0 3.662 0l-.17-1.111q-.812.125-1.66.125a11 11 0 0 1-1.66-.125"/></svg>
+      </div>
+      <div class="sb-label">Signal</div>
+    </div>
+    <!-- SMS -->
+    <div class="sb-item sms-item" data-view="chats" data-filter="sms" onclick="navTo(this)">
+      <div class="sb-icon">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" fill="#34C759"/></svg>
+      </div>
+      <div class="sb-label">SMS</div>
+    </div>
   </div>
+
+  <div class="sb-divider"></div>
 
   <!-- Tools section -->
   <div class="sb-section">
@@ -1182,10 +1114,6 @@ input,textarea{font-family:inherit;color:inherit}
     <div class="sb-footer-item" onclick="openWallpaperModal()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
       Wallpaper
-    </div>
-    <div class="sb-footer-item" onclick="openSettingsModal()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-      API Keys
     </div>
   </div>
 </div>
@@ -1448,13 +1376,6 @@ input,textarea{font-family:inherit;color:inherit}
           onerror="this.style.display='none'">
         <div id="talk-idle-greeting">Hi, what's the move?</div>
         <div id="talk-idle-sub">Say something or type below</div>
-        <!-- Quick action chips -->
-        <div id="talk-quick-chips" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px;padding:0 20px">
-          <button class="talk-chip" onclick="talkQuick('give me a daily briefing')">📋 Daily briefing</button>
-          <button class="talk-chip" onclick="talkQuick('who should I block')">🚫 Who to block</button>
-          <button class="talk-chip" onclick="talkQuick('show me your photo')">📸 Show me you</button>
-          <button class="talk-chip" onclick="talkQuick('what have you been up to today')">💬 What\'s been happening</button>
-        </div>
       </div>
 
       <!-- CHAT LOG HEADER (clear button, shows when there are messages) -->
@@ -1530,13 +1451,6 @@ input,textarea{font-family:inherit;color:inherit}
 
       <!-- BOTTOM -->
       <div id="talk-bottom">
-
-        <!-- media caption preview (shown when image is attached) -->
-        <div id="talk-media-preview">
-          <div id="talk-preview-thumb"></div>
-          <span id="talk-preview-label">Tap send or type a caption</span>
-          <button id="talk-preview-cancel" onclick="talkClearMedia()">×</button>
-        </div>
 
         <!-- standard bar -->
         <div id="talk-bar-std">
@@ -1695,35 +1609,7 @@ input,textarea{font-family:inherit;color:inherit}
     <div class="modal-btns"><button class="mbtn cancel" onclick="closeModal('tag-modal')">Cancel</button><button class="mbtn confirm accent" onclick="saveTagModal()">Save Tags</button></div>
   </div>
 </div>
-<!-- iOS NOTIFICATION BANNER -->
-<div id="notif-banner">
-  <div id="notif-inner">
-    <div id="notif-icon-wrap"><span id="notif-icon" style="font-size:18px">✦</span></div>
-    <div style="flex:1;min-width:0">
-      <div id="notif-title"></div>
-      <div id="notif-body"></div>
-    </div>
-    <div id="notif-time"></div>
-  </div>
-</div>
-
-<!-- SETTINGS MODAL -->
-<div class="modal-overlay hidden" id="settings-modal">
-  <div class="modal">
-    <h3>API Settings</h3>
-    <p style="font-size:12px;color:var(--t2);margin-bottom:14px">Stored locally in your browser — never sent anywhere else.</p>
-    <span class="settings-field-label">ElevenLabs API Key</span>
-    <input class="modal-input" id="el-key-input" type="password" placeholder="sk_...">
-    <span class="settings-field-label">ElevenLabs Voice ID</span>
-    <input class="modal-input" id="el-voice-input" type="text" placeholder="Voice ID">
-    <span class="settings-field-label">Dashboard Secret Key</span>
-    <input class="modal-input" id="dash-key-input" type="password" placeholder="Your DASHBOARD_SECRET value from Render">
-    <div class="modal-btns">
-      <button class="mbtn cancel" onclick="closeModal('settings-modal')">Cancel</button>
-      <button class="mbtn confirm accent" onclick="saveSettingsModal()">Save</button>
-    </div>
-  </div>
-</div>
+<div id="toast"></div>
 
 <script>
 // ══════════════════════════════════════════════
@@ -1830,8 +1716,8 @@ function navTo(el){
   if(!el)return;
   const view=el.dataset.view;
   const filter=el.dataset.filter||null;
-  // update active state — covers both sidebar items and bottom nav buttons
-  document.querySelectorAll(".sb-item,.bn-btn").forEach(i=>i.classList.remove("active"));
+  // update active state
+  document.querySelectorAll(".sb-item").forEach(i=>i.classList.remove("active"));
   el.classList.add("active");
   // switch view
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
@@ -1881,12 +1767,7 @@ socket.on("new_message",data=>{
     if(convo)convos[phone]=convo;
     else{if(!convos[phone])convos[phone]={phone,messages:[],name:"",lastSeen:msg.time};if(!Array.isArray(convos[phone].messages))convos[phone].messages=[];convos[phone].messages.push(msg);convos[phone].lastSeen=msg.time}
     if(phone===currentPhone){appendMsg(msg);scrollBottom()}
-    else{
-      if(!convos[phone]._unread)convos[phone]._unread=0;convos[phone]._unread++;
-      const p=getPlat(phone);
-      const platEmoji={wa:'💬',tg:'✈️',sms:'📱',sg:'🔒'};
-      showNotif(convos[phone].name||phone, String(msg.text||'').slice(0,70)||'Sent media', platEmoji[p]||'💬', 5000);
-    }
+    else{if(!convos[phone]._unread)convos[phone]._unread=0;convos[phone]._unread++;showToast((convos[phone].name||phone)+": "+String(msg.text||"").slice(0,40))}
     renderList();
   }catch(e){}
 });
@@ -2189,103 +2070,16 @@ function applyWp(id,bg){wallpaper=id;try{localStorage.setItem("_wp",id);localSto
 function applyWallpaper(){const m=document.getElementById("messages");if(!m)return;const bg=localStorage.getItem("_wpbg")||"#000";m.style.background=wallpaper==="w0"?"#000":bg}
 function handleWpUpload(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>applyWp("custom",`url(${ev.target.result}) center/cover`);r.readAsDataURL(f)}
 async function requestPush(){
-  if(!("Notification"in window)){showNotif('Not supported','Your browser doesn\'t support push notifications','⚠️');return}
-  const p=await Notification.requestPermission();
-  if(p!=="granted"){showNotif('Blocked','Notification permission denied — check browser settings','🔕');return}
-  try{
-    const reg=await navigator.serviceWorker.ready;
-    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64ToArr(VAPID)});
-    await fetch("/api/push-subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(sub)});
-    showNotif('Notifications on','You\'ll get notified even when the tab is closed','🔔');
-    closeSidebar();
-  }catch(e){showNotif('Push failed',e.message,'⚠️')}
+  if(!("Notification"in window)){showToast("Not supported");return}
+  const p=await Notification.requestPermission();if(p!=="granted"){showToast("Permission denied");return}
+  try{const reg=await navigator.serviceWorker.ready;const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64ToArr(VAPID)});await fetch("/api/push-subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(sub)});showToast("Notifications enabled");closeSidebar()}catch(e){showToast("Push failed")}
 }
 function b64ToArr(b64){const pad="=".repeat((4-b64.length%4)%4);const raw=atob((b64+pad).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)))}
 function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 function fmtTime(iso){if(!iso)return"";try{const d=new Date(iso),now=new Date();if(d.toDateString()===now.toDateString())return d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});const diff=(now-d)/864e5;if(diff<7)return["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()];return d.toLocaleDateString([],{month:"numeric",day:"numeric"})}catch{return""}}
 function fmtTimeFull(iso){if(!iso)return"";try{return new Date(iso).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}catch{return""}}
 function fmtDate(iso){if(!iso)return"—";try{const d=new Date(iso),now=new Date();if(d.toDateString()===now.toDateString())return"Today";if(new Date(now-864e5).toDateString()===d.toDateString())return"Yesterday";return d.toLocaleDateString([],{month:"short",day:"numeric",year:"numeric"})}catch{return"—"}}
-let _notifTimer = null;
-function showNotif(title, body, icon, duration) {
-  duration = duration || 3800;
-  clearTimeout(_notifTimer);
-  const inner = document.getElementById('notif-inner');
-  const iconEl = document.getElementById('notif-icon');
-  const titleEl = document.getElementById('notif-title');
-  const bodyEl  = document.getElementById('notif-body');
-  const timeEl  = document.getElementById('notif-time');
-  if (typeof icon === 'string' && icon.startsWith('<')) {
-    iconEl.parentElement.innerHTML = '<div style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">'+icon+'</div>';
-  } else {
-    iconEl.textContent = icon || '✦';
-  }
-  titleEl.textContent = String(title || '');
-  bodyEl.textContent  = String(body  || '');
-  timeEl.textContent  = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-  inner.classList.add('show');
-  inner.onclick = () => { clearTimeout(_notifTimer); inner.classList.remove('show'); };
-  _notifTimer = setTimeout(() => inner.classList.remove('show'), duration);
-}
-/* backward-compat: all existing showToast() calls route here */
-function showToast(msg) { showNotif('Ariana', msg, '✦'); }
-
-/* ── ElevenLabs key helpers — stored in localStorage, never hardcoded ── */
-function getElevenKey()   { return localStorage.getItem('_el_key')   || ''; }
-function getElevenVoice() { return localStorage.getItem('_el_voice') || 'Uuc6s41mqYjIaMyXWGxL'; }
-function getDashKey()     { return localStorage.getItem('_dashKey')  || ''; }
-
-/* ── Settings modal ── */
-function openSettingsModal() {
-  document.getElementById('el-key-input').value   = getElevenKey();
-  document.getElementById('el-voice-input').value = getElevenVoice();
-  document.getElementById('dash-key-input').value = getDashKey();
-  document.getElementById('settings-modal').classList.remove('hidden');
-  closeSidebar();
-}
-function saveSettingsModal() {
-  const key   = document.getElementById('el-key-input').value.trim();
-  const voice = document.getElementById('el-voice-input').value.trim();
-  const dash  = document.getElementById('dash-key-input').value.trim();
-  if (key)   localStorage.setItem('_el_key',   key);
-  if (voice) localStorage.setItem('_el_voice', voice);
-  if (dash)  localStorage.setItem('_dashKey',  dash);
-  closeModal('settings-modal');
-  showNotif('Settings saved', 'API keys stored in your browser', '✓');
-}
-
-/* ── Self-learning: extract facts from conversation turn → update brain ── */
-async function talkSelfLearn(userMsg, arianaReply) {
-  if (!userMsg || !arianaReply || userMsg === '[image]') return;
-  try {
-    await fetch('/api/talk-learn', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Dashboard-Key': getDashKey() },
-      body: JSON.stringify({ userMessage: userMsg, arianaReply })
-    });
-  } catch(e) { /* silent — not critical */ }
-}
-
-/* ── Scheduler: fire due messages ── */
-async function runDueSchedules() {
-  if (!schedules.length) return;
-  const now = Date.now();
-  const due = schedules.filter(s => s.time && new Date(s.time).getTime() <= now);
-  if (!due.length) return;
-  for (const s of due) {
-    try {
-      const r = await fetch('/api/send/' + encodeURIComponent(s.phone), {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ message: s.msg || s.message })
-      });
-      const j = await r.json();
-      if (j.ok) showNotif('Scheduled message sent', (window._cachedConvos?.[s.phone]?.name || s.phone), '📅');
-    } catch(e) { console.warn('[scheduler]', e); }
-  }
-  schedules = schedules.filter(s => new Date(s.time).getTime() > now);
-  try { await fetch('/api/extras/schedules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({schedules})}); } catch(e){}
-  renderSchedules();
-}
-setInterval(runDueSchedules, 30000); // check every 30s
+let _tt;function showToast(msg){const el=document.getElementById("toast");el.textContent=String(msg||"");el.classList.add("show");clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove("show"),3000)}
 
 // ══════════════════════════════════════════════
 // GENERATE
@@ -2623,8 +2417,6 @@ let talkInlineBars  = [];
 let talkWaveRaf     = null;
 let talkTypeTimer   = null;
 let talkOrbMode     = false;
-let _talkGainNode   = null;  // current ElevenLabs gain node — used for real-time volume
-let _speakerOn      = true;
 window._talkDisplayLog      = [];
 window._talkPendingMedia     = null;
 window._talkPendingMediaUrl  = null;
@@ -2968,16 +2760,10 @@ function talkPlayAudio(b64, transcript) {
   });
 }
 
-/* ── ElevenLabs Direct (called from browser — bypasses Render so key can't be rate-limited by proxy) ── */
+/* ── ElevenLabs Direct (called from browser — uses phone IP, not Render) ── */
 async function talkElevenLabsDirect(text) {
-  const ELEVEN_KEY      = getElevenKey();
-  const ELEVEN_VOICE_ID = getElevenVoice();
-
-  if (!ELEVEN_KEY) {
-    console.warn('[ElevenDirect] No API key — open API Keys in sidebar to set one');
-    talkSpeakWebSpeech(text);
-    return;
-  }
+  const ELEVEN_KEY      = "sk_ce3baf0035e207baf49c35219a9dcd6ab681e9160e0184c0";
+  const ELEVEN_VOICE_ID = "Uuc6s41mqYjIaMyXWGxL";
 
   // Disconnect mic source from analyser during playback — prevents browser echo
   // cancellation / AGC from ducking Ariana's voice output
@@ -3016,8 +2802,7 @@ async function talkElevenLabsDirect(text) {
     await audioCtx.resume();  // iOS requires explicit resume even for new contexts
     const decoded  = await audioCtx.decodeAudioData(arrayBuffer);
     const gainNode  = audioCtx.createGain();
-    gainNode.gain.value = _speakerOn ? 2.0 : 0.001;  // respect mute state
-    _talkGainNode = gainNode;
+    gainNode.gain.value = 2.0;  // Full speaker volume (iOS may still apply system limit)
     const source   = audioCtx.createBufferSource();
     source.buffer  = decoded;
     source.connect(gainNode);
@@ -3113,19 +2898,18 @@ function talkSpeakWebSpeech(text) {
   setTimeout(() => window.speechSynthesis.speak(utter), 80);
 }
 
-/* ── speaker toggle — works on active gain node, not setSinkId ── */
+/* ── speaker toggle ── */
+let _speakerOn = true;
 function talkToggleSpeaker() {
   _speakerOn = !_speakerOn;
   const btn = document.getElementById('talk-speaker-btn');
-  if (btn) {
-    btn.classList.toggle('muted', !_speakerOn);
-    btn.innerHTML = _speakerOn
-      ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>`
-      : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>`;
+  if (btn) btn.classList.toggle('muted', !_speakerOn);
+  // On iOS, programmatic audio routing is not available via JS.
+  // setSinkId works on desktop Chrome/Edge.
+  if (talkAudio && talkAudio.setSinkId) {
+    talkAudio.setSinkId(_speakerOn ? '' : 'default').catch(() => {});
   }
-  // Control live audio gain if currently playing
-  if (_talkGainNode) _talkGainNode.gain.value = _speakerOn ? 2.0 : 0.001;
-  if (talkAudio) talkAudio.volume = _speakerOn ? 1.0 : 0.001;
+  showToast(_speakerOn ? 'Speaker on' : 'Speaker off');
 }
 
 /* ── mic analyser ── */
@@ -3172,7 +2956,7 @@ async function talkToggleCamera() {
       flipBtn.classList.add('show');
       talkCameraOn = true;
     } catch(e) {
-      showNotif('Camera blocked', 'Allow camera access in browser settings', '📷');
+      showToast('Camera access denied');
     }
   }
 }
@@ -3188,7 +2972,7 @@ async function talkFlipCamera() {
     });
     document.getElementById('talk-video-bg').srcObject = talkStream;
   } catch(e) {
-    showNotif('Camera error', 'Could not switch camera', '📷');
+    showToast('Could not switch camera');
   }
 }
 
@@ -3203,33 +2987,11 @@ function talkCaptureFrame() {
   return canvas.toDataURL('image/jpeg', 0.78).split(',')[1];
 }
 
-/* ── quick-action chip tap ── */
-function talkQuick(text) {
-  if (talkProcessing) return;
-  // Show it as a user bubble immediately, then process
-  const now = Date.now();
-  talkAppendMsg('user', text, null, null, now);
-  window._talkDisplayLog.push({ role:'user', text, ts: now });
-  talkHistory.push({ role:'user', content: text });
-  talkProcess(text);
-}
-
-/* ── clear pending media (caption cancel) ── */
-function talkClearMedia() {
-  window._talkPendingMedia     = null;
-  window._talkPendingMediaUrl  = null;
-  window._talkPendingMediaType = null;
-  window._talkMediaAlreadyShown = false;
-  document.getElementById('talk-media-preview').classList.remove('show');
-  document.getElementById('talk-text-input').placeholder = 'Message Ariana...';
-  talkOnType(document.getElementById('talk-text-input').value);
-}
-
 /* ── text input ── */
 function talkOnType(val) {
   const sendBtn = document.getElementById('talk-send-btn');
   const micBtn  = document.getElementById('talk-mic-inline-btn');
-  if (val.trim().length > 0 || window._talkPendingMedia) {
+  if (val.trim().length > 0) {
     sendBtn.classList.add('show');
     micBtn.style.display = 'none';
   } else {
@@ -3404,34 +3166,15 @@ function talkLeaveOrbMode() {
 }
 
 function talkOrbMicToggle() {
-  const btn = document.getElementById('talk-orb-mic-btn');
   if (talkListening) {
-    // MUTE: stop recogniser, show slashed mic
+    // Mute: stop recogniser but stay in orb mode
     if (talkRecog) { try { talkRecog.abort(); } catch(e){} talkRecog = null; }
     talkListening = false;
-    if (btn) {
-      btn.classList.add('muted');
-      btn.title = 'Unmute';
-      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <line x1="1" y1="1" x2="23" y2="23"/>
-        <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
-        <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/>
-        <line x1="12" y1="19" x2="12" y2="23"/>
-        <line x1="8" y1="23" x2="16" y2="23"/>
-      </svg>`;
-    }
+    const btn = document.getElementById('talk-orb-mic-btn');
+    if (btn) btn.style.opacity = '0.4';
   } else {
-    // UNMUTE: restore mic icon
-    if (btn) {
-      btn.classList.remove('muted');
-      btn.title = 'Mute';
-      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-        <line x1="12" y1="19" x2="12" y2="23"/>
-        <line x1="8" y1="23" x2="16" y2="23"/>
-      </svg>`;
-    }
+    const btn = document.getElementById('talk-orb-mic-btn');
+    if (btn) btn.style.opacity = '';
     talkStartListening();
   }
 }
@@ -3447,7 +3190,7 @@ async function talkToggleMic() {
 
 async function talkStartListening() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { showNotif('Not supported', 'Use Chrome or Safari for voice', '🎙️'); return; }
+  if (!SR) { showToast('Speech recognition not supported in this browser'); return; }
   if (talkAudio) { talkAudio.pause(); talkAudio = null; }
 
   // Request mic permission ONCE — reuse stream after that
@@ -3676,39 +3419,8 @@ async function talkProcess(text) {
   if (!text && !hasMedia) return;
   if (!text) text = '[image]';
 
-  // ── Clear caption bar as soon as message is sent ──
-  document.getElementById('talk-media-preview').classList.remove('show');
-  document.getElementById('talk-text-input').placeholder = 'Message Ariana...';
-
   talkProcessing = true;
   talkWatchdogStart();
-
-  // ── Try owner command first (text/send/call actions) ──
-  const dashKey = getDashKey();
-  const isAction = /^(text|message|send|call|tell|email|forward|reply|ask)\s/i.test(text.trim());
-  if (isAction && text !== '[image]') {
-    try {
-      const cmdRes = await fetch('/api/owner-command', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Dashboard-Key': dashKey },
-        body: JSON.stringify({ message: text, source: 'live_talk' })
-      });
-      const cmdData = await cmdRes.json();
-      if (cmdData.handled) {
-        talkWatchdogClear();
-        talkProcessing = false;
-        const replyTs = Date.now();
-        talkAppendMsg('ariana', cmdData.confirmation, null, null, replyTs);
-        window._talkDisplayLog.push({ role:'ariana', text: cmdData.confirmation, ts: replyTs });
-        talkSaveChatLog();
-        if (talkOrbMode) {
-          talkShowState('speaking');
-          await talkElevenLabsDirect(cmdData.confirmation);
-        } else { talkShowState('idle'); }
-        return;
-      }
-    } catch(e) { console.warn('[cmd] owner-command lookup failed:', e.message); }
-  }
 
   // Use pending uploaded media OR camera frame
   const imageBase64 = window._talkPendingMedia || talkCaptureFrame();
@@ -3750,7 +3462,7 @@ async function talkProcess(text) {
   try {
     const res = await fetch('/api/talk', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Dashboard-Key': dashKey },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: text, history: talkHistory.slice(-14), imageBase64 })
     });
     if (!res.ok) throw new Error('Server ' + res.status);
@@ -3761,29 +3473,15 @@ async function talkProcess(text) {
     talkHistory.push({ role: 'assistant', content: data.reply });
     window._talkDisplayLog.push({ role:'ariana', text: data.reply, ts: replyTs });
 
-    // If server returned a media image (e.g. "show me your photo" command), display it
-    if (data.imageUrl) {
-      talkAppendMsg('ariana', data.reply === 'here' ? '' : data.reply, data.imageUrl, 'image', replyTs);
-    } else {
-      // Append Ariana reply to chat log
-      talkAppendMsg('ariana', data.reply, null, null, replyTs);
-    }
+    // Append Ariana reply to chat log
+    talkAppendMsg('ariana', data.reply, null, null, replyTs);
     talkSaveChatLog();
-
-    // Self-learn in background (non-blocking)
-    setTimeout(() => talkSelfLearn(text, data.reply), 0);
 
     // Speak only in call/orb mode — text chat stays silent
     if (talkOrbMode) {
       talkShowState('speaking');
       talkTypeText(data.reply);
-      if (data.audioBase64) {
-        // Server pre-generated audio — use it directly (no extra API call)
-        talkPlayAudio(data.audioBase64, data.reply);
-      } else {
-        // Browser calls ElevenLabs directly
-        await talkElevenLabsDirect(data.reply);
-      }
+      await talkElevenLabsDirect(data.reply);
     } else {
       talkWatchdogClear();
       talkProcessing = false;
@@ -3845,21 +3543,13 @@ async function talkHandleMediaUpload(e) {
         window._talkPendingMediaUrl  = dataUrl;
         window._talkPendingMediaType = mtype;
 
-        // 3. Show caption preview bar — let user type caption or press send directly
-        const thumb = document.getElementById('talk-preview-thumb');
-        if (thumb) {
-          thumb.innerHTML = mtype === 'video'
-            ? `<video src="${dataUrl}" muted playsinline style="width:100%;height:100%;object-fit:cover"></video>`
-            : `<img src="${dataUrl}" alt="preview" style="width:100%;height:100%;object-fit:cover">`;
+        // NOTE: media is NOT saved to the library here — use Media Library tab manually if needed.
+
+        // 4. Auto-trigger Ariana response to the media
+        if (!talkProcessing) {
+          const prompt = mtype === 'video' ? 'I sent you a video' : 'I just shared a photo with you';
+          setTimeout(() => talkProcess(prompt), 300);
         }
-        document.getElementById('talk-media-preview').classList.add('show');
-
-        // Show send button (even with empty caption) and focus input
-        talkOnType(document.getElementById('talk-text-input').value);
-        document.getElementById('talk-text-input').placeholder = 'Add a caption...';
-        document.getElementById('talk-text-input').focus();
-
-        // NOTE: do NOT auto-trigger here — user controls when to send
 
         resolve();
       };
@@ -3985,56 +3675,30 @@ function renderSchedules() {
 function delSchedule(i) { schedules.splice(i, 1); fetch('/api/extras/schedules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ schedules }) }); renderSchedules(); }
 
 // ── Persona ──
-const PERSONAS = ['default','sweet','cold','flirty','distant','explicit','nsfw','girlfriend'];
-const PERSONA_LABELS = {
-  default: { label: 'Default', color: '' },
-  sweet:   { label: 'Sweet',   color: '' },
-  cold:    { label: 'Cold',    color: '' },
-  flirty:  { label: 'Flirty',  color: '#f59e0b' },
-  distant: { label: 'Distant', color: '' },
-  explicit:   { label: '🔥 Explicit',   color: '#ef4444' },
-  nsfw:       { label: '🔞 NSFW',       color: '#dc2626' },
-  girlfriend: { label: '💋 GF Mode',    color: '#ec4899' },
-};
-
+const PERSONAS = ['default','sweet','cold','flirty','distant'];
 function renderPersonaList() {
   const list = document.getElementById('persona-list');
   const convos = window._cachedConvos || {};
   list.innerHTML = '';
   Object.keys(convos).forEach(phone => {
-    const name    = convos[phone].name || phone;
+    const name = convos[phone].name || phone;
     const current = personas[phone] || 'default';
-    const row     = document.createElement('div');
+    const row = document.createElement('div');
     row.className = 'persona-contact-row';
-    row.innerHTML = `
-      <div class="pc-name">${name}</div>
-      <select class="ex-select" style="width:140px;flex-shrink:0" onchange="setPersona('${phone}',this.value)">
-        ${PERSONAS.map(p => {
-          const info  = PERSONA_LABELS[p] || { label: p, color: '' };
-          const style = info.color ? `style="color:${info.color};font-weight:600"` : '';
-          return `<option value="${p}" ${p===current?'selected':''} ${style}>${info.label}</option>`;
-        }).join('')}
+    row.innerHTML = `<div class="pc-name">${name}</div>
+      <select class="ex-select" style="width:120px;flex-shrink:0" onchange="setPersona('${phone}',this.value)">
+        ${PERSONAS.map(p => `<option value="${p}" ${p===current?'selected':''}>${p.charAt(0).toUpperCase()+p.slice(1)}</option>`).join('')}
       </select>`;
     list.appendChild(row);
   });
 }
 async function setPersona(phone, persona) {
   personas[phone] = persona;
-  try {
-    await fetch('/api/extras/personas', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ personas })
-    });
-    const info = PERSONA_LABELS[persona] || { label: persona };
-    showNotif('Persona updated', `${(window._cachedConvos?.[phone]?.name||phone)} → ${info.label}`, '✓');
-  } catch(e) {}
+  try { await fetch('/api/extras/personas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ personas }) }); } catch(e) {}
+  showToast('Persona updated');
 }
 async function loadPersonas() {
-  try {
-    const res = await fetch('/api/extras/personas');
-    const d   = await res.json();
-    if (d.personas) personas = d.personas;
-  } catch(e) {}
+  try { const res = await fetch('/api/extras/personas'); const d = await res.json(); if (d.personas) personas = d.personas; } catch(e) {}
 }
 
 // ── Broadcast ──
@@ -4141,44 +3805,15 @@ async function loadAnalytics() {
 // Load extras data when view activates
 const _origNavTo = navTo;
 
-async function loadSchedules() {
-  try {
-    const res = await fetch('/api/extras/schedules');
-    const d = await res.json();
-    if (d.schedules) { schedules = d.schedules; renderSchedules(); }
-  } catch(e) {}
-}
-
 // Initialize extras on first load
 async function initExtras() {
   await loadMood();
   await loadPersonas();
   await loadRules();
-  await loadSchedules();
 }
 
 document.addEventListener("touchstart",e=>{_tx=e.touches[0].clientX;_ty=e.touches[0].clientY},{passive:true});
 document.addEventListener("touchend",e=>{const dx=e.changedTouches[0].clientX-_tx;const dy=Math.abs(e.changedTouches[0].clientY-_ty);if(_tx<35&&dx>65&&dy<80&&window.innerWidth<=700){if(document.getElementById("sidebar").classList.contains("open"))closeSidebar();else if(currentPhone)closeChat()}},{passive:true});
 </script>
-
-<!-- FLOATING BOTTOM NAV -->
-<div id="bottom-nav">
-  <!-- WhatsApp -->
-  <button class="bn-btn wa-btn" data-view="chats" data-filter="wa" onclick="navTo(this)" aria-label="WhatsApp">
-    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" fill="#25D366"/></svg>
-  </button>
-  <!-- Telegram -->
-  <button class="bn-btn tg-btn" data-view="chats" data-filter="tg" onclick="navTo(this)" aria-label="Telegram">
-    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-.943-.62-.332-1.062.207-1.676.142-.148 2.607-2.39 2.653-2.594.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" fill="#2AABEE"/></svg>
-  </button>
-  <!-- Signal -->
-  <button class="bn-btn sg-btn" data-view="chats" data-filter="sg" onclick="navTo(this)" aria-label="Signal">
-    <svg viewBox="0 0 24 24" fill="#3A76F0" xmlns="http://www.w3.org/2000/svg"><path d="M12 0q-.934 0-1.83.139l.17 1.111a11 11 0 0 1 3.32 0l.172-1.111A12 12 0 0 0 12 0M9.152.34A12 12 0 0 0 5.77 1.742l.584.961a10.8 10.8 0 0 1 3.066-1.27zm5.696 0-.268 1.094a10.8 10.8 0 0 1 3.066 1.27l.584-.962A12 12 0 0 0 14.848.34M12 2.25a9.75 9.75 0 0 0-8.539 14.459c.074.134.1.292.064.441l-1.013 4.338 4.338-1.013a.62.62 0 0 1 .441.064A9.7 9.7 0 0 0 12 21.75c5.385 0 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25m-7.092.068a12 12 0 0 0-2.59 2.59l.909.664a11 11 0 0 1 2.345-2.345zm14.184 0-.664.909a11 11 0 0 1 2.345 2.345l.909-.664a12 12 0 0 0-2.59-2.59M1.742 5.77A12 12 0 0 0 .34 9.152l1.094.268a10.8 10.8 0 0 1 1.269-3.066zm20.516 0-.961.584a10.8 10.8 0 0 1 1.27 3.066l1.093-.268a12 12 0 0 0-1.402-3.383M.138 10.168A12 12 0 0 0 0 12q0 .934.139 1.83l1.111-.17A11 11 0 0 1 1.125 12q0-.848.125-1.66zm23.723.002-1.111.17q.125.812.125 1.66c0 .848-.042 1.12-.125 1.66l1.111.172a12.1 12.1 0 0 0 0-3.662M1.434 14.58l-1.094.268a12 12 0 0 0 .96 2.591l-.265 1.14 1.096.255.36-1.539-.188-.365a10.8 10.8 0 0 1-.87-2.35m21.133 0a10.8 10.8 0 0 1-1.27 3.067l.962.584a12 12 0 0 0 1.402-3.383zm-1.793 3.848a11 11 0 0 1-2.345 2.345l.664.909a12 12 0 0 0 2.59-2.59zm-19.959 1.1L.357 21.48a1.8 1.8 0 0 0 2.162 2.161l1.954-.455-.256-1.095-1.953.455a.675.675 0 0 1-.81-.81l.454-1.954zm16.832 1.769a10.8 10.8 0 0 1-3.066 1.27l.268 1.093a12 12 0 0 0 3.382-1.402zm-10.94.213-1.54.36.256 1.095 1.139-.266c.814.415 1.683.74 2.591.961l.268-1.094a10.8 10.8 0 0 1-2.35-.869zm3.634 1.24-.172 1.111a12.1 12.1 0 0 0 3.662 0l-.17-1.111q-.812.125-1.66.125a11 11 0 0 1-1.66-.125"/></svg>
-  </button>
-  <!-- SMS -->
-  <button class="bn-btn sms-btn" data-view="chats" data-filter="sms" onclick="navTo(this)" aria-label="SMS">
-    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" fill="#34C759"/></svg>
-  </button>
-</div>
 </body>
 </html>
