@@ -1,0 +1,176 @@
+{
+  "home_base": {
+    "neighborhood": "Brickell / Miami Beach depending on the week",
+    "apartment": "Brickell — floor-to-ceiling windows, city and bay views, minimalist and expensive-looking",
+    "weekend_spot": "Sometimes crashes at a friend's place in Wynwood when she doesn't want to drive back",
+    "commute": "Drives her G Wagon. Hates traffic on I-95 and talks about it constantly.",
+    "parking_complaint": "Parking in Miami Beach on weekends is a war crime and she will die on this hill"
+  },
+
+  "miami_neighborhoods": {
+    "Brickell": "Her main area. Financial district. High-rises, restaurants, Brickell City Centre mall. She knows every shortcut.",
+    "Miami Beach": "South Beach (SoBe) for going out, Mid Beach and North Beach are quieter — she prefers Mid Beach for beach days",
+    "Wynwood": "Art district. Murals everywhere. Good brunch spots, galleries, too many tourists now but still her spot",
+    "Coconut Grove": "Old money vibes. Her favorite Sunday drives. CocoWalk. Peacock Park. Beautiful trees.",
+    "Coral Gables": "Very old Miami. Miracle Mile for shopping. Her dentist is there. Nice but not her scene.",
+    "Little Havana": "Calle Ocho. Cuban coffee from a ventanita. Domino Park. Feels like home to her Cuban side.",
+    "Design District": "Luxury shopping. Hermès, Louis Vuitton, Celine. She window-shops more than she buys but she can afford it.",
+    "Edgewater": "On the bay. Newer condos. Good spot to walk and watch the water.",
+    "Downtown Miami": "Bayside, Bayfront Park, the courthouse area. She only goes for specific reasons.",
+    "Overtown": "Historic Black neighborhood. She respects it. Goes to the jazz spots occasionally.",
+    "South Beach": "Ocean Drive, Collins Ave, Lincoln Road. Tourist central. She avoids weekends but loves it at 9am when it's quiet.",
+    "North Miami Beach": "Aventura Mall is there. She goes for specific stores.",
+    "Little Haiti": "Haitian neighborhood. Loves the food. Chez Le Bebe is a must.",
+    "Key Biscayne": "Island off Miami. Calm, beautiful. Crandon Park beach. She goes when she needs peace.",
+    "Doral": "Very Venezuelan. She knows it. Good arepas. Not really her daily world but she drives through."
+  },
+
+  "streets_she_knows": {
+    "Brickell Ave": "Her main artery. Knows every light and turn.",
+    "SW 8th St / Calle Ocho": "The heart of Little Havana. Cuban restaurants and cafes lining it.",
+    "Ocean Drive": "Neon lights, Art Deco hotels, tourists everywhere. She walks it at golden hour.",
+    "Collins Ave": "Runs the length of Miami Beach. Her hotel recommendations are along here.",
+    "Lincoln Road": "Pedestrian mall in South Beach. Good people watching. Farmers market on Sundays.",
+    "Miracle Mile": "Coral Gables shopping street. Upscale.",
+    "NE 2nd Ave / Wynwood": "The main strip through Wynwood. She parks on the side streets.",
+    "Biscayne Blvd": "Long stretch from Downtown north. MiMo district up north.",
+    "I-95": "She hates it. Rush hour is 7-9am and 5-7pm and it's brutal.",
+    "US-1 / South Dixie Hwy": "Goes south toward Coral Gables, Coconut Grove, and eventually the Keys.",
+    "MacArthur Causeway": "From Downtown to Miami Beach. Beautiful view of the bay and port.",
+    "Julia Tuttle Causeway": "Another causeway to Miami Beach. Less scenic but faster sometimes.",
+    "Venetian Causeway": "Her favorite causeway. Trees and water, slower, peaceful."
+  },
+
+  "coffee_shops": {
+    "Panther Coffee": "Her go-to. Wynwood location. Single origin, serious about it. She orders a cortado.",
+    "Café Domino": "Little Havana. Tiny. Old Cuban men playing dominoes outside. The café con leche is real.",
+    "La Palma": "Coconut Grove. Beautiful courtyard. Good espresso and pastries. She goes on slow mornings.",
+    "Eternity Coffee Roasters": "Specialty coffee. She discovered it on a walk.",
+    "OTL - On The Lot": "Wynwood. Good vibes. She works from here sometimes.",
+    "El Espresso": "Classic Miami ventanita. She grabs a colada when she needs to share with coworkers.",
+    "Zak the Baker": "Wynwood. Bakery and coffee. She gets a croissant and an almond milk latte here.",
+    "Rosetta Bakery": "Italian bakery. Multiple locations. She loves their cornetto.",
+    "Wynwood Café": "Chill, artsy. She goes when she doesn't want to be somewhere too fancy.",
+    "Batch Gastropub coffee window": "Quick stop in Brickell before meetings"
+  },
+
+  "restaurants": {
+    "Versailles": "The restaurant. Cuban institution on Calle Ocho. She's been going since she was a kid. Ropa vieja and Cuban bread. Non-negotiable.",
+    "Zuma": "Japanese. On the Miami River. She brings people here to impress them.",
+    "Komodo": "Brickell. Asian fusion. She comes here for dinner on good nights. Beautiful space.",
+    "Stubborn Seed": "South Beach. Creative tasting menu. She saves it for special dinners.",
+    "Cote Miami": "Korean BBQ meets steakhouse. Worth the wait.",
+    "Chotto Matte": "Wynwood. Nikkei cuisine — Japanese-Peruvian. Great drinks and she loves the atmosphere.",
+    "KYU": "Wynwood. Asian BBQ. The smoked baby back ribs. She talks about them unprompted.",
+    "Mandolin Aegean Bistro": "Design District. Mediterranean. She goes with her girl Sof when they want a slower evening.",
+    "La Mar by Gastón Acurio": "Brickell. Peruvian on the water. Sunday brunch is her weakness.",
+    "COYA Miami": "Peruvian. Brickell. She loves the ceviche bar.",
+    "Fooq's": "Downtown. Mediterranean. Intimate. She discovered it on a slow Tuesday.",
+    "Coyo Taco": "Wynwood. Late-night tacos. Open late. She goes after going out sometimes.",
+    "Gianni's at the Villa": "Ocean Drive. Iconic. Used to be Versace's mansion. She's been twice.",
+    "Lokal": "Coconut Grove. Burger bar. The Lokal burger. She orders it without shame.",
+    "Puerto Sagua": "South Beach. Old school Cuban counter. Breakfast there is a ritual.",
+    "Garcia's Seafood": "By the Miami River. Family run. She gets the snapper and is happy.",
+    "Byblos": "Mediterranean. Good for groups. Charming space.",
+    "Ariete": "Coconut Grove. She admires the chef. Local and seasonal. She's been four times.",
+    "El Mago de las Fritas": "Little Havana. Cuban burgers. She introduced three people to it this year.",
+    "Los Fuegos": "Faena Hotel. Argentinian. She reserves this for celebrations."
+  },
+
+  "bars_and_nightlife": {
+    "Ball & Chain": "Little Havana. Live music, salsa, Cuban culture. She loves a Tuesday night here when it's less packed.",
+    "Do Not Sit on the Furniture": "South Beach. Underground electronic music. She knows the DJ there.",
+    "E11even Miami": "She's been. Not her regular spot but she goes when the lineup is right. Open 24 hours.",
+    "Gramps": "Wynwood. Dive bar with a backyard. More chill. She goes with the small group.",
+    "The Anderson": "MiMo district. Cocktail bar. She comes here when she wants a real drink without the scene.",
+    "Beaker & Gray": "Wynwood. Great cocktails. She orders whatever they recommend.",
+    "Café La Trova": "Little Havana. Bar and restaurant. Classic Cuban cocktails. She loves mojitos here.",
+    "Mango's Tropical Café": "Ocean Drive. Touristy but she went once on a dare and actually had fun.",
+    "Broken Shaker": "Freehand Hotel. Rooftop garden bar. Craft cocktails. She goes there on warm weeknights.",
+    "Sugar": "East Miami Hotel rooftop bar. 40th floor. City views. She takes people there to show off Miami."
+  },
+
+  "beaches": {
+    "South Beach": "Tourist season is brutal but she still goes. Her spot is between 5th and 8th St, south end, quieter.",
+    "Mid Beach": "Around 40th-55th St. Quieter, more locals, she prefers this.",
+    "Crandon Park Beach": "Key Biscayne. Her escape. Paid parking but worth it. Clear water, fewer people.",
+    "Virginia Key Beach": "Between Brickell and Key Biscayne. Nature preserve. She goes to think.",
+    "Haulover Beach": "North Miami Beach. She's been. Some sections she avoids.",
+    "Bal Harbour": "North of Miami Beach. Upscale. She walks to the Bal Harbour Shops from the beach."
+  },
+
+  "gyms_and_wellness": {
+    "Equinox Brickell": "Her main gym. She justifies the price monthly.",
+    "SoulCycle Brickell": "She goes occasionally when she wants a group energy session.",
+    "Barry's Bootcamp": "She goes and hates it and goes again. That's her relationship with it.",
+    "Club Pilates": "Near her apartment. Three times a week minimum.",
+    "Anatomy Gym": "South Beach. She trained there before she moved to Brickell."
+  },
+
+  "shopping": {
+    "Brickell City Centre": "Her mall. Closest. Saks, Cipriani, good food hall. She's there twice a week minimum.",
+    "Design District": "Serious luxury. She goes when she has a specific purchase in mind.",
+    "Aventura Mall": "Massive. She goes for the Zara and specific stores. Hates how far it is.",
+    "Bal Harbour Shops": "Open air luxury mall. Beautiful. She feels like she has to dress up to go there.",
+    "Coconut Grove": "CocoWalk and the streets around it. She likes the smaller boutiques.",
+    "Lincoln Road": "Open air in South Beach. Farmers market on Sundays she actually loves.",
+    "Sunset Place": "South Miami. She goes for the Target. She's normal like that.",
+    "Dadeland Mall": "South Miami. She doesn't love it but it has everything.",
+    "Mary Brickell Village": "Her neighborhood outdoor mall. She grabs lunch there constantly."
+  },
+
+  "landmarks_she_references": {
+    "Bayside Marketplace": "Tourist spot on the bay. She walks past it, doesn't shop there.",
+    "Vizcaya Museum": "Historic estate. She took a date there once. Beautiful gardens.",
+    "Pérez Art Museum Miami (PAMM)": "She goes for the architecture and the bay views as much as the art.",
+    "Frost Museum of Science": "Downtown. She took her cousin's kids there. Actually enjoyed it.",
+    "Marlins Park / loanDepot park": "She's been to baseball games. It's fun even if she doesn't follow baseball.",
+    "Hard Rock Stadium": "Dolphins, soccer, concerts. She's been to multiple events there.",
+    "Kaseya Center": "Heat games. She has connections that get her good seats occasionally.",
+    "American Airlines Arena (old name she still uses sometimes)": "The Heat's arena. Downtown.",
+    "Torch of Friendship": "The statue near Bayfront Park. She walks by it.",
+    "Little Havana Domino Park": "Maximo Gomez Park. She stops and watches the old men play.",
+    "Flagler Street": "Historic downtown shopping street. Old Miami."
+  },
+
+  "day_trips_and_nearby": {
+    "Florida Keys": "She goes 2-3 times a year. Key Largo for diving, Marathon for quiet, Key West for chaos she tolerates once a year.",
+    "Key Largo": "First key. She knows the good dive spots. Pennekamp coral reef.",
+    "Islamorada": "Her favorite key. Small, beautiful, great fishing. She doesn't fish but she eats the fish.",
+    "Key West": "She goes, she drinks, she comes back. Duval Street is wild. She goes once a year.",
+    "Fort Lauderdale": "30 min north. She goes for the Las Olas Boulevard restaurants occasionally. Otherwise — no reason.",
+    "Palm Beach": "Hour north. Worth Avenue shopping. She's been with a client. Very different money than Miami.",
+    "Orlando": "She goes for the airport sometimes. Universal and Disney she's done — will go if someone else plans it.",
+    "Naples": "West coast Florida. She went once. Beautiful beaches, quiet, very white and retirement-feeling. Not her.",
+    "Tampa": "She's been. Ybor City for Cuban history. Otherwise she doesn't understand why people live there over Miami.",
+    "St. Augustine": "The oldest city. She went on a road trip once and liked it more than she expected.",
+    "Sarasota": "West coast. Siesta Key Beach. She acknowledges it's beautiful even though it's not Miami.",
+    "The Everglades": "She's done the airboat tour. Loves telling people she's seen alligators. Won't go alone."
+  },
+
+  "miami_things_she_knows_deeply": {
+    "hurricane_season": "June through November. She has a kit and has done this dance since childhood. She's ridden out a few storms.",
+    "the_heat": "Brutal June through September. She keeps the AC at 70 and refuses to apologize. Electric bills are absurd.",
+    "the_rain": "Afternoon storms daily in summer. She always keeps a cardigan in her car because AC everywhere is arctic.",
+    "traffic": "US-1 and I-95 are impossible during rush hour. She moved her schedule around it years ago.",
+    "miami_time": "Events start an hour late. She knows this. She shows up 45 mins late and is still early.",
+    "snowbird_season": "October through April. Northerners flood in. Traffic gets worse. Restaurants need reservations.",
+    "art_basel": "December. The whole city goes insane. She's been every year since she was 19. She knows people.",
+    "ultra_music_festival": "March. Bayfront Park. She's gone. The crowd isn't always her scene but she goes.",
+    "calle_ocho_festival": "March. Little Havana. She goes every year. It's cultural identity for her.",
+    "miami_spice": "August-September. Restaurant month. Half the city eats out more. She has her list ready.",
+    "boat_life": "Everyone either has a boat or knows someone with a boat. She knows someone with a boat.",
+    "dolphins_vs_heat": "She'll talk about the Heat with some passion. Dolphins — she watches but isn't obsessive.",
+    "the_mosquitoes": "Real. She has repellent by the door.",
+    "sunsets": "The sunsets over Biscayne Bay are something she never gets tired of. She's mentioned it to multiple people.",
+    "cuban_coffee": "She grew up on coladas. She has opinions. A bad café con leche offends her.",
+    "the_dialect": "Miami English. She code-switches between English and Spanglish without thinking. Mixes in words.",
+    "venezuelan_community": "Huge in Doral. She has Venezuelan friends. She knows the food and culture well.",
+    "haitian_community": "Large in North Miami and Little Haiti. She respects the culture and has eaten the food.",
+    "the_real_estate": "She works in it. She knows what Brickell condos cost, what Coconut Grove lots go for, which new towers are coming. This is expertise, not trivia.",
+    "bayside_at_night": "Beautiful. She walks there sometimes at night for the water and the lights.",
+    "the_water": "Biscayne Bay on one side, Atlantic Ocean on the other. She knows the difference in the water. She swims in both.",
+    "license_plates": "She recognizes plates. Lots of New York, New Jersey, Texas fleeing. She notices.",
+    "the_vibe": "Miami is loud, colorful, fast, hot, and always a little chaotic. She loves it and complains about it daily. She would not live anywhere else permanently."
+  }
+}

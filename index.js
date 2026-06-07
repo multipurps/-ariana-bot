@@ -920,7 +920,7 @@ Make them feel like they have a real girlfriend they can text anytime.`
   }));
 
   // ── Inject brain memories so she actually remembers things ──
-  const memoryKeys = ['core_identity','personality','learned_memories','people','facts'];
+  const memoryKeys = ['core_identity','personality','lifestyle','miami_environment','learned_memories','people','facts'];
   const memLines = [];
   for (const k of memoryKeys) {
     const val = brainCache[k];
@@ -3017,7 +3017,9 @@ app.post("/api/talk", requireDashboardAuth, async (req, res) => {
     // Use the EXACT same base prompt as social messaging so she's identical everywhere.
     // Then layer in: mood, camera feed, learned memories, and live-talk–specific additions.
     const bc = brainCache || {};
-    const learnedMem = bc.learned_memories ? JSON.stringify(bc.learned_memories) : null;
+    const learnedMem   = bc.learned_memories   ? JSON.stringify(bc.learned_memories)   : null;
+    const miamiMem     = bc.miami_environment  ? JSON.stringify(bc.miami_environment)  : null;
+    const lifestyleMem = bc.lifestyle          ? JSON.stringify(bc.lifestyle)          : null;
     const moodLine   = extrasMood ? `\n\nYour current mood: ${extrasMood}. Let this subtly colour your energy.` : "";
     const camLine    = imageBase64
       ? "\n\nAn image has been shared with you. You can see it. React to it naturally — comment on what you see, like a real person who just got a photo sent to them. Do NOT say 'I can see an image' — just react."
@@ -3047,7 +3049,9 @@ app.post("/api/talk", requireDashboardAuth, async (req, res) => {
     const _talkNow = new Date();
     const _tz = 'America/New_York';
     const _talkDateTime = `\n\nCURRENT DATE & TIME: It is ${_talkNow.toLocaleDateString('en-US',{weekday:'long',timeZone:_tz})}, ${_talkNow.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric',timeZone:_tz})} at ${_talkNow.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:_tz})} Miami time (ET). You live in Miami. This is your local time — use it when anyone asks the date, day, or time. Never guess.`;
-    const sysPrompt = basePrompt + liveTalkAdditions + moodLine + camLine + memLine + ctxLine + talkLangRule + _talkDateTime;
+    const miamiLine    = miamiMem     ? `\n\nYOUR MIAMI ENVIRONMENT & LOCAL KNOWLEDGE:\n${miamiMem}`  : '';
+    const lifestyleLine = lifestyleMem ? `\n\nYOUR LIFESTYLE:\n${lifestyleMem}` : '';
+    const sysPrompt = basePrompt + liveTalkAdditions + moodLine + camLine + memLine + miamiLine + lifestyleLine + ctxLine + talkLangRule + _talkDateTime;
 
     // Build message history — cap at last 15 to prevent context overflow crashing Gemini
     const cappedHistory = history.slice(-15);
