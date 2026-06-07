@@ -842,6 +842,16 @@ async function getReply(id, userMsg, systemOverride, imageBase64 = null) {
   let sys = systemOverride || (engineV2
     ? engineV2.buildSystemPrompt(id, userMsg, convo.platform || 'whatsapp')
     : SYSTEM_PROMPT);
+
+  // Inject live date/time so Ariana always knows exactly when it is
+  if (!systemOverride) {
+    const now = new Date();
+    const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
+    const dateStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    sys += `\n\nCURRENT DATE & TIME: It is ${dayName}, ${dateStr} at ${timeStr}. You know this. If anyone asks the date, day, or time, answer from this — never guess or make something up.`;
+  }
+
   if (extrasMood && !systemOverride) {
     sys += `\n\nCURRENT MOOD OVERRIDE: You are feeling ${extrasMood} right now. Let this genuinely influence your tone, energy, and word choice.`;
   }
@@ -3033,7 +3043,9 @@ app.post("/api/talk", requireDashboardAuth, async (req, res) => {
       `NEVER say you "can't" do something. If you already handled a task from the platforms, mention it casually.`;
 
     const basePrompt  = engineV2 ? engineV2.buildSystemPrompt('talk_owner', message, 'live_talk') : SYSTEM_PROMPT;
-    const sysPrompt = basePrompt + liveTalkAdditions + moodLine + camLine + memLine + ctxLine + talkLangRule;
+    const _talkNow = new Date();
+    const _talkDateTime = `\n\nCURRENT DATE & TIME: It is ${_talkNow.toLocaleDateString('en-US',{weekday:'long'})}, ${_talkNow.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})} at ${_talkNow.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}. You know this. Never guess.`;
+    const sysPrompt = basePrompt + liveTalkAdditions + moodLine + camLine + memLine + ctxLine + talkLangRule + _talkDateTime;
 
     // Build message history — cap at last 15 to prevent context overflow crashing Gemini
     const cappedHistory = history.slice(-15);
