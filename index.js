@@ -2513,8 +2513,54 @@ async function callGeminiWithVision(history, sys, imageBase64) {
   return res.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? null;
 }
 
+// ── Cartesia TTS → base64 mp3 ──
+async function ttsCartesiaBase64(text) {
+  const apiKey  = process.env.CARTESIA_API_KEY;
+  const voiceId = process.env.CARTESIA_VOICE_ID;
+  if (!apiKey || !voiceId) {
+    console.warn('[TTS/Cartesia] CARTESIA_API_KEY or CARTESIA_VOICE_ID not set');
+    return null;
+  }
+  try {
+    const res = await axios.post(
+      'https://api.cartesia.ai/tts/bytes',
+      {
+        model_id:    'sonic-2',
+        transcript:  text,
+        voice:       { mode: 'id', id: voiceId },
+        output_format: { container: 'mp3', encoding: 'mp3', sample_rate: 44100 }
+      },
+      {
+        headers: {
+          'X-API-Key':    apiKey,
+          'Cartesia-Version': '2024-06-10',
+          'Content-Type': 'application/json'
+        },
+        responseType: 'arraybuffer',
+        timeout: 25000
+      }
+    );
+    if (!res.data || res.data.byteLength === 0) throw new Error('Empty audio response');
+    const b64 = Buffer.from(res.data).toString('base64');
+    console.log(`[TTS/Cartesia] Generated ${Math.round(b64.length / 1024)}KB audio`);
+    return b64;
+  } catch(e) {
+    const status = e.response?.status;
+    const body   = e.response?.data
+      ? Buffer.isBuffer(e.response.data)
+        ? e.response.data.toString('utf8').slice(0, 300)
+        : JSON.stringify(e.response.data).slice(0, 300)
+      : e.message;
+    console.error(`[TTS/Cartesia] FAILED — HTTP ${status || 'no-response'}: ${body}`);
+    return null;
+  }
+}
+
 // ── ElevenLabs TTS → base64 mp3 ──
+// Routes to Cartesia if TTS_PROVIDER=cartesia is set in env.
 async function ttsBase64(text) {
+  const provider = (process.env.TTS_PROVIDER || 'elevenlabs').toLowerCase();
+  if (provider === 'cartesia') return ttsCartesiaBase64(text);
   const apiKey  = process.env.ELEVENLABS_API_KEY;
   const voiceId = cachedVoiceId;
   if (!apiKey) {
