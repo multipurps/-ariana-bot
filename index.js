@@ -2522,52 +2522,56 @@ async function callGeminiWithVision(history, sys, imageBase64) {
 
 // ── ElevenLabs TTS → base64 mp3 ──
 async function ttsBase64(text) {
+  if (!text?.trim()) return null;
+
+  // ── PRIMARY: Cartesia ──────────────────────────────────────
+  const cartesiaKey     = process.env.CARTESIA_API_KEY;
+  const cartesiaVoiceId = process.env.CARTESIA_VOICE_ID;
+  if (cartesiaKey && cartesiaVoiceId) {
+    try {
+      const res = await axios.post(
+        'https://api.cartesia.ai/tts/bytes',
+        {
+          model_id: 'sonic-english',
+          transcript: text,
+          voice: { mode: 'id', id: cartesiaVoiceId },
+          output_format: { container: 'mp3', encoding: 'mp3', bit_rate: 128000, sample_rate: 44100 },
+        },
+        {
+          headers: { 'X-API-Key': cartesiaKey, 'Cartesia-Version': '2024-06-10', 'Content-Type': 'application/json' },
+          responseType: 'arraybuffer',
+          timeout: 12000,
+        }
+      );
+      if (res.data?.byteLength > 0) {
+        const b64 = Buffer.from(res.data).toString('base64');
+        console.log(`[TTS] ✅ Cartesia — ${Math.round(b64.length / 1024)}KB`);
+        return b64;
+      }
+    } catch (e) { console.warn('[TTS] Cartesia failed:', e.response?.status || e.message); }
+  }
+
+  // ── FALLBACK: ElevenLabs ───────────────────────────────────
   const apiKey  = process.env.ELEVENLABS_API_KEY;
   const voiceId = cachedVoiceId;
-  if (!apiKey) {
-    console.warn("[TTS] ❌ ELEVENLABS_API_KEY not set — voice disabled");
-    return null;
-  }
-  if (!voiceId) {
-    console.warn("[TTS] ❌ No voice ID found. Set ELEVENLABS_VOICE_ID in env. Voice disabled.");
-    return null;
-  }
-  console.log(`[TTS] Using voice ID: ${voiceId.slice(0,8)}... (key: ${apiKey.slice(0,8)}...)`);
+  if (!apiKey || !voiceId) return null;
 
   try {
     const res = await axios.post(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-      {
-        text,
-        model_id: "eleven_multilingual_v2",
-        voice_settings: { stability: 0.48, similarity_boost: 0.78, style: 0.1, use_speaker_boost: true }
-      },
-      {
-        headers: {
-          "xi-api-key": apiKey,
-          "Content-Type": "application/json",
-          "Accept": "audio/mpeg"
-        },
-        responseType: "arraybuffer",
-        timeout: 25000
-      }
+      { text, model_id: 'eleven_multilingual_v2', voice_settings: { stability: 0.48, similarity_boost: 0.78, style: 0.1, use_speaker_boost: true } },
+      { headers: { 'xi-api-key': apiKey, 'Content-Type': 'application/json', Accept: 'audio/mpeg' }, responseType: 'arraybuffer', timeout: 12000 }
     );
-    if (!res.data || res.data.byteLength === 0) throw new Error("Empty audio response");
-    const b64 = Buffer.from(res.data).toString("base64");
-    console.log(`[TTS] Generated ${Math.round(b64.length / 1024)}KB audio`);
+    if (!res.data || res.data.byteLength === 0) throw new Error('Empty audio response');
+    const b64 = Buffer.from(res.data).toString('base64');
+    console.log(`[TTS] ✅ ElevenLabs — ${Math.round(b64.length / 1024)}KB`);
     return b64;
-  } catch(e) {
+  } catch (e) {
     const status = e.response?.status;
-    const body   = e.response?.data
-      ? Buffer.isBuffer(e.response.data)
-        ? e.response.data.toString('utf8').slice(0, 300)
-        : JSON.stringify(e.response.data).slice(0, 300)
-      : e.message;
-    console.error(`[TTS] ElevenLabs FAILED — HTTP ${status || 'no-response'}: ${body}`);
-    if (status === 401) console.error('[TTS] 401 = API key is wrong or expired. Check ELEVENLABS_API_KEY.');
-    if (status === 404) console.error('[TTS] 404 = Voice ID not found. Check ELEVENLABS_VOICE_ID — current value:', voiceId);
-    if (status === 422) console.error('[TTS] 422 = Bad request (text too long or voice settings invalid).');
-    if (status === 429) console.error('[TTS] 429 = Quota exceeded. Check your ElevenLabs plan usage.');
+    if (status === 401) console.error('[TTS] 401 — ElevenLabs key wrong or expired');
+    else if (status === 422) console.error('[TTS] 422 — Bad request (text too long or voice settings)');
+    else if (status === 429) console.error('[TTS] 429 — ElevenLabs quota exceeded');
+    else console.warn('[TTS] ElevenLabs failed:', status || e.message);
     return null;
   }
 }
@@ -3102,8 +3106,8 @@ app.post("/api/talk", requireDashboardAuth, async (req, res) => {
     reply = cleanAITells(reply);
 
     // ── Self-learning: extract facts from this conversation turn ──
-    // Runs in background — doesn't block the reply
-    setImmediate(async () => {
+    // Only 15% of exchanges to avoid competing with main Gemini calls and hitting rate limits
+    if (Math.random() < 0.15) setImmediate(async () => {
       try {
         const extractPrompt = `You are a memory extraction system for an AI persona named Ariana.
 Read this conversation exchange and extract ONLY new, durable facts worth remembering long-term.
@@ -3136,15 +3140,7 @@ Ariana replied: "${reply}"`;
       } catch (e) { /* silent — never block the response */ }
     });
 
-    // Generate voice — always attempt; retry with shorter text if needed
-    let audioBase64 = await ttsBase64(reply).catch(() => null);
-    if (!audioBase64 && reply.length > 300) {
-      // Try with a shortened reply — ElevenLabs can fail on very long text
-      audioBase64 = await ttsBase64(reply.slice(0, 300)).catch(() => null);
-    }
-    if (!audioBase64) console.warn("[talk] Voice unavailable — sending text only. Check ELEVENLABS_API_KEY and ELEVENLABS_VOICE_ID, or visit /api/debug/tts");
-
-    res.json({ ok: true, reply, audioBase64: audioBase64 || null });
+    res.json({ ok: true, reply });
 
   } catch(e) {
     console.error("[talk] Unhandled error:", e.message);
