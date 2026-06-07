@@ -4226,7 +4226,9 @@ async function talkProcess(text) {
         talkSaveChatLog();
         if (talkOrbMode) {
           talkShowState('speaking');
-          await talkElevenLabsDirect(cmdData.confirmation);
+          const _p = (localStorage.getItem('_tts_provider') || 'elevenlabs').toLowerCase();
+          if (_p === 'cartesia') await talkCartesiaDirect(cmdData.confirmation);
+          else await talkElevenLabsDirect(cmdData.confirmation);
         } else { talkShowState('idle'); }
         return;
       }
