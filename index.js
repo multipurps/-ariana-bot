@@ -846,10 +846,11 @@ async function getReply(id, userMsg, systemOverride, imageBase64 = null) {
   // Inject live date/time so Ariana always knows exactly when it is
   if (!systemOverride) {
     const now = new Date();
-    const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
-    const dateStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    sys += `\n\nCURRENT DATE & TIME: It is ${dayName}, ${dateStr} at ${timeStr}. You know this. If anyone asks the date, day, or time, answer from this — never guess or make something up.`;
+    const tz = 'America/New_York';
+    const dayName = now.toLocaleDateString('en-US', { weekday: 'long', timeZone: tz });
+    const dateStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: tz });
+    const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: tz });
+    sys += `\n\nCURRENT DATE & TIME: It is ${dayName}, ${dateStr} at ${timeStr} Miami time (ET). You live in Miami. This is your local time — use it when anyone asks the date, day, or time. Never guess.`;
   }
 
   if (extrasMood && !systemOverride) {
@@ -3044,7 +3045,8 @@ app.post("/api/talk", requireDashboardAuth, async (req, res) => {
 
     const basePrompt  = engineV2 ? engineV2.buildSystemPrompt('talk_owner', message, 'live_talk') : SYSTEM_PROMPT;
     const _talkNow = new Date();
-    const _talkDateTime = `\n\nCURRENT DATE & TIME: It is ${_talkNow.toLocaleDateString('en-US',{weekday:'long'})}, ${_talkNow.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})} at ${_talkNow.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}. You know this. Never guess.`;
+    const _tz = 'America/New_York';
+    const _talkDateTime = `\n\nCURRENT DATE & TIME: It is ${_talkNow.toLocaleDateString('en-US',{weekday:'long',timeZone:_tz})}, ${_talkNow.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric',timeZone:_tz})} at ${_talkNow.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:_tz})} Miami time (ET). You live in Miami. This is your local time — use it when anyone asks the date, day, or time. Never guess.`;
     const sysPrompt = basePrompt + liveTalkAdditions + moodLine + camLine + memLine + ctxLine + talkLangRule + _talkDateTime;
 
     // Build message history — cap at last 15 to prevent context overflow crashing Gemini
