@@ -3622,6 +3622,18 @@ function talkSpeakWebSpeech(text) {
 
   // iOS Safari needs a small delay after cancel()
   setTimeout(() => window.speechSynthesis.speak(utter), 80);
+
+  // Safety: if onend never fires (iOS bug), release lock after estimated duration
+  const safetyMs = Math.min(15000, 2500 + text.length * 55);
+  const safetyTimer = setTimeout(() => {
+    if (talkProcessing) {
+      console.warn('[WebSpeech] safety timeout fired — releasing lock');
+      utter.onend();
+    }
+  }, safetyMs);
+  // Clear safety timer if onend fires normally
+  const _origOnend = utter.onend;
+  utter.onend = (e) => { clearTimeout(safetyTimer); _origOnend(e); };
 }
 
 /* ── speaker toggle — works on active gain node, not setSinkId ── */
@@ -4292,8 +4304,13 @@ async function talkProcess(text) {
         // Server pre-generated audio — use it directly (no extra API call)
         talkPlayAudio(data.audioBase64, data.reply);
       } else {
-        // Browser calls ElevenLabs directly
-        await talkElevenLabsDirect(data.reply);
+        // Browser-side TTS fallback — use whichever provider is selected
+        const ttsProvider = (localStorage.getItem('_tts_provider') || 'elevenlabs').toLowerCase();
+        if (ttsProvider === 'cartesia') {
+          await talkCartesiaDirect(data.reply);
+        } else {
+          await talkElevenLabsDirect(data.reply);
+        }
       }
     } else {
       talkWatchdogClear();
@@ -4317,6 +4334,90 @@ async function talkProcess(text) {
       talkShowState('idle');
     }
     showToast('Connection error — try again');
+  }
+}
+
+/* ── Cartesia browser-side TTS (mirrors talkElevenLabsDirect) ── */
+async function talkCartesiaDirect(text) {
+  const cartesiaKey   = localStorage.getItem('_cartesia_key')   || '';
+  const cartesiaVoice = localStorage.getItem('_cartesia_voice') || '';
+
+  if (!cartesiaKey || !cartesiaVoice) {
+    console.warn('[CartesiaDirect] No key/voice in settings — falling back to WebSpeech');
+    talkSpeakWebSpeech(text);
+    return;
+  }
+
+  if (window._talkMicSrc) {
+    try { window._talkMicSrc.disconnect(); } catch(e) {}
+  }
+
+  try {
+    const res = await fetch('https://api.cartesia.ai/tts/bytes', {
+      method: 'POST',
+      headers: {
+        'X-API-Key': cartesiaKey,
+        'Cartesia-Version': '2024-06-10',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model_id: 'sonic-2',
+        transcript: text,
+        voice: { mode: 'id', id: cartesiaVoice },
+        output_format: { container: 'mp3', encoding: 'mp3', sample_rate: 44100 }
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      console.warn('[CartesiaDirect] HTTP', res.status, err.slice(0, 200));
+      if (window._talkMicSrc && window._talkMicAnalyser) {
+        try { window._talkMicSrc.connect(window._talkMicAnalyser); } catch(e) {}
+      }
+      talkSpeakWebSpeech(text);
+      return;
+    }
+
+    const arrayBuffer = await res.arrayBuffer();
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    await audioCtx.resume();
+    const decoded  = await audioCtx.decodeAudioData(arrayBuffer);
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.value = _speakerOn ? 2.0 : 0.001;
+    _talkGainNode = gainNode;
+    const source = audioCtx.createBufferSource();
+    source.buffer = decoded;
+    source.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    source.onended = () => {
+      if (window._talkMicSrc && window._talkMicAnalyser) {
+        try { window._talkMicSrc.connect(window._talkMicAnalyser); } catch(e) {}
+      }
+      talkWatchdogClear();
+      talkProcessing = false;
+      const el = document.getElementById(talkOrbMode ? 'talk-orb-transcript' : 'talk-transcript');
+      if (el) el.textContent = '';
+      if (talkOrbMode) {
+        talkShowState('listening');
+        setTimeout(() => { if (talkOrbMode) talkStartListening(); }, 300);
+      } else {
+        talkShowState('idle');
+      }
+    };
+
+    source.start(0);
+    talkWatchdogClear();
+
+  } catch(e) {
+    console.warn('[CartesiaDirect] error:', e.message);
+    if (window._talkMicSrc && window._talkMicAnalyser) {
+      try { window._talkMicSrc.connect(window._talkMicAnalyser); } catch(e2) {}
+    }
+    talkWatchdogClear();
+    talkProcessing = false;
+    talkShowState(talkOrbMode ? 'listening' : 'idle');
+    if (talkOrbMode) setTimeout(() => { if (talkOrbMode) talkStartListening(); }, 300);
   }
 }
 
