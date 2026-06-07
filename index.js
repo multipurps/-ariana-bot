@@ -410,10 +410,11 @@ function cleanAITells(text) {
   // Step 2 — Standalone action-only lines (no bold markers)
   // e.g. a whole line that is only "Laughs, low and knowing" or "Leans back, unfazed"
   const actionVerbs = [
-    'Laugh','Smirk','Grin','Lean','Pause','Tilt','Raise','Stretch',
+    'Laugh','Chuckle','Snort','Scoff','Gasp','Groan','Exhale','Pout',
+    'Smirk','Grin','Lean','Pause','Tilt','Raise','Stretch',
     'Yawn','Nod','Wink','Drop','Walk','Look','Glance','Blink','Sigh',
     'Shrug','Cross','Narrow','Arch','Stare','Roll','Turn','Flip','Step',
-    'Stand','Sit','Eyes','Casually','Quietly','Slowly'
+    'Stand','Sit','Eyes','Casually','Quietly','Slowly','Already'
   ];
   const actionLineRe = new RegExp(
     `^(${actionVerbs.join('|')})[a-z]*s?(?:[,\\s][^\\n]*)?$`, 'gm'
@@ -1548,7 +1549,13 @@ async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, 
     const replyPromise = isFirst
       ? handleNewTexter(id, finalText, incomingImageBase64)
       : getReply(id, finalText, systemOverride, incomingImageBase64);
-    const [reply] = await Promise.all([replyPromise, humanDelay(text)]);
+    let [reply] = await Promise.all([replyPromise, humanDelay(text)]);
+
+    // Never go completely silent — if all AI failed, send a natural-sounding fallback
+    if (!reply || reply === 'hold on') {
+      const silentFallbacks = ['lol give me a sec', 'one sec', 'hold on', 'k one moment', '😶'];
+      reply = silentFallbacks[Math.floor(Math.random() * silentFallbacks.length)];
+    }
 
     let voiceUrl = null;
     let imageUrl = null;
@@ -2513,54 +2520,8 @@ async function callGeminiWithVision(history, sys, imageBase64) {
   return res.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? null;
 }
 
-// ── Cartesia TTS → base64 mp3 ──
-async function ttsCartesiaBase64(text) {
-  const apiKey  = process.env.CARTESIA_API_KEY;
-  const voiceId = process.env.CARTESIA_VOICE_ID;
-  if (!apiKey || !voiceId) {
-    console.warn('[TTS/Cartesia] CARTESIA_API_KEY or CARTESIA_VOICE_ID not set');
-    return null;
-  }
-  try {
-    const res = await axios.post(
-      'https://api.cartesia.ai/tts/bytes',
-      {
-        model_id:    'sonic-2',
-        transcript:  text,
-        voice:       { mode: 'id', id: voiceId },
-        output_format: { container: 'mp3', encoding: 'mp3', sample_rate: 44100 }
-      },
-      {
-        headers: {
-          'X-API-Key':    apiKey,
-          'Cartesia-Version': '2024-06-10',
-          'Content-Type': 'application/json'
-        },
-        responseType: 'arraybuffer',
-        timeout: 25000
-      }
-    );
-    if (!res.data || res.data.byteLength === 0) throw new Error('Empty audio response');
-    const b64 = Buffer.from(res.data).toString('base64');
-    console.log(`[TTS/Cartesia] Generated ${Math.round(b64.length / 1024)}KB audio`);
-    return b64;
-  } catch(e) {
-    const status = e.response?.status;
-    const body   = e.response?.data
-      ? Buffer.isBuffer(e.response.data)
-        ? e.response.data.toString('utf8').slice(0, 300)
-        : JSON.stringify(e.response.data).slice(0, 300)
-      : e.message;
-    console.error(`[TTS/Cartesia] FAILED — HTTP ${status || 'no-response'}: ${body}`);
-    return null;
-  }
-}
-
 // ── ElevenLabs TTS → base64 mp3 ──
-// Routes to Cartesia if TTS_PROVIDER=cartesia is set in env.
 async function ttsBase64(text) {
-  const provider = (process.env.TTS_PROVIDER || 'elevenlabs').toLowerCase();
-  if (provider === 'cartesia') return ttsCartesiaBase64(text);
   const apiKey  = process.env.ELEVENLABS_API_KEY;
   const voiceId = cachedVoiceId;
   if (!apiKey) {
@@ -2942,16 +2903,19 @@ function buildTodayContext() {
 
   for (const [id, convo] of Object.entries(conversations)) {
     if (!convo.messages?.length) continue;
-    // Only messages from today
+
+    // Skip the owner's own conversation — never include it in reports
+    const rawId = id.replace(/^(tg_|sg_|sms_)/, '');
+    if (OWNER_PHONE && (rawId === OWNER_PHONE || id === OWNER_PHONE)) continue;
+
     const todayMsgs = convo.messages.filter(m => new Date(m.time) >= todayStart);
     if (!todayMsgs.length) continue;
 
-    const name     = convo.name || id;
+    const name    = convo.name || (rawId.match(/^\+?\d+$/) ? rawId.slice(0, -4).replace(/./g, '*') + rawId.slice(-4) : rawId);
     const platform = convo.platform || 'WhatsApp';
     const userMsgs = todayMsgs.filter(m => m.role === 'user');
     if (!userMsgs.length) continue;
 
-    // Grab last 3 user messages as a snippet
     const snippet = userMsgs.slice(-3).map(m => `"${(m.text||'').slice(0, 80)}"`).join(', ');
     lines.push(`${name} (${platform}): ${snippet}`);
   }
@@ -2968,6 +2932,11 @@ async function generateDailyReport() {
 
   for (const [id, convo] of Object.entries(conversations)) {
     if (!convo.messages?.length) continue;
+
+    // Skip owner's own conversation
+    const rawId = id.replace(/^(tg_|sg_|sms_)/, '');
+    if (OWNER_PHONE && (rawId === OWNER_PHONE || id === OWNER_PHONE)) continue;
+
     const todayMsgs = convo.messages.filter(m => new Date(m.time) >= todayStart);
     if (!todayMsgs.length) continue;
 
@@ -3056,15 +3025,16 @@ app.post("/api/talk", requireDashboardAuth, async (req, res) => {
       `Keep replies SHORT — 1 to 3 sentences max. Speak naturally, as if out loud. ` +
       `You CAN text people, send photos, block contacts, and handle tasks. ` +
       `CRITICAL: NEVER claim to have sent a photo or message unless the system actually confirmed it. ` +
-      `If asked to send something, say "on it" or "give me a sec" — not "I sent it" unless it actually happened. ` + +
+      `If asked to send something, say "on it" or "give me a sec" — not "I sent it" unless it actually happened. ` +
       `NEVER say you "can't" do something. If you already handled a task from the platforms, mention it casually.`;
 
     const basePrompt  = engineV2 ? engineV2.buildSystemPrompt('talk_owner', message, 'live_talk') : SYSTEM_PROMPT;
     const sysPrompt = basePrompt + liveTalkAdditions + moodLine + camLine + memLine + ctxLine + talkLangRule;
 
-    // Build message history with current message appended
+    // Build message history — cap at last 15 to prevent context overflow crashing Gemini
+    const cappedHistory = history.slice(-15);
     const msgs = [
-      ...history.map(m => ({ role: m.role, content: m.content })),
+      ...cappedHistory.map(m => ({ role: m.role, content: m.content })),
       { role: "user", content: message }
     ];
 
