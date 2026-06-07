@@ -3009,8 +3009,7 @@ app.post("/api/talk", requireDashboardAuth, async (req, res) => {
       console.log(`[talk] command executed: ${cmd.confirmation?.slice(0,60)}`);
       // Speak the confirmation back (skip TTS for long reports — too slow)
       const shouldSpeak = cmd.confirmation && cmd.confirmation.length < 400;
-      const audioBase64 = shouldSpeak ? await ttsBase64(cmd.confirmation).catch(() => null) : null;
-      return res.json({ ok: true, reply: cmd.confirmation, audioBase64: audioBase64 || null, wasCommand: true, imageUrl: cmd.imageUrl || null });
+      return res.json({ ok: true, reply: cmd.confirmation, wasCommand: true, imageUrl: cmd.imageUrl || null });
     }
 
     // ── Not a command — normal AI conversation ─────────────────
@@ -3984,8 +3983,7 @@ app.post("/api/talk/vision", requireDashboardAuth, async (req, res) => {
     if (!reply) reply = "okay send it again, it didn't load right";
     if (hasAIBreak(reply)) reply = "wait let me look at this properly";
 
-    const audioBase64 = await ttsBase64(reply).catch(() => null);
-    res.json({ ok: true, reply, audioBase64: audioBase64 || null });
+    res.json({ ok: true, reply });
   } catch(e) {
     console.error("[talk/vision] Error:", e.message);
     res.status(500).json({ error: e.message });

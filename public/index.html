@@ -1340,7 +1340,7 @@ body.in-chat       #global-back { display:flex !important; }
 /* ── FLOATING BOTTOM NAV — liquid glass ── */
 #bottom-nav{
   position:fixed;
-  bottom: 20px;
+  bottom: calc(22px + env(safe-area-inset-bottom));
   left:50%;
   transform:translateX(-50%);
   z-index:300;
@@ -2700,36 +2700,39 @@ function fmtTime(iso){if(!iso)return"";try{const d=new Date(iso),now=new Date();
 function fmtTimeFull(iso){if(!iso)return"";try{return new Date(iso).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}catch{return""}}
 function fmtDate(iso){if(!iso)return"—";try{const d=new Date(iso),now=new Date();if(d.toDateString()===now.toDateString())return"Today";if(new Date(now-864e5).toDateString()===d.toDateString())return"Yesterday";return d.toLocaleDateString([],{month:"short",day:"numeric",year:"numeric"})}catch{return"—"}}
 let _notifTimer = null;
-function showNotif(title, body, icon, duration) {
-  duration = duration || 3500;
-  clearTimeout(_notifTimer);
-  const inner = document.getElementById('notif-inner');
-  if(!inner) return;
-  const iconEl = document.getElementById('notif-icon');
-  const titleEl = document.getElementById('notif-title');
-  const bodyEl  = document.getElementById('notif-body');
-  const timeEl  = document.getElementById('notif-time');
-  if(!iconEl||!titleEl||!bodyEl||!timeEl) return;
-  if (typeof icon === 'string' && icon.startsWith('<')) {
-    iconEl.parentElement.innerHTML = '<div id="notif-icon-wrap" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">'+icon+'</div>';
-  } else {
-    iconEl.textContent = icon || '✦';
-  }
-  titleEl.textContent = String(title || '');
-  bodyEl.textContent  = String(body  || '');
-  timeEl.textContent  = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-  // force off first so transition replays
+let _notifQ=[], _notifBusy=false;
+function _notifDrain(){
+  if(_notifBusy||!_notifQ.length)return;
+  _notifBusy=true;
+  const{title,body,icon,duration}=_notifQ.shift();
+  const inner=document.getElementById('notif-inner');
+  if(!inner){_notifBusy=false;return}
+  const iconEl=document.getElementById('notif-icon');
+  const titleEl=document.getElementById('notif-title');
+  const bodyEl=document.getElementById('notif-body');
+  const timeEl=document.getElementById('notif-time');
+  if(!titleEl||!bodyEl||!timeEl){_notifBusy=false;return}
+  if(typeof icon==='string'&&icon.startsWith('<')){
+    if(iconEl)iconEl.parentElement.innerHTML='<div id="notif-icon-wrap" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">'+icon+'</div>';
+  }else if(iconEl){iconEl.textContent=icon||'✦'}
+  titleEl.textContent=String(title||'');
+  bodyEl.textContent=String(body||'');
+  timeEl.textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
   inner.classList.remove('show');
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      inner.classList.add('show');
-      inner.onclick = () => { clearTimeout(_notifTimer); inner.classList.remove('show'); };
-      _notifTimer = setTimeout(() => inner.classList.remove('show'), duration);
-    });
-  });
+  void inner.offsetHeight; // force synchronous reflow — reliably resets CSS transition
+  inner.classList.add('show');
+  const done=()=>{inner.classList.remove('show');setTimeout(()=>{_notifBusy=false;_notifDrain()},400)};
+  inner.onclick=()=>{clearTimeout(_notifTimer);done()};
+  clearTimeout(_notifTimer);
+  _notifTimer=setTimeout(done,duration||3500);
+}
+function showNotif(title,body,icon,duration){
+  _notifQ=[{title,body,icon,duration}]; // replace queue — always show latest
+  if(!_notifBusy)_notifDrain();
 }
 /* backward-compat: all existing showToast() calls route here */
 function showToast(msg) { showNotif('Ariana', msg, '✦'); }
+
 
 /* ── ElevenLabs key helpers — stored in localStorage, never hardcoded ── */
 function getElevenKey()   { return localStorage.getItem('_el_key')   || ''; }
