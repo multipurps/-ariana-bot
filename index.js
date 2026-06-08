@@ -387,47 +387,64 @@ function cleanAITells(text) {
 
   const actionToEmoji = (str) => {
     const s = str.toLowerCase();
-    if (/laugh|lmao|dead/.test(s))        return '💀';
-    if (/smirk|grin|half.?smile/.test(s)) return '😏';
-    if (/eye.*roll|roll.*eye/.test(s))    return '🙄';
-    if (/sigh/.test(s))                   return '😮‍💨';
-    if (/shrug/.test(s))                  return '🤷';
-    if (/yawn/.test(s))                   return '🥱';
-    if (/wink/.test(s))                   return '😉';
+    if (/laugh|lmao|dead/.test(s))           return '💀';
+    if (/smirk|grin|half.?smile/.test(s))   return '😏';
+    if (/eye.*roll|roll.*eye/.test(s))       return '🙄';
+    if (/facepalm/.test(s))                  return '🤦';
+    if (/shrug/.test(s))                     return '🤷';
+    if (/sigh/.test(s))                      return '😮‍💨';
+    if (/yawn/.test(s))                      return '🥱';
+    if (/wink/.test(s))                      return '😉';
+    if (/gasp/.test(s))                      return '😮';
+    if (/groan|grunt/.test(s))               return '😩';
+    if (/scoff|snort/.test(s))               return '🙄';
     return null;
   };
 
-  // Step 1 — **Bold action/stage-direction lines**
-  // e.g. "**Laughs, low and knowing**", "**Smirks, already typing back**", "**Leans back, unfazed**"
-  t = t.replace(/\*\*([A-Z][^*\n]{1,80})\*\*/g, (match, inner) => {
-    const emoji = actionToEmoji(inner);
+  // Comprehensive set of action words — used for precise matching
+  // so we never accidentally strip real words like "Miami" or "Friday"
+  const ACTION_WORDS = new Set([
+    'laughs','laugh','laughed','chuckles','chuckle','snorts','snort',
+    'scoffs','scoff','gasps','gasp','groans','groan','exhales','exhale',
+    'pouts','pout','smirks','smirk','grins','grin','leans','lean',
+    'pauses','pause','tilts','tilt','raises','raise','stretches','stretch',
+    'yawns','yawn','nods','nod','winks','wink','drops','drop',
+    'walks','walk','looks','look','glances','glance','blinks','blink',
+    'sighs','sigh','shrugs','shrug','crosses','cross','narrows','narrow',
+    'arches','arch','stares','stare','rolls','roll','turns','turn',
+    'flips','flip','facepalms','facepalm','eyerolls','eyeroll',
+    'grumbles','grumble','mumbles','mumble','sniffs','sniff',
+    'gulps','gulp','fidgets','fidget',
+  ]);
+
+  // Step 1 — **Bold action lines** e.g. **Shrugs** **Facepalms** **Leans back, unfazed**
+  t = t.replace(/\*\*([A-Z][^*\n]{0,80})\*\*/g, (match, inner) => {
+    const trimmed = inner.trim();
+    const emoji = actionToEmoji(trimmed);
     if (emoji) return emoji;
-    // Stage-direction verb phrases (starts capital verb, has descriptor after)
-    if (/^[A-Z][a-z]+(s|ed|ing)?\b/.test(inner) && inner.includes(' ')) return '';
-    return match; // keep — probably real emphasis like **finally** or a name
+    // Single-word bold action verb (Shrugs, Facepalms, Scoffs...)
+    if (ACTION_WORDS.has(trimmed.toLowerCase())) return '';
+    // Multi-word stage direction (Leans back unfazed, Walks away slowly...)
+    const firstWord = trimmed.split(/[\s,]/)[0].toLowerCase();
+    if (ACTION_WORDS.has(firstWord) && trimmed.includes(' ')) return '';
+    return match; // keep — probably real emphasis
   });
 
-  // Step 2 — Standalone action-only lines (no bold markers)
-  // e.g. a whole line that is only "Laughs, low and knowing" or "Leans back, unfazed"
-  const actionVerbs = [
-    'Laugh','Chuckle','Snort','Scoff','Gasp','Groan','Exhale','Pout',
-    'Smirk','Grin','Lean','Pause','Tilt','Raise','Stretch',
-    'Yawn','Nod','Wink','Drop','Walk','Look','Glance','Blink','Sigh',
-    'Shrug','Cross','Narrow','Arch','Stare','Roll','Turn','Flip','Step',
-    'Stand','Sit','Eyes','Casually','Quietly','Slowly','Already'
-  ];
-  const actionLineRe = new RegExp(
-    `^(${actionVerbs.join('|')})[a-z]*s?(?:[,\\s][^\\n]*)?$`, 'gm'
-  );
-  t = t.replace(actionLineRe, (line) => actionToEmoji(line) || '');
+  // Step 2 — Standalone action-only lines (no bold)
+  // e.g. a whole line that is just "Shrugs" or "Leans back, unfazed"
+  t = t.replace(/^([A-Z][a-z]+)([a-z]*)s?(?:[,\s][^\n]*)?$/gm, (line) => {
+    const firstWord = line.split(/[\s,]/)[0].toLowerCase();
+    if (!ACTION_WORDS.has(firstWord)) return line; // not an action word — keep
+    const emoji = actionToEmoji(line);
+    return emoji || '';
+  });
 
-  // Step 3 — Spanish endearments in English text (final safety net)
+  // Step 3 — Spanish endearments slipping through
   t = t.replace(/\bamor\b/gi, 'babe');
   t = t.replace(/\bmi amor\b/gi, 'babe');
   t = t.replace(/\bcari[ñn]o\b/gi, '');
-  t = t.replace(/\bquerida\b/gi, '');
 
-  // Step 4 — Clean up blank lines left by removals
+  // Step 4 — Clean leftover blank lines
   t = t.replace(/\n{3,}/g, '\n\n').trim();
 
   return t;
