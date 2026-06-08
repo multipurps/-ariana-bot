@@ -1084,6 +1084,8 @@ body.view-media    #bottom-nav,
 body.view-generate #bottom-nav,
 body.view-extras   #bottom-nav,
 body.view-talk     #bottom-nav,
+body.view-call     #bottom-nav,
+body.view-sleep    #bottom-nav,
 body.view-profile  #bottom-nav,
 body.in-chat       #bottom-nav { display:none !important; }
 
@@ -1094,6 +1096,8 @@ body.view-media    #profile-btn,
 body.view-generate #profile-btn,
 body.view-extras   #profile-btn,
 body.view-talk     #profile-btn,
+body.view-call     #profile-btn,
+body.view-sleep    #profile-btn,
 body.view-profile  #profile-btn,
 body.in-chat       #profile-btn { display:none !important; }
 
@@ -1422,6 +1426,86 @@ body.in-chat       #global-back { display:flex !important; }
 .bn-btn.tg-btn::after{background:#2AABEE}
 .bn-btn.sg-btn::after{background:#3A76F0}
 .bn-btn.sms-btn::after{background:#34C759}
+
+/* ══ CALL VIEW ══════════════════════════════════════════════ */
+@keyframes pulse-red{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.5)}}
+.sb-item.active.call-item{background:rgba(239,68,68,.1);color:var(--danger);border:1px solid rgba(239,68,68,.2)}
+.sb-item.active.sleep-item{background:rgba(99,102,241,.1);color:#818cf8;border:1px solid rgba(99,102,241,.2)}
+#call-live-badge{display:none;width:7px;height:7px;border-radius:50%;background:var(--danger);animation:pulse-red 1.4s infinite;margin-left:auto}
+#view-call{flex-direction:column;overflow-y:auto}
+.call-wrap{padding:calc(env(safe-area-inset-top)+56px) 20px calc(20px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:16px;max-width:480px;margin:0 auto;width:100%}
+.call-hd h2{font-size:20px;font-weight:800;margin-bottom:4px}
+.call-hd p{font-size:13px;color:var(--t2);line-height:1.5}
+.call-field{display:flex;flex-direction:column;gap:6px}
+.call-field label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--t3)}
+.call-field input,.call-field textarea{background:var(--s1);border:1px solid var(--b1);border-radius:12px;padding:12px 14px;color:#fff;font-size:15px;outline:none;resize:none;transition:border-color .18s;font-family:inherit}
+.call-field input:focus,.call-field textarea:focus{border-color:rgba(239,68,68,.45)}
+.call-field textarea{min-height:88px;line-height:1.5}
+.call-ariana-bubble{background:var(--s1);border:1px solid var(--b2);border-radius:14px;padding:13px 15px;font-size:14px;line-height:1.55;color:var(--t2);font-style:italic}
+.call-btn-brief{width:100%;padding:14px;border-radius:13px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.22);color:var(--danger);font-size:15px;font-weight:600;transition:background .18s}
+.call-btn-brief:active{background:rgba(239,68,68,.2)}
+.call-btn-dial{width:100%;padding:14px;border-radius:13px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;font-size:15px;font-weight:700;box-shadow:0 4px 20px rgba(239,68,68,.3);transition:opacity .18s}
+.call-btn-dial:disabled{opacity:.35;pointer-events:none}
+.call-btn-dial:active{opacity:.82}
+
+/* live call overlay */
+#clo{position:fixed;inset:0;background:rgba(4,4,10,.97);z-index:820;flex-direction:column;display:none}
+#clo.show{display:flex}
+.clo-head{display:flex;align-items:center;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top)) 18px 12px;flex-shrink:0}
+.clo-x{width:36px;height:36px;border-radius:50%;background:var(--s2);border:1px solid var(--b1);font-size:17px;color:var(--t1);display:flex;align-items:center;justify-content:center}
+.clo-x:active{transform:scale(.9)}
+.clo-who{text-align:center}
+.clo-who-name{font-size:16px;font-weight:700}
+.clo-who-status{font-size:12px;color:var(--t2);margin-top:2px}
+.clo-timer{font-size:13px;font-weight:600;color:var(--danger);font-variant-numeric:tabular-nums;min-width:38px;text-align:right}
+.clo-log{flex:1;overflow-y:auto;padding:10px 16px;display:flex;flex-direction:column;gap:7px}
+.clo-bub{max-width:78%;padding:9px 13px;border-radius:16px;font-size:14px;line-height:1.45}
+.clo-bub.ariana{align-self:flex-start;background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.18)}
+.clo-bub.them{align-self:flex-end;background:var(--s2);border:1px solid var(--b1)}
+.clo-bub.sys{align-self:center;font-size:12px;color:var(--t3);font-style:italic}
+.clo-end-row{display:flex;justify-content:center;padding:8px 0 4px;flex-shrink:0}
+.clo-end{width:64px;height:64px;border-radius:50%;background:var(--danger);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 24px rgba(239,68,68,.4);font-size:28px}
+.clo-end:active{transform:scale(.9)}
+.clo-bar{display:flex;gap:10px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--b1);flex-shrink:0}
+.clo-bar input{flex:1;background:var(--s1);border:1px solid var(--b1);border-radius:22px;padding:10px 16px;color:#fff;font-size:14px;outline:none;font-family:inherit}
+.clo-bar button{width:40px;height:40px;border-radius:50%;background:var(--danger);color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.clo-bar button:active{transform:scale(.9)}
+/* pip */
+#call-pip{position:fixed;bottom:calc(110px + env(safe-area-inset-bottom));right:14px;background:var(--danger);border-radius:24px;padding:8px 14px;font-size:13px;font-weight:600;color:#fff;z-index:700;display:none;align-items:center;gap:7px;box-shadow:0 4px 18px rgba(239,68,68,.4);cursor:pointer}
+.pip-dot{width:8px;height:8px;border-radius:50%;background:#fff;display:inline-block;animation:pulse-red 1.4s infinite}
+
+/* ══ SLEEP VIEW ═════════════════════════════════════════════ */
+#view-sleep{flex-direction:column;overflow-y:auto}
+.sleep-wrap{padding:calc(env(safe-area-inset-top)+56px) 20px calc(20px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:18px;max-width:480px;margin:0 auto;width:100%}
+.sleep-hd h2{font-size:20px;font-weight:800;margin-bottom:4px}
+.sleep-hd p{font-size:13px;color:var(--t2);line-height:1.5}
+.sleep-status-pill{display:flex;align-items:center;gap:9px;padding:10px 15px;border-radius:14px;font-size:14px;font-weight:600;border:1px solid var(--b1);background:var(--s1)}
+.sleep-dot{width:9px;height:9px;border-radius:50%;background:#6ee7b7;flex-shrink:0}
+.sleep-dot.sleeping{background:var(--danger);animation:pulse-red 2s infinite}
+.sleep-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 15px;border-radius:14px;background:var(--s1);border:1px solid var(--b1)}
+.sleep-row-label{flex:1}
+.sleep-row-title{font-size:14px;font-weight:600;margin-bottom:2px}
+.sleep-row-sub{font-size:12px;color:var(--t2);line-height:1.4}
+.toggle-pill{position:relative;width:46px;height:26px;flex-shrink:0;cursor:pointer}
+.toggle-pill input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;border-radius:13px;background:var(--s3);transition:background .2s}
+.toggle-track::after{content:'';position:absolute;width:20px;height:20px;border-radius:50%;background:#fff;top:3px;left:3px;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.toggle-pill input:checked+.toggle-track{background:#818cf8}
+.toggle-pill input:checked+.toggle-track::after{transform:translateX(20px)}
+.sleep-times{display:flex;align-items:center;gap:10px;padding:14px 15px;border-radius:14px;background:var(--s1);border:1px solid var(--b1)}
+.sleep-time-field{flex:1;display:flex;flex-direction:column;gap:6px}
+.sleep-time-field label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--t3)}
+.sleep-time-field input[type=time]{background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:10px 12px;color:#fff;font-size:16px;font-weight:600;outline:none;width:100%;font-variant-numeric:tabular-nums}
+.sleep-time-sep{color:var(--t3);font-size:18px;padding-top:18px}
+.sleep-tz-row{display:flex;flex-direction:column;gap:6px}
+.sleep-tz-row label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--t3)}
+.sleep-tz-row select{background:var(--s1);border:1px solid var(--b1);border-radius:12px;padding:12px 14px;color:#fff;font-size:14px;outline:none;width:100%}
+.sleep-force-row{display:flex;gap:10px}
+.sleep-force-btn{flex:1;padding:13px;border-radius:13px;font-size:14px;font-weight:600;transition:background .18s}
+.sleep-force-btn.sleep{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--danger)}
+.sleep-force-btn.sleep:active{background:rgba(239,68,68,.2)}
+.sleep-force-btn.wake{background:rgba(110,231,183,.08);border:1px solid rgba(110,231,183,.2);color:#6ee7b7}
+.sleep-force-btn.wake:active{background:rgba(110,231,183,.15)}
 </style>
 </head>
 <body>
@@ -1492,6 +1576,15 @@ body.in-chat       #global-back { display:flex !important; }
     <div class="sb-item talk-item" data-view="talk" onclick="navTo(this)">
       <div class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
       <div class="sb-label">Live Talk</div>
+    </div>
+    <div class="sb-item call-item" data-view="call" onclick="navTo(this)">
+      <div class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.44 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.56a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+      <div class="sb-label">AI Call</div>
+      <span id="call-live-badge"></span>
+    </div>
+    <div class="sb-item sleep-item" data-view="sleep" onclick="navTo(this)">
+      <div class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></div>
+      <div class="sb-label">Sleep</div>
     </div>
     <div class="sb-item gen-item" data-view="generate" onclick="navTo(this)">
       <div class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
@@ -2270,7 +2363,107 @@ body.in-chat       #global-back { display:flex !important; }
     </div>
 
   </div><!-- #views -->
+
+    <!-- ══════════ AI CALL VIEW ══════════ -->
+    <div id="view-call" class="view">
+      <div class="call-wrap">
+        <div class="call-hd">
+          <h2>📞 AI Call</h2>
+          <p>Brief Ariana first — she makes the call and you watch the transcript live</p>
+        </div>
+        <div class="call-field">
+          <label>Phone Number</label>
+          <input type="tel" id="call-num" inputmode="tel" placeholder="+2348012345678">
+        </div>
+        <div class="call-field">
+          <label>Their Name</label>
+          <input type="text" id="call-name-input" placeholder="Contact name (optional)">
+        </div>
+        <div class="call-field">
+          <label>Brief Ariana — what's this call about?</label>
+          <textarea id="call-brief-text" rows="5" placeholder="Tell her what to say, ask, or negotiate. Be specific — she handles the rest."></textarea>
+        </div>
+        <div id="call-ariana-reply" class="call-ariana-bubble" style="display:none"></div>
+        <button class="call-btn-brief" id="call-brief-btn" onclick="callDoBrief()">Brief Ariana</button>
+        <button class="call-btn-dial" id="call-dial-btn" disabled onclick="callDoStart()">📞 Call Now</button>
+      </div>
+    </div>
+
+    <!-- ══════════ SLEEP VIEW ══════════ -->
+    <div id="view-sleep" class="view">
+      <div class="sleep-wrap">
+        <div class="sleep-hd">
+          <h2>🌙 Sleep Schedule</h2>
+          <p>Ariana goes quiet during sleep hours and sends goodnight to active chats</p>
+        </div>
+        <div class="sleep-status-pill" id="sleep-status-pill">
+          <span class="sleep-dot" id="sleep-dot"></span>
+          <span id="sleep-status-txt">Loading…</span>
+        </div>
+        <div class="sleep-row">
+          <div class="sleep-row-label">
+            <div class="sleep-row-title">Enable Sleep Schedule</div>
+            <div class="sleep-row-sub">Ariana automatically sleeps and wakes based on the times below</div>
+          </div>
+          <label class="toggle-pill">
+            <input type="checkbox" id="sleep-enabled" onchange="saveSleepConfig()">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div class="sleep-times">
+          <div class="sleep-time-field">
+            <label>Sleep time</label>
+            <input type="time" id="sleep-start" value="23:00" onchange="saveSleepConfig()">
+          </div>
+          <div class="sleep-time-sep">→</div>
+          <div class="sleep-time-field">
+            <label>Wake time</label>
+            <input type="time" id="sleep-end" value="07:00" onchange="saveSleepConfig()">
+          </div>
+        </div>
+        <div class="sleep-tz-row">
+          <label>Timezone</label>
+          <select id="sleep-tz" onchange="saveSleepConfig()">
+            <option value="Africa/Lagos">Africa/Lagos (WAT)</option>
+            <option value="America/New_York">America/New_York (EST)</option>
+            <option value="America/Los_Angeles">America/Los_Angeles (PST)</option>
+            <option value="Europe/London">Europe/London (GMT)</option>
+            <option value="Asia/Dubai">Asia/Dubai (GST)</option>
+            <option value="Europe/Paris">Europe/Paris (CET)</option>
+          </select>
+        </div>
+        <div class="sleep-force-row">
+          <button class="sleep-force-btn sleep" onclick="forceSleep(true)">💤 Force Sleep</button>
+          <button class="sleep-force-btn wake" onclick="forceSleep(false)">☀️ Force Wake</button>
+        </div>
+      </div>
+    </div>
 </div><!-- #app -->
+
+<!-- ══ LIVE CALL OVERLAY (fixed, z:820, outside #app) ══ -->
+<div id="clo">
+  <div class="clo-head">
+    <button class="clo-x" onclick="callHideOverlay()" title="Back — call stays live">✕</button>
+    <div class="clo-who">
+      <div class="clo-who-name" id="clo-name">Calling…</div>
+      <div class="clo-who-status" id="clo-status">Connecting</div>
+    </div>
+    <div class="clo-timer" id="clo-timer">0:00</div>
+  </div>
+  <div class="clo-log" id="clo-log">
+    <div class="clo-bub sys">Waiting for connection…</div>
+  </div>
+  <div class="clo-end-row">
+    <button class="clo-end" onclick="callDoEnd()" title="End call">📵</button>
+  </div>
+  <div class="clo-bar">
+    <input id="clo-inp" placeholder="Tell Ariana something mid-call…" onkeydown="if(event.key==='Enter'){event.preventDefault();callDoInstruct()}">
+    <button onclick="callDoInstruct()">↑</button>
+  </div>
+</div>
+<div id="call-pip" onclick="callShowOverlay()">
+  <span class="pip-dot"></span>Call live — tap to return
+</div>
 
 <div id="drop-overlay">Drop to upload</div>
 
@@ -5415,5 +5608,166 @@ document.addEventListener("DOMContentLoaded",()=>{
     <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" fill="#34C759"/></svg>
   </button>
 </div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// AI CALL — Mitra-style (backed by /api/call/* endpoints)
+// ══════════════════════════════════════════════════════════════
+let _cCallId=null,_cTimer=null,_cSecs=0;
+
+function callDoBrief(){
+  const num=(document.getElementById('call-num').value||'').trim();
+  const name=(document.getElementById('call-name-input').value||'').trim();
+  const brief=(document.getElementById('call-brief-text').value||'').trim();
+  if(!num){showToast('Enter a phone number');return}
+  if(!brief){showToast('Write the briefing first');return}
+  const btn=document.getElementById('call-brief-btn');
+  btn.textContent='Briefing…';btn.disabled=true;
+  fetch('/api/call/brief',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({to:num,name:name||num,briefing:brief})})
+  .then(r=>r.json()).then(d=>{
+    if(!d.ok)throw new Error(d.error||'Failed');
+    _cCallId=d.callId;
+    const el=document.getElementById('call-ariana-reply');
+    el.textContent=d.summary||'Got it. Ready to call.';el.style.display='block';
+    document.getElementById('call-dial-btn').disabled=false;
+    btn.textContent='✓ Briefed — edit & re-brief';btn.disabled=false;
+  }).catch(e=>{showToast('Brief failed: '+e.message);btn.textContent='Brief Ariana';btn.disabled=false});
+}
+
+function callDoStart(){
+  if(!_cCallId){showToast('Brief Ariana first');return}
+  const btn=document.getElementById('call-dial-btn');
+  const name=(document.getElementById('call-name-input').value||document.getElementById('call-num').value||'').trim();
+  btn.textContent='Dialling…';btn.disabled=true;
+  fetch('/api/call/start',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({callId:_cCallId})})
+  .then(r=>r.json()).then(d=>{
+    if(!d.ok)throw new Error(d.error||'Failed');
+    callShowOverlay(name);
+    btn.textContent='📞 Call Now';btn.disabled=false;
+    const badge=document.getElementById('call-live-badge');if(badge)badge.style.display='inline-block';
+  }).catch(e=>{showToast('Call failed: '+e.message);btn.textContent='📞 Call Now';btn.disabled=false});
+}
+
+function callShowOverlay(name){
+  document.getElementById('clo-name').textContent=name||'Call';
+  document.getElementById('clo-status').textContent='Ringing…';
+  document.getElementById('clo-log').innerHTML='<div class="clo-bub sys">Connecting…</div>';
+  document.getElementById('clo').classList.add('show');
+  document.getElementById('call-pip').style.display='none';
+  _cSecs=0;clearInterval(_cTimer);
+  _cTimer=setInterval(()=>{_cSecs++;const m=Math.floor(_cSecs/60),s=_cSecs%60;document.getElementById('clo-timer').textContent=m+':'+(s<10?'0':'')+s},1000);
+}
+
+function callHideOverlay(){
+  // X button: hides overlay but call stays live — pip shows instead
+  document.getElementById('clo').classList.remove('show');
+  document.getElementById('call-pip').style.display='flex';
+}
+
+function callDoEnd(){
+  if(_cCallId)fetch('/api/call/end',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({callId:_cCallId})}).catch(()=>{});
+  clearInterval(_cTimer);
+  document.getElementById('clo').classList.remove('show');
+  document.getElementById('call-pip').style.display='none';
+  const badge=document.getElementById('call-live-badge');if(badge)badge.style.display='none';
+  document.getElementById('call-dial-btn').disabled=true;
+  document.getElementById('call-ariana-reply').style.display='none';
+  _cCallId=null;_cSecs=0;
+  showToast('Call ended');
+}
+
+function callDoInstruct(){
+  if(!_cCallId){showToast('No active call');return}
+  const inp=document.getElementById('clo-inp');
+  const inst=(inp.value||'').trim();if(!inst)return;inp.value='';
+  fetch('/api/call/instruct',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({callId:_cCallId,instruction:inst})})
+  .then(r=>r.json()).then(d=>{if(d.ok)_cBub('sys','You told Ariana: "'+inst+'"');else showToast(d.error||'Failed')})
+  .catch(e=>showToast(e.message));
+}
+
+function _cBub(role,text){
+  const el=document.createElement('div');el.className='clo-bub '+role;el.textContent=text;
+  const log=document.getElementById('clo-log');if(log){log.appendChild(el);log.scrollTop=log.scrollHeight}
+}
+
+// Wire socket events (after socket is initialized)
+setTimeout(()=>{
+  if(typeof socket==='undefined')return;
+  socket.on('call_started',d=>{if(d.callId!==_cCallId)return;document.getElementById('clo-status').textContent='Connected';_cBub('sys','Connected to '+(d.name||d.to||'them'))});
+  socket.on('call_transcript',d=>{if(d.callId!==_cCallId)return;const e=d.entry||{};if(e.text)_cBub(e.role==='assistant'?'ariana':'them',e.text)});
+  socket.on('call_status',d=>{if(d.callId!==_cCallId)return;document.getElementById('clo-status').textContent=d.status||'Active'});
+  socket.on('call_ended',d=>{
+    if(d.callId!==_cCallId)return;
+    clearInterval(_cTimer);
+    _cBub('sys','Call ended'+(d.summary?' — '+d.summary:''));
+    document.getElementById('clo-status').textContent='Ended';
+    const badge=document.getElementById('call-live-badge');if(badge)badge.style.display='none';
+    document.getElementById('call-pip').style.display='none';
+    showNotif('Call ended',d.summary||'Ariana finished the call','📞');
+  });
+  socket.on('call_instruction',d=>{if(d.callId!==_cCallId)return;_cBub('sys','Instruction sent: "'+d.instruction+'"')});
+  socket.on('sleep_update',d=>{_updateSleepStatus(d.sleeping)});
+},1800);
+
+// ══════════════════════════════════════════════════════════════
+// SLEEP SCHEDULE — /api/sleep controls
+// ══════════════════════════════════════════════════════════════
+function _updateSleepStatus(sleeping){
+  const dot=document.getElementById('sleep-dot');
+  const txt=document.getElementById('sleep-status-txt');
+  if(!dot||!txt)return;
+  if(sleeping){
+    dot.className='sleep-dot sleeping';
+    txt.textContent='Ariana is sleeping 💤';
+  } else {
+    dot.className='sleep-dot';
+    txt.textContent='Ariana is active ☀️';
+  }
+}
+
+function loadSleepConfig(){
+  fetch('/api/sleep').then(r=>r.json()).then(d=>{
+    if(d.enabled!==undefined)document.getElementById('sleep-enabled').checked=!!d.enabled;
+    if(d.startTime)document.getElementById('sleep-start').value=d.startTime;
+    if(d.endTime)document.getElementById('sleep-end').value=d.endTime;
+    if(d.timezone){
+      const sel=document.getElementById('sleep-tz');
+      for(let i=0;i<sel.options.length;i++){if(sel.options[i].value===d.timezone){sel.selectedIndex=i;break}}
+    }
+    _updateSleepStatus(!!d.active);
+  }).catch(()=>{});
+}
+
+function saveSleepConfig(){
+  const enabled=document.getElementById('sleep-enabled').checked;
+  const startTime=document.getElementById('sleep-start').value;
+  const endTime=document.getElementById('sleep-end').value;
+  const timezone=document.getElementById('sleep-tz').value;
+  fetch('/api/sleep',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({enabled,startTime,endTime,timezone})})
+  .then(r=>r.json()).then(d=>{
+    _updateSleepStatus(!!d.active);
+    showToast(d.active?'Sleep schedule saved — Ariana is sleeping':'Sleep schedule saved');
+  }).catch(e=>showToast('Save failed: '+e.message));
+}
+
+function forceSleep(sleeping){
+  fetch('/api/sleep/force',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({sleeping})})
+  .then(r=>r.json()).then(d=>{
+    _updateSleepStatus(!!d.active);
+    showToast(sleeping?'Ariana is now sleeping 💤':'Ariana is now awake ☀️');
+  }).catch(e=>showToast('Failed: '+e.message));
+}
+
+// Load sleep config when that view becomes active
+const _origNavTo=navTo;
+navTo=function(el){
+  _origNavTo(el);
+  if((el?.dataset?.view||el?.view)==='sleep') loadSleepConfig();
+};
+</script>
 </body>
 </html>
