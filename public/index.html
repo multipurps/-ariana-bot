@@ -11,6 +11,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icons/icon-180.png">
 <script src="/socket.io/socket.io.js"></script>
+<link rel="stylesheet" href="/generate.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -348,36 +349,6 @@ input,textarea{font-family:inherit;color:inherit}
 #gen-type-toggle{display:flex;background:var(--s2);border-radius:10px;padding:3px;gap:2px;border:1px solid var(--b1);flex-shrink:0}
 .gen-type-btn{padding:6px 16px;border-radius:8px;font-size:13px;font-weight:600;color:var(--t2);transition:all .18s;cursor:pointer;border:none}
 .gen-type-btn.active{background:rgba(168,85,247,.25);color:#c084fc}
-/* ── GENERATE MODES ── */
-#gen-mode-row{display:flex;gap:6px;overflow-x:auto;padding:12px 16px 0;scrollbar-width:none}
-#gen-mode-row::-webkit-scrollbar{display:none}
-.gen-mode-chip{flex-shrink:0;padding:7px 14px;border-radius:20px;font-size:12px;font-weight:700;color:var(--t2);background:var(--s1);border:1px solid var(--b1);cursor:pointer;transition:all .15s;white-space:nowrap}
-.gen-mode-chip.active{color:#c084fc;background:rgba(168,85,247,.15);border-color:rgba(168,85,247,.35)}
-.gen-mode-chip.nsfw-chip.active{color:#f87171;background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3)}
-/* ── LOCK BAR ── */
-#gen-lock-bar{display:flex;gap:6px;padding:8px 16px;flex-wrap:wrap}
-.gen-lock-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;background:var(--s1);border:1px solid var(--b1);color:var(--t2);cursor:pointer}
-.gen-lock-pill.active{background:rgba(168,85,247,.12);border-color:rgba(168,85,247,.3);color:#c084fc}
-.gen-lock-pill.clothes-active{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3);color:#4ade80}
-/* ── MODE PANELS ── */
-.gen-mode-panel{display:none}.gen-mode-panel.on{display:flex;flex-direction:column;gap:0}
-.gen-upload-zone{background:var(--s2);border:1.5px dashed var(--b1);border-radius:12px;padding:20px;text-align:center;cursor:pointer;margin-bottom:8px}
-.gen-upload-zone img{max-height:160px;width:100%;object-fit:cover;border-radius:10px;display:none}
-.gen-upload-ph{display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--t3);font-size:13px}
-/* ── TTS PANEL ── */
-#gen-tts-panel .tts-voice-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
-.tts-vbtn{padding:10px 8px;border-radius:10px;background:var(--s2);border:1px solid var(--b1);color:var(--t2);font-size:12px;font-weight:600;cursor:pointer;text-align:left;transition:all .15s}
-.tts-vbtn.active{background:rgba(168,85,247,.12);border-color:rgba(168,85,247,.35);color:#c084fc}
-/* ── WARDROBE VIEW ── */
-#view-wardrobe{padding:0 0 80px}
-#wardrobe-topbar{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--s1);border-bottom:1px solid var(--b1);position:sticky;top:0;z-index:5}
-#wardrobe-topbar-title{flex:1;font-weight:700;font-size:16px}
-#wardrobe-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:2px}
-.wardrobe-card{position:relative;aspect-ratio:3/4;overflow:hidden;background:var(--s2);cursor:pointer}
-.wardrobe-card img{width:100%;height:100%;object-fit:cover;transition:transform .2s}
-.wardrobe-card.selected::after{content:'✓';position:absolute;inset:0;background:rgba(139,92,246,.45);display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;font-weight:700}
-.wardrobe-card.selected img{transform:scale(1.04)}
-.wardrobe-upload-btn{position:fixed;bottom:90px;right:20px;width:52px;height:52px;border-radius:50%;background:#8b5cf6;border:none;color:#fff;font-size:26px;cursor:pointer;box-shadow:0 4px 20px rgba(139,92,246,.4);display:flex;align-items:center;justify-content:center;z-index:10}
 /* ── PROFILE FACE LOCK ── */
 .fl-upload-box{background:var(--s2);border:1px solid var(--b1);border-radius:12px;overflow:hidden;position:relative;aspect-ratio:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;color:var(--t3);font-size:12px}
 .fl-upload-box img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
@@ -1671,56 +1642,8 @@ body.in-chat       #global-back { display:flex !important; }
         </div>
       </div>
 
-      <!-- FACE LOCK section -->
       <div class="pv-section-wrap">
-        <div class="pv-section-label">Generation Locks</div>
-        <div style="padding:14px 16px;background:var(--bg);border-radius:14px;border:1px solid var(--b1);margin:0 16px 12px">
-          <p style="font-size:12px;color:var(--t3);line-height:1.7;margin-bottom:14px">Upload reference photos below. When set, every generated image will match this face, body shape, and outfit.</p>
-
-          <!-- Face toggle -->
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-            <span style="font-size:14px;font-weight:600">Enable Face Lock</span>
-            <button class="tgl" id="prof-fl-tgl" onclick="toggleProfFaceLock()"><div class="tgl-k"></div></button>
-          </div>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
-            <!-- Face -->
-            <div>
-              <div style="font-size:11px;color:var(--t3);margin-bottom:4px;text-align:center">Face</div>
-              <div class="fl-upload-box" id="fl-face-box" onclick="document.getElementById('fl-face-file').click()">
-                <input type="file" id="fl-face-file" accept="image/*" hidden onchange="profUploadLock(this,'face')">
-                <img id="fl-face-img" alt="">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-                <span>Upload</span>
-              </div>
-            </div>
-            <!-- Body -->
-            <div>
-              <div style="font-size:11px;color:var(--t3);margin-bottom:4px;text-align:center">Body</div>
-              <div class="fl-upload-box" id="fl-body-box" onclick="document.getElementById('fl-body-file').click()">
-                <input type="file" id="fl-body-file" accept="image/*" hidden onchange="profUploadLock(this,'body')">
-                <img id="fl-body-img" alt="">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2a5 5 0 010 10M4 22v-2a8 8 0 0116 0v2"/></svg>
-                <span>Upload</span>
-              </div>
-            </div>
-            <!-- Environment -->
-            <div>
-              <div style="font-size:11px;color:var(--t3);margin-bottom:4px;text-align:center">Room</div>
-              <div class="fl-upload-box" id="fl-env-box" onclick="document.getElementById('fl-env-file').click()">
-                <input type="file" id="fl-env-file" accept="image/*" hidden onchange="profUploadLock(this,'env')">
-                <img id="fl-env-img" alt="">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-                <span>Optional</span>
-              </div>
-            </div>
-          </div>
-          <div style="display:flex;gap:8px">
-            <button onclick="clearProfLock('face')" style="flex:1;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:8px;color:var(--t3);font-size:12px;cursor:pointer">Clear Face</button>
-            <button onclick="clearProfLock('body')" style="flex:1;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:8px;color:var(--t3);font-size:12px;cursor:pointer">Clear Body</button>
-            <button onclick="clearProfLock('env')" style="flex:1;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:8px;color:var(--t3);font-size:12px;cursor:pointer">Clear Room</button>
-          </div>
-        </div>
+        <div class="pv-section-label">Generation</div>
         <div class="pv-list">
           <div class="pv-row" onclick="navTo({dataset:{view:'wardrobe'}})">
             <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg></div>
@@ -1730,546 +1653,7 @@ body.in-chat       #global-back { display:flex !important; }
         </div>
       </div>
 
-      <div class="pv-bottom-space"></div>
-    </div>
-
-    <!-- ══════════ WARDROBE ══════════ -->
-    <div id="view-wardrobe" class="view">
-      <div id="wardrobe-topbar">
-        <button onclick="navTo({dataset:{view:'generate'}})" style="background:none;border:none;color:var(--t2);cursor:pointer;padding:4px 8px">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        </button>
-        <div id="wardrobe-topbar-title">Wardrobe</div>
-        <button onclick="document.getElementById('wardrobe-file-input').click()" style="background:none;border:none;color:#c084fc;cursor:pointer;font-size:13px;font-weight:700;padding:4px 8px">+ Add</button>
-        <input type="file" id="wardrobe-file-input" accept="image/*" multiple hidden onchange="addWardrobeItems(this)">
-      </div>
-      <div style="padding:12px 16px;background:var(--s1);border-bottom:1px solid var(--b1)">
-        <div id="wardrobe-selected-bar" style="font-size:13px;color:var(--t2)">Tap any outfit to select it — it will be applied to all generations.</div>
-      </div>
-      <div id="wardrobe-grid"></div>
-      <div id="wardrobe-empty" style="text-align:center;padding:60px 20px;color:var(--t3)">
-        <div style="font-size:48px;margin-bottom:12px">👗</div>
-        <div style="font-size:15px;font-weight:600;color:var(--t2);margin-bottom:8px">Your wardrobe is empty</div>
-        <div style="font-size:13px">Tap <strong style="color:var(--t2)">+ Add</strong> to upload your clothes photos</div>
-      </div>
-    </div>
-
-    <!-- ══════════ HOME ══════════ -->
-    <div id="view-home" class="view active">
-      <div id="home-logo">
-        <img src="/icons/icon-192.png" alt="Ariana" onerror="this.outerHTML='<div style=\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:32px\'>✦</div>'">
-      </div>
-      <div id="home-title">Ariana</div>
-      <div id="home-sub">Your AI companion. Pick a platform to start chatting.</div>
-      <div class="home-plat-grid">
-        <div class="home-plat-card wa-card" onclick="navToPlatform('wa')">
-          <svg viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-          <span class="home-plat-name">WhatsApp</span>
-        </div>
-        <div class="home-plat-card tg-card" onclick="navToPlatform('tg')">
-          <svg viewBox="0 0 24 24" fill="#2AABEE"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-.943-.62-.332-1.062.207-1.676.142-.148 2.607-2.39 2.653-2.594.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
-          <span class="home-plat-name">Telegram</span>
-        </div>
-        <div class="home-plat-card sg-card" onclick="navToPlatform('sg')">
-          <svg viewBox="0 0 24 24" fill="#3A76F0"><path d="M12 0q-.934 0-1.83.139l.17 1.111a11 11 0 0 1 3.32 0l.172-1.111A12 12 0 0 0 12 0M9.152.34A12 12 0 0 0 5.77 1.742l.584.961a10.8 10.8 0 0 1 3.066-1.27zm5.696 0-.268 1.094a10.8 10.8 0 0 1 3.066 1.27l.584-.962A12 12 0 0 0 14.848.34M12 2.25a9.75 9.75 0 0 0-8.539 14.459c.074.134.1.292.064.441l-1.013 4.338 4.338-1.013a.62.62 0 0 1 .441.064A9.7 9.7 0 0 0 12 21.75c5.385 0 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25m-7.092.068a12 12 0 0 0-2.59 2.59l.909.664a11 11 0 0 1 2.345-2.345zm14.184 0-.664.909a11 11 0 0 1 2.345 2.345l.909-.664a12 12 0 0 0-2.59-2.59M1.742 5.77A12 12 0 0 0 .34 9.152l1.094.268a10.8 10.8 0 0 1 1.269-3.066zm20.516 0-.961.584a10.8 10.8 0 0 1 1.27 3.066l1.093-.268a12 12 0 0 0-1.402-3.383M.138 10.168A12 12 0 0 0 0 12q0 .934.139 1.83l1.111-.17A11 11 0 0 1 1.125 12q0-.848.125-1.66zm23.723.002-1.111.17q.125.812.125 1.66c0 .848-.042 1.12-.125 1.66l1.111.172a12.1 12.1 0 0 0 0-3.662M1.434 14.58l-1.094.268a12 12 0 0 0 .96 2.591l-.265 1.14 1.096.255.36-1.539-.188-.365a10.8 10.8 0 0 1-.87-2.35m21.133 0a10.8 10.8 0 0 1-1.27 3.067l.962.584a12 12 0 0 0 1.402-3.383zm-1.793 3.848a11 11 0 0 1-2.345 2.345l.664.909a12 12 0 0 0 2.59-2.59zm-19.959 1.1L.357 21.48a1.8 1.8 0 0 0 2.162 2.161l1.954-.455-.256-1.095-1.953.455a.675.675 0 0 1-.81-.81l.454-1.954zm16.832 1.769a10.8 10.8 0 0 1-3.066 1.27l.268 1.093a12 12 0 0 0 3.382-1.402zm-10.94.213-1.54.36.256 1.095 1.139-.266c.814.415 1.683.74 2.591.961l.268-1.094a10.8 10.8 0 0 1-2.35-.869zm3.634 1.24-.172 1.111a12.1 12.1 0 0 0 3.662 0l-.17-1.111q-.812.125-1.66.125a11 11 0 0 1-1.66-.125"/></svg>
-          <span class="home-plat-name">Signal</span>
-        </div>
-        <div class="home-plat-card sms-card" onclick="navToPlatform('sms')">
-          <svg viewBox="0 0 24 24" fill="#34C759"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
-          <span class="home-plat-name">SMS</span>
-        </div>
-      </div>
-      <button id="home-talk-btn" onclick="navTo({dataset:{view:'talk'}})">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-        Talk to Ariana
-      </button>
-    </div>
-
-    <!-- ══════════ CHATS ══════════ -->
-    <div id="view-chats" class="view">
-      <div id="chat-list-pane">
-        <div id="chat-list-topbar">
-          <div id="chat-list-topbar-spacer"></div>
-          <div id="search-wrap">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input id="search-input" type="search" placeholder="Search" oninput="renderList()">
-          </div>
-        </div>
-        <div id="contact-list"></div>
-      </div>
-      <div id="chat-panel">
-        <div id="no-chat">
-          <div class="nc-icon"><img src="/icons/icon-192.png" onerror="this.outerHTML='<svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.2\'><path d=\'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\'/></svg>'"></div>
-          <h2>Select a conversation</h2>
-        </div>
-        <div id="chat-header" style="display:none">
-          <button id="chat-back" onclick="closeChat()">
-            <svg viewBox="0 0 11 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M9.5 1L1.5 9L9.5 17" stroke="#3a9df8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </button>
-          <div id="chat-avatar" onclick="openDrawer()"></div>
-          <div id="chat-info" onclick="openDrawer()"><div id="chat-name">—</div><div id="chat-sub"></div></div>
-          <div id="chat-header-actions">
-            <button class="hdr-wp-btn" id="chat-wp-btn" onclick="openPlatWallpaperModal()" title="Set wallpaper">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-            </button>
-            <div id="send-as-wrap">
-              <button class="sa-btn active" id="sa-ariana" onclick="setSendAs('ariana')">Ariana</button>
-              <button class="sa-btn" id="sa-you" onclick="setSendAs('you')">You</button>
-            </div>
-            <button class="hdr-icon-btn" onclick="toggleTakeover()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-            </button>
-          </div>
-        </div>
-        <div id="messages" style="display:none"></div>
-        <div id="input-area" style="display:none">
-          <div id="takeover-notice">YOU are in control — Ariana paused</div>
-          <button class="inp-btn" onclick="toggleEmoji()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9" stroke-width="2.5" stroke-linecap="round"/><line x1="15" y1="9" x2="15.01" y2="9" stroke-width="2.5" stroke-linecap="round"/></svg></button>
-          <textarea id="msg-box" rows="1" placeholder="Message" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-          <button id="send-btn" onclick="sendMsg()"><svg viewBox="0 0 24 24" fill="#000"><path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>
-        </div>
-        <div id="emoji-picker">
-          <div class="emoji-cats"><button class="ecbtn active" onclick="showEcat('smileys',this)">&#128512;</button><button class="ecbtn" onclick="showEcat('hearts',this)">&#10084;&#65039;</button><button class="ecbtn" onclick="showEcat('hands',this)">&#128075;</button><button class="ecbtn" onclick="showEcat('fire',this)">&#128293;</button></div>
-          <div class="emoji-grid" id="emoji-grid"></div>
-        </div>
-        <!-- Contact drawer -->
-        <div id="contact-drawer">
-          <div class="drawer-hdr">
-            <div class="drawer-av" onclick="triggerAvatarUpload()">
-              <div id="drawer-av-inner">
-                <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-              </div>
-              <div class="av-overlay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
-            </div>
-            <div class="drawer-dname" id="drawer-name">—</div>
-            <div class="drawer-phone" id="drawer-phone">—</div>
-            <div style="text-align:center;margin-top:6px" id="drawer-plat-wrap"></div>
-          </div>
-          <div class="drawer-body">
-            <div class="dsec">
-              <h4>Info</h4>
-              <div class="drow"><span class="dlabel">Platform</span><span class="dval" id="d-plat">—</span></div>
-              <div class="drow"><span class="dlabel">Messages</span><span class="dval" id="d-msgs">0</span></div>
-              <div class="drow"><span class="dlabel">First contact</span><span class="dval" id="d-first">—</span></div>
-              <div class="drow"><span class="dlabel">Last message</span><span class="dval" id="d-last">—</span></div>
-            </div>
-            <div class="dsec">
-              <h4>Controls</h4>
-              <div class="drow"><span class="dlabel">Takeover</span><label class="toggle"><input type="checkbox" id="drawer-takeover" onchange="toggleTakeoverFromDrawer()"><span class="tslider"></span></label></div>
-            </div>
-            <button class="daction primary" onclick="renamePrompt()">Rename Contact</button>
-            <button class="daction danger" onclick="closeDrawer()">Close</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══════════ BRAIN ══════════ -->
-    <div id="view-brain" class="view">
-      <div id="brain-file-pane">
-        <div class="bfp-label">Brain Files</div>
-        <div id="brain-file-list"></div>
-      </div>
-      <div id="brain-edit-panel">
-        <div id="brain-empty-state">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3L9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3L14.5 2Z"/></svg>
-          <p>Select a brain file to edit</p>
-        </div>
-        <div id="brain-edit-inner" style="display:none;flex:1;flex-direction:column;overflow:hidden">
-          <div id="brain-editor-bar">
-            <span id="brain-file-label">—</span>
-            <span id="brain-saved-tag"></span>
-            <button id="brain-validate-btn" onclick="validateBrain()">Validate JSON</button>
-            <button id="brain-save-btn" onclick="saveBrain()">Save</button>
-          </div>
-          <div id="brain-error-bar"></div>
-          <textarea id="brain-textarea" spellcheck="false" oninput="onBrainInput()"></textarea>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══════════ MEDIA ══════════ -->
-    <div id="view-media" class="view">
-      <div id="media-topbar">
-        <div id="chat-list-topbar-spacer2" style="width:40px;flex-shrink:0"></div>
-        <label id="media-upload-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Upload
-          <input type="file" id="media-file-input" accept="image/*,video/*" multiple style="display:none" onchange="handleMediaUpload(event)">
-        </label>
-        <input id="media-search-input" type="search" placeholder="Search filename or tag..." oninput="renderMediaGrid()">
-        <span id="media-count-tag"></span>
-      </div>
-      <div id="media-tag-bar"></div>
-      <div id="media-grid-wrap">
-        <div id="media-empty" style="display:none">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-          <h3>No media yet</h3>
-          <p>Upload photos and videos. Tag them so Ariana knows when to send them.</p>
-        </div>
-        <div id="media-grid"></div>
-      </div>
-    </div><!-- end view-media -->
-
-    <!-- ══════════ GENERATE ══════════ -->
-    <div id="view-generate" class="view">
-      <div id="gen-topbar">
-        <div style="width:40px;flex-shrink:0"></div>
-        <span id="gen-topbar-title">Generate</span>
-        <div style="width:40px;flex-shrink:0"></div>
-      </div>
-      <!-- Mode chips -->
-      <div id="gen-mode-row">
-        <div class="gen-mode-chip active" data-mode="pimg" onclick="setGenMode('pimg',this)">Text to Image</div>
-        <div class="gen-mode-chip" data-mode="i2i"  onclick="setGenMode('i2i',this)">Image to Image</div>
-        <div class="gen-mode-chip" data-mode="pvid" onclick="setGenMode('pvid',this)">Text to Video</div>
-        <div class="gen-mode-chip nsfw-chip" data-mode="nsfw" onclick="setGenMode('nsfw',this)">NSFW</div>
-        <div class="gen-mode-chip" data-mode="motion" onclick="setGenMode('motion',this)">Motion</div>
-        <div class="gen-mode-chip" data-mode="tts"   onclick="setGenMode('tts',this)">TTS</div>
-      </div>
-      <!-- Lock bar -->
-      <div id="gen-lock-bar">
-        <div class="gen-lock-pill" id="lb-face" onclick="navTo({dataset:{view:'profile'}})">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-          <span id="lb-face-txt">Face: Off</span>
-        </div>
-        <div class="gen-lock-pill" id="lb-body" onclick="navTo({dataset:{view:'profile'}})">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a5 5 0 010 10M4 22v-2a8 8 0 0116 0v2"/></svg>
-          <span id="lb-body-txt">Body: Off</span>
-        </div>
-        <div class="gen-lock-pill" id="lb-clothes" onclick="navTo({dataset:{view:'wardrobe'}})">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
-          <span id="lb-clothes-txt">Outfit: None</span>
-        </div>
-      </div>
-      <div id="gen-body">
-
-        <!-- Left: Controls -->
-        <div id="gen-controls">
-          <div class="gen-section">
-            <div class="gen-section-label">Provider</div>
-            <div class="gen-provider-pills" id="gen-provider-pills">
-              <div class="gen-provider-pill active" data-provider="fal" onclick="setGenProvider('fal',this)">Fal.ai</div>
-              <div class="gen-provider-pill" data-provider="replicate" onclick="setGenProvider('replicate',this)">Replicate</div>
-              <div class="gen-provider-pill" data-provider="runway" onclick="setGenProvider('runway',this)">Runway ML</div>
-            </div>
-          </div>
-          <div class="gen-section">
-            <div class="gen-section-label">Prompt</div>
-            <textarea id="gen-prompt" placeholder="Describe the scene — outfit, setting, expression, lighting..."></textarea>
-          </div>
-
-          <!-- ── MODE PANELS ── -->
-          <!-- Image to Image -->
-          <div id="gen-i2i-panel" class="gen-mode-panel gen-section">
-            <div class="gen-section-label">Source Image</div>
-            <div class="gen-upload-zone" onclick="document.getElementById('gen-i2i-file').click()" id="gen-i2i-zone">
-              <input type="file" id="gen-i2i-file" accept="image/*" hidden onchange="genPickFile(this,'i2i')">
-              <img id="gen-i2i-prev" alt="">
-              <div class="gen-upload-ph" id="gen-i2i-ph">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                <span>Tap to upload source image</span>
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-              <label style="font-size:12px;color:var(--t2)">Strength</label>
-              <input type="range" id="gen-i2i-strength" min="0.3" max="1" step="0.05" value="0.75" style="flex:1">
-              <span id="gen-i2i-strength-val" style="font-size:12px;color:var(--t3);width:30px">0.75</span>
-            </div>
-            <p style="font-size:11px;color:var(--t3)">Face Lock reference is applied automatically when set.</p>
-          </div>
-
-          <!-- Motion (image to video) -->
-          <div id="gen-motion-panel" class="gen-mode-panel gen-section">
-            <div class="gen-section-label">Image to Animate</div>
-            <div class="gen-upload-zone" onclick="document.getElementById('gen-mot-file').click()" id="gen-mot-zone">
-              <input type="file" id="gen-mot-file" accept="image/*" hidden onchange="genPickFile(this,'mot')">
-              <img id="gen-mot-prev" alt="">
-              <div class="gen-upload-ph" id="gen-mot-ph">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                <span>Tap to upload image</span>
-              </div>
-            </div>
-            <button onclick="genUseFaceLockAsMotion()" style="background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:9px;color:var(--t2);font-size:13px;cursor:pointer;width:100%;margin-bottom:4px">Use Face Lock as source</button>
-          </div>
-
-          <!-- NSFW -->
-          <div id="gen-nsfw-panel" class="gen-mode-panel gen-section">
-            <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:12px;color:#f87171">🔞 Adult content only. Face & body lock applied automatically.</div>
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--b1)">
-              <span style="font-size:14px;font-weight:600">Nude Mode</span>
-              <button class="tgl" id="gen-nude-tgl" onclick="this.classList.toggle('on');localStorage.setItem('nsfw_nude',this.classList.contains('on')?'1':'0')"><div class="tgl-k"></div></button>
-            </div>
-            <div class="gen-upload-zone" style="margin-top:10px" onclick="document.getElementById('gen-nsfw-file').click()" id="gen-nsfw-zone">
-              <input type="file" id="gen-nsfw-file" accept="image/*" hidden onchange="genPickFile(this,'nsfw')">
-              <img id="gen-nsfw-prev" alt="">
-              <div class="gen-upload-ph" id="gen-nsfw-ph">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-                <span>Optional: source image (or use face lock)</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- TTS panel -->
-          <div id="gen-tts-panel" class="gen-mode-panel gen-section">
-            <div class="gen-section-label">Provider</div>
-            <div style="display:flex;gap:6px;margin-bottom:10px">
-              <button class="gen-mode-chip active" id="tts-prov-car" onclick="setTtsProv('cartesia',this)">Cartesia</button>
-              <button class="gen-mode-chip" id="tts-prov-el" onclick="setTtsProv('elevenlabs',this)">ElevenLabs</button>
-            </div>
-            <div class="gen-section-label">Voice ID</div>
-            <input class="gen-key-input" id="gen-tts-voice" placeholder="Paste Voice ID..." style="margin-bottom:8px">
-            <div class="gen-section-label" style="margin-bottom:6px">Preset Voices (Cartesia)</div>
-            <div class="tts-voice-grid" id="gen-tts-voice-grid">
-              <button class="tts-vbtn" data-id="a0e99841-438c-4a64-b679-ae501e7d6091" onclick="pickTtsVoice(this)">Barbra<br><span style="font-weight:400;font-size:10px">Warm Female</span></button>
-              <button class="tts-vbtn" data-id="79a125e8-cd45-4c13-8a67-188112f4dd22" onclick="pickTtsVoice(this)">British Lady<br><span style="font-weight:400;font-size:10px">Refined Female</span></button>
-              <button class="tts-vbtn" data-id="5c42302c-194b-4d0c-ba1a-8cb485c84ab9" onclick="pickTtsVoice(this)">Newsman<br><span style="font-weight:400;font-size:10px">Authoritative Male</span></button>
-              <button class="tts-vbtn" data-id="729651dc-c6b3-4b55-a43c-8f3ae64f5a2d" onclick="pickTtsVoice(this)">Pleasant Man<br><span style="font-weight:400;font-size:10px">Conversational</span></button>
-              <button class="tts-vbtn" data-id="21b81c14-f85b-436d-aff5-43072529f9f0" onclick="pickTtsVoice(this)">Laidback<br><span style="font-weight:400;font-size:10px">Casual Female</span></button>
-              <button class="tts-vbtn" data-id="e13cae5c-ec59-4f71-b0a6-266df3c9bb8e" onclick="pickTtsVoice(this)">Mischief<br><span style="font-weight:400;font-size:10px">Playful Female</span></button>
-            </div>
-          </div>
-          <div class="gen-section">
-            <div class="gen-section-label">Quick Start</div>
-            <div class="gen-quick-chips">
-              <div class="gen-chip" onclick="pickChip(this,'morning selfie, bedroom, soft natural light')">Morning selfie</div>
-              <div class="gen-chip" onclick="pickChip(this,'going out, night scene, confident')">Night out</div>
-              <div class="gen-chip" onclick="pickChip(this,'beach day, golden hour, relaxed')">Beach</div>
-              <div class="gen-chip" onclick="pickChip(this,'casual home, cozy and relaxed')">Casual</div>
-              <div class="gen-chip" onclick="pickChip(this,'gym selfie, mirror, activewear')">Gym</div>
-              <div class="gen-chip" onclick="pickChip(this,'rooftop, city skyline at night, dressed up')">Rooftop</div>
-            </div>
-          </div>
-          <div class="gen-section">
-            <div class="gen-section-label">Style</div>
-            <select class="gen-select" id="gen-outfit" onchange="buildStylePrompt()">
-              <option value="">Outfit — any</option>
-              <option value="casual streetwear outfit">Casual streetwear</option>
-              <option value="sundress">Sundress</option>
-              <option value="gym wear, sports bra and leggings">Gym wear</option>
-              <option value="swimwear, beach">Swimwear</option>
-              <option value="elegant evening dress">Evening dress</option>
-              <option value="business casual, blazer">Business casual</option>
-              <option value="cozy oversized hoodie">Cozy hoodie</option>
-            </select>
-            <select class="gen-select" id="gen-setting" onchange="buildStylePrompt()">
-              <option value="">Setting — anywhere</option>
-              <option value="modern apartment interior">Apartment</option>
-              <option value="luxury hotel rooftop pool">Hotel pool</option>
-              <option value="rooftop with city skyline">Rooftop</option>
-              <option value="nightclub, neon lights">Nightclub</option>
-              <option value="tropical beach">Beach</option>
-              <option value="upscale restaurant">Restaurant</option>
-              <option value="car selfie, dashboard">In car</option>
-              <option value="bathroom mirror selfie">Bathroom mirror</option>
-            </select>
-            <select class="gen-select" id="gen-expression" onchange="buildStylePrompt()">
-              <option value="">Expression — natural</option>
-              <option value="warm genuine smile">Smiling</option>
-              <option value="serious, direct gaze">Serious</option>
-              <option value="playful smirk">Playful smirk</option>
-              <option value="laughing, candid moment">Laughing</option>
-              <option value="calm, peaceful expression">Calm</option>
-            </select>
-          </div>
-          <div class="gen-section">
-            <div class="gen-section-label" id="gen-key-label">Fal.ai API Key</div>
-            <input class="gen-key-input" id="gen-key-input" type="password" placeholder="Paste your API key..." oninput="genSaveKey()">
-            <div class="gen-key-hint" id="gen-key-hint">Stored locally in your browser only.</div>
-          </div>
-          <button id="gen-btn" onclick="runGenerate()">Generate</button>
-        </div>
-
-        <!-- Right: Results -->
-        <div id="gen-results-panel">
-          <div id="gen-results-scroll">
-            <div id="gen-empty-state">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              <h3>Nothing generated yet</h3>
-              <p>Choose a provider, add your API key, write a prompt and hit Generate.</p>
-            </div>
-            <div id="gen-loading-state">
-              <div class="gen-spinner"></div>
-              <p id="gen-loading-txt">Generating...</p>
-            </div>
-            <div id="gen-grid"></div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- LIVE TALK VIEW -->
-    <div id="view-talk" class="view">
-
-      <!-- top bar: sidebar toggle space + camera controls -->
-      <div id="talk-topbar">
-        <div id="talk-topbar-spacer"></div>
-        <div id="talk-cam-controls">
-          <button id="talk-cam-on-btn" onclick="talkToggleCamera()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-              <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>
-            </svg>
-            Camera
-          </button>
-          <button id="talk-cam-flip-btn" onclick="talkFlipCamera()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-              <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/>
-              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- hidden video + canvas for camera -->
-      <video id="talk-video-bg" autoplay muted playsinline></video>
-      <canvas id="talk-canvas"></canvas>
-
-      <!-- IDLE STATE -->
-      <div id="talk-idle">
-        <img id="talk-logo-alone" src="/icons/icon-192.png" alt="Ariana"
-          onerror="this.style.display='none'">
-        <div id="talk-idle-greeting">Hi, what's the move?</div>
-        <div id="talk-idle-sub">Say something or type below</div>
-        <!-- Quick action chips -->
-        <div id="talk-quick-chips" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px;padding:0 20px">
-          <button class="talk-chip" onclick="talkQuick('give me a daily briefing')">📋 Daily briefing</button>
-          <button class="talk-chip" onclick="talkQuick('who should I block')">🚫 Who to block</button>
-          <button class="talk-chip" onclick="talkQuick('show me your photo')">📸 Show me you</button>
-          <button class="talk-chip" onclick="talkQuick('what have you been up to today')">💬 What\'s been happening</button>
-        </div>
-      </div>
-
-      <!-- CHAT LOG HEADER (clear button, shows when there are messages) -->
-      <div id="talk-chat-header">
-        <button id="talk-clear-btn" onclick="talkClearChat()">Clear Chat</button>
-      </div>
-
-      <!-- CHAT LOG — always visible in text mode -->
-      <div id="talk-chat-log"></div>
-
-      <!-- ORB SCENE — full screen call view -->
-      <div id="talk-orb-scene">
-
-        <!-- Top: ARIANA / calling... (only in orb-full mode) -->
-        <div id="talk-call-header">
-          <div id="talk-orb-name">ARIANA</div>
-          <div id="talk-call-sub">calling...</div>
-        </div>
-
-        <!-- status pill (non-full mode only) -->
-        <div id="talk-status-pill">
-          <div id="talk-status-dot"></div>
-          <span id="talk-status-txt">Thinking</span>
-        </div>
-
-        <!-- Orb: centered in flex:1 wrapper -->
-        <div id="talk-orb-wrap">
-          <div id="talk-orb">
-            <div id="talk-orb-inner"></div>
-          </div>
-        </div>
-
-        <div id="talk-transcript"></div>
-
-      </div>
-
-      <!-- ORB MODE BOTTOM — transcript + 3 call controls -->
-      <div id="talk-orb-btm">
-        <div id="talk-orb-transcript"></div>
-        <div id="talk-orb-btm-row">
-
-          <!-- Mute / unmute mic -->
-          <button class="orb-ctrl-btn" id="talk-orb-mic-btn" onclick="talkOrbMicToggle()" title="Mute">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-              <line x1="12" y1="19" x2="12" y2="23"/>
-              <line x1="8" y1="23" x2="16" y2="23"/>
-            </svg>
-          </button>
-
-          <!-- End call — red, larger, phone rotated 135° -->
-          <button id="talk-end-call-btn" onclick="talkLeaveOrbMode()" title="End call">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C9.6 21 3 14.4 3 6c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/>
-            </svg>
-          </button>
-
-          <!-- Speaker toggle -->
-          <button class="orb-ctrl-btn" id="talk-speaker-btn" onclick="talkToggleSpeaker()" title="Speaker">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
-              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-            </svg>
-          </button>
-
-        </div>
-      </div>
-
-      <!-- WAVEFORM (listening state) -->
-      <div id="talk-waveform"></div>
-
-      <!-- BOTTOM -->
-      <div id="talk-bottom">
-
-        <!-- media caption preview (shown when image is attached) -->
-        <div id="talk-media-preview">
-          <div id="talk-preview-thumb"></div>
-          <span id="talk-preview-label">Tap send or type a caption</span>
-          <button id="talk-preview-cancel" onclick="talkClearMedia()">×</button>
-        </div>
-
-        <!-- standard bar -->
-        <div id="talk-bar-std">
-          <label id="talk-plus-btn" title="Attach media" style="display:flex;align-items:center;justify-content:center;cursor:pointer">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            <input type="file" id="talk-media-file" accept="image/*,video/*" style="display:none" onchange="talkHandleMediaUpload(event)">
-          </label>
-          <input id="talk-text-input" type="text" placeholder="Message Ariana..."
-            oninput="talkOnType(this.value)"
-            onkeydown="if(event.key==='Enter')talkSendText()">
-          <button id="talk-send-btn" onclick="talkSendText()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-              <line x1="12" y1="19" x2="12" y2="5"/>
-              <polyline points="5,12 12,5 19,12"/>
-            </svg>
-          </button>
-          <button id="talk-mic-inline-btn" onclick="talkExpandVoice()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-              <line x1="12" y1="19" x2="12" y2="23"/>
-              <line x1="8" y1="23" x2="16" y2="23"/>
-            </svg>
-          </button>
-          <button id="talk-voice-btn" onclick="talkEnterOrbMode()">
-            <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-              <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.58.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C9.61 21 3 14.39 3 6c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.46.57 3.58.11.35.03.74-.24 1.02L6.6 10.8z"/>
-            </svg>
-          </button>
-        </div>
-
-        <!-- expanded voice bar — ONLY inline waveform, no orb -->
-        <div id="talk-bar-exp">
-          <div id="talk-mic-live-dot"></div>
-          <div id="talk-inline-wave"></div>
-          <button id="talk-bar-close" onclick="talkCollapseVoice()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        </div>
-
-      </div>
-    </div>
-
-        <!-- EXTRAS VIEW (Thing 7) -->
+<!-- EXTRAS VIEW (Thing 7) -->
     <div id="view-extras" class="view">
       <div id="extras-topbar">
         <div id="extras-topbar-spacer"></div>
@@ -2545,6 +1929,22 @@ const WALLPAPERS=[{id:"w0",label:"Black",bg:"#000"},{id:"w1",label:"Deep",bg:"li
 const EMOJIS={smileys:['😀','😂','🥰','😍','🤩','😎','🥺','😭','😤','😏','🙄','😴','🤔','😅','😆','🤣','😊','🥲','😇','🤗','😌','😋','🤤','🤫','🫢','🤐','🥱','😶','😑','😬','🙃','😈','💀','👻','🥳','😻'],hearts:['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💕','💞','💓','💗','💖','💝','💘','💟','❣️','💔','💋','💌'],hands:['👍','👎','✌️','🤞','🤙','💪','🙏','👏','🤝','✊','👊','🤚','👋','🖐️','✋','👌','🤌','☝️','👆','👇','👈','👉'],fire:['🔥','✨','💯','🎉','🎊','🎈','🏆','⭐','🌟','💫','⚡','🌈','🍕','🍔','🌮','🍣','🍰','🎵','🎶','💎','🚀','👑','🦋']};
 const VAPID="BC73tPCUnIe2lzYWl_cpB3hp2R4CN5F3PM9Z6_kRIX7gC91pxowUlxdijQCM7X1mTxo7qrA9h32Rw3XgwBFWvjc";
 
+
+// ── LOAD GENERATE FRAGMENT ──
+let _genFragLoaded = false;
+async function loadGenerateFragment() {
+  if (_genFragLoaded) return;
+  try {
+    const r = await fetch('/generate.html');
+    const html = await r.text();
+    const wrap = document.getElementById('app-wrap') || document.body;
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    while (tmp.firstChild) wrap.insertBefore(tmp.firstChild, document.getElementById('bottom-nav') || wrap.lastChild);
+    _genFragLoaded = true;
+  } catch(e) { console.warn('Fragment load failed:', e); }
+}
+
 // ── Supabase Live Talk Chat ──
 // Fill in your Supabase project URL and anon key below
 const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';  // ← replace
@@ -2689,9 +2089,9 @@ function _applyView(view,filter,el){
   closeSidebar();
   if(view==="brain")initBrainView();
   if(view==="media")initMediaView();
-  if(view==="generate")initGenerateView();
+  if(view==="generate"){loadGenerateFragment().then(initGenerateView);}
   if(view==="wardrobe")initWardrobeView();
-  if(view==="profile")initProfileLocks();
+  if(view==="profile"){initFaceLockSection && initFaceLockSection(); if(typeof loadWardrobeFromServer==="function")loadWardrobeFromServer().then(()=>{const el=document.getElementById("prof-wardrobe-count");if(el)el.textContent=wardrobeItems.length+" outfit"+(wardrobeItems.length!==1?"s":"");});}
   if(view==="extras"){window._cachedConvos=convos;initExtras();}
   if(view==="talk"){window._cachedConvos=convos;talkInit();}
 }
@@ -5739,5 +5139,7 @@ navTo=function(el){
   if((el?.dataset?.view||el?.view)==='sleep') loadSleepConfig();
 };
 </script>
+<div id="bottom-safe-fill"></div>
+<script src="/generate.js"></script>
 </body>
 </html>
