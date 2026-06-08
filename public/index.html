@@ -1829,12 +1829,12 @@ body.in-chat       #global-back { display:flex !important; }
       </div>
       <!-- Mode chips -->
       <div id="gen-mode-row">
-        <div class="gen-mode-chip active" data-mode="pimg" onclick="setGenMode('pimg',this)">🖼️ Text→Image</div>
-        <div class="gen-mode-chip" data-mode="i2i"  onclick="setGenMode('i2i',this)">🔄 Image→Image</div>
-        <div class="gen-mode-chip" data-mode="pvid" onclick="setGenMode('pvid',this)">🎬 Text→Video</div>
-        <div class="gen-mode-chip nsfw-chip" data-mode="nsfw" onclick="setGenMode('nsfw',this)">🔞 NSFW</div>
-        <div class="gen-mode-chip" data-mode="motion" onclick="setGenMode('motion',this)">✨ Motion</div>
-        <div class="gen-mode-chip" data-mode="tts"   onclick="setGenMode('tts',this)">🔊 TTS</div>
+        <div class="gen-mode-chip active" data-mode="pimg" onclick="setGenMode('pimg',this)">Text to Image</div>
+        <div class="gen-mode-chip" data-mode="i2i"  onclick="setGenMode('i2i',this)">Image to Image</div>
+        <div class="gen-mode-chip" data-mode="pvid" onclick="setGenMode('pvid',this)">Text to Video</div>
+        <div class="gen-mode-chip nsfw-chip" data-mode="nsfw" onclick="setGenMode('nsfw',this)">NSFW</div>
+        <div class="gen-mode-chip" data-mode="motion" onclick="setGenMode('motion',this)">Motion</div>
+        <div class="gen-mode-chip" data-mode="tts"   onclick="setGenMode('tts',this)">TTS</div>
       </div>
       <!-- Lock bar -->
       <div id="gen-lock-bar">
@@ -5078,7 +5078,7 @@ const PERSONA_LABELS = {
   flirty:  { label: 'Flirty',  color: '#f59e0b' },
   distant: { label: 'Distant', color: '' },
   explicit:   { label: '🔥 Explicit',   color: '#ef4444' },
-  nsfw:       { label: '🔞 NSFW',       color: '#dc2626' },
+  nsfw:       { label: 'NSFW',       color: '#dc2626' },
   girlfriend: { label: '💋 GF Mode',    color: '#ec4899' },
 };
 
