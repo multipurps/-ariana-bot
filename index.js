@@ -1717,31 +1717,47 @@ app.get("/webhook", (req, res) => {
 
 // ── SIGNAL TRUST + REQUEST ACCEPT ────────────────────────────
 async function trustSignalContact(number) {
-  // Step 1: Trust directly — no safetyNumber needed in most signal-cli versions.
-  // This is the fastest path and handles new contacts who haven't been seen before.
+  if (!SIGNAL_CLI_URL || !SIGNAL_NUMBER) return;
+
+  // ── Step 1: Send a typing indicator TO them first ─────────────
+  // This is the most reliable way to establish contact in signal-cli.
+  // A typing indicator initiates the connection from our side and
+  // in most signal-cli versions implicitly accepts the message request
+  // without sending a visible message to the other person.
+  try {
+    await axios.post(
+      `${SIGNAL_CLI_URL}/v1/typing-indicator/${SIGNAL_NUMBER}`,
+      { recipient: number },
+      { timeout: 5000 }
+    );
+    console.log(`[Signal] ✅ Typing indicator sent — contact established: ${number}`);
+  } catch (_) {
+    // Some signal-cli versions use PUT not POST for typing indicator
+    try {
+      await axios.put(
+        `${SIGNAL_CLI_URL}/v1/typing-indicator/${SIGNAL_NUMBER}`,
+        { recipient: number },
+        { timeout: 5000 }
+      );
+      console.log(`[Signal] ✅ Typing indicator (PUT) sent: ${number}`);
+    } catch (_) {}
+  }
+
+  // ── Step 2: Trust the identity key ────────────────────────────
   try {
     await axios.put(
       `${SIGNAL_CLI_URL}/v1/identities/${SIGNAL_NUMBER}/${encodeURIComponent(number)}`,
-      { trust: "TRUSTED_UNVERIFIED" },
+      { trust: 'TRUSTED_UNVERIFIED' },
       { timeout: 6000 }
     );
-    console.log(`[Signal] ✅ Identity trusted (direct): ${number}`);
-  } catch (e1) {
-    // Step 2: If direct trust failed, get their safetyNumber first then trust
+  } catch (_) {
+    // Try with safetyNumber if direct trust failed
     try {
-      const res = await axios.get(
-        `${SIGNAL_CLI_URL}/v1/identities/${SIGNAL_NUMBER}`,
-        { timeout: 6000 }
-      );
-      const identities = res.data || [];
-      // Normalise number for comparison (strip spaces/dashes)
+      const res = await axios.get(`${SIGNAL_CLI_URL}/v1/identities/${SIGNAL_NUMBER}`, { timeout: 6000 });
       const norm = number.replace(/[\s\-]/g, '');
-      const forNumber = identities.filter(i =>
-        i.number === number || i.number === norm ||
-        (i.number || '').replace(/[\s\-]/g,'') === norm
-      );
-      for (const identity of forNumber) {
-        if (identity.safetyNumber && identity.status !== 'TRUSTED') {
+      for (const identity of (res.data || [])) {
+        const iNorm = (identity.number || '').replace(/[\s\-]/g, '');
+        if ((identity.number === number || iNorm === norm) && identity.safetyNumber) {
           await axios.put(
             `${SIGNAL_CLI_URL}/v1/identities/${SIGNAL_NUMBER}/${encodeURIComponent(number)}`,
             { trust: 'TRUSTED_UNVERIFIED', safetyNumber: identity.safetyNumber },
@@ -1749,36 +1765,23 @@ async function trustSignalContact(number) {
           ).catch(() => {});
         }
       }
-      if (!forNumber.length) {
-        console.log(`[Signal] No identity key found yet for ${number} — send will register on first reply`);
-      }
-    } catch (e2) {
-      console.log(`[Signal] Trust lookup skipped for ${number}:`, e2.message);
-    }
+    } catch (_) {}
   }
 
-  // Step 3: Accept message request — try multiple endpoint patterns across signal-cli versions.
-  // Non-fatal — we try all variants and move on.
-  const acceptAttempts = [
-    // v0.11+ explicit accept endpoint
-    () => axios.post(`${SIGNAL_CLI_URL}/v1/accounts/${SIGNAL_NUMBER}/accept-message-request`,
-      { sender: number }, { timeout: 6000 }),
-    // Alternative: contacts PUT (v0.10 style)
-    () => axios.put(`${SIGNAL_CLI_URL}/v1/contacts`,
-      { number, name: number, expiration_in_seconds: 0 }, { timeout: 6000 }),
-    // Alternative: contacts PUT with 'recipient' field (some builds)
-    () => axios.put(`${SIGNAL_CLI_URL}/v1/contacts`,
-      { recipient: number, name: number, expiration_in_seconds: 0 }, { timeout: 6000 }),
-    // v2 contacts endpoint
-    () => axios.put(`${SIGNAL_CLI_URL}/v2/contacts`,
-      { recipient: number, name: number }, { timeout: 6000 }),
+  // ── Step 3: Register as contact (all known API variants) ──────
+  const contactBodies = [
+    { number, name: number, expiration_in_seconds: 0 },
+    { recipient: number, name: number, expiration_in_seconds: 0 },
+    { number, name: 'Contact' },
   ];
-  for (const attempt of acceptAttempts) {
-    try {
-      await attempt();
-      console.log(`[Signal] ✅ Contact accepted/added: ${number}`);
-      break; // stop on first success
-    } catch (_) { /* try next */ }
+  for (const body of contactBodies) {
+    for (const ver of ['v1', 'v2']) {
+      try {
+        await axios.put(`${SIGNAL_CLI_URL}/${ver}/contacts`, body, { timeout: 5000 });
+        console.log(`[Signal] ✅ Contact added (${ver}): ${number}`);
+        break;
+      } catch (_) {}
+    }
   }
 }
 
@@ -1793,8 +1796,20 @@ app.post("/signal", async (req, res) => {
     if (!from || !text) return;
     const name = envelope.sourceName || from;
     console.log(`📶 Signal ${name}: "${text}"`);
-    // Trust new contact before replying (handles message requests)
+
+    // Check if this is the first ever message from this contact
+    const isFirstContact = !conversations[`sg_${from}`]?.messages?.length;
+
+    // Trust + accept — typing indicator establishes the connection
     await trustSignalContact(from);
+
+    // For first-time contacts, give signal-cli 2s to process the
+    // typing indicator before we attempt to send a reply
+    if (isFirstContact) {
+      console.log(`[Signal] 🆕 First contact from ${from} — waiting 2s for connection to settle`);
+      await new Promise(r => setTimeout(r, 2000));
+    }
+
     await handleMessage({ id: `sg_${from}`, platform: "signal", from, text, chatId: null, phoneNumberId: null, name });
   } catch (e) { console.error("❌ Signal:", e.message); }
 });
