@@ -1,0 +1,206 @@
+<!-- ══════ GENERATE VIEW ══════ -->
+<div id="view-generate" class="view">
+
+  <div id="gen-topbar">
+    <div id="gen-back-btn" onclick="navTo({dataset:{view:'home'}})">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </div>
+    <span id="gen-topbar-title">Generate</span>
+    <div style="width:36px;flex-shrink:0"></div>
+  </div>
+
+  <div id="gen-mode-row">
+    <div class="gen-chip active" data-mode="pimg" onclick="setGenMode('pimg',this)">Text to Image</div>
+    <div class="gen-chip" data-mode="i2i"  onclick="setGenMode('i2i',this)">Image to Image</div>
+    <div class="gen-chip" data-mode="pvid" onclick="setGenMode('pvid',this)">Text to Video</div>
+    <div class="gen-chip" data-mode="nsfw" onclick="setGenMode('nsfw',this)">NSFW</div>
+    <div class="gen-chip" data-mode="motion" onclick="setGenMode('motion',this)">Motion</div>
+    <div class="gen-chip" data-mode="tts"   onclick="setGenMode('tts',this)">TTS</div>
+  </div>
+
+  <div id="gen-lock-bar">
+    <div class="gl-pill" id="glp-face" onclick="openFaceLockFromGen()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      <span id="glp-face-txt">Face</span>
+    </div>
+    <div class="gl-pill" id="glp-body" onclick="openFaceLockFromGen()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a5 5 0 010 10M4 22v-2a8 8 0 0116 0v2"/></svg>
+      <span id="glp-body-txt">Body</span>
+    </div>
+    <div class="gl-pill" id="glp-outfit" onclick="openOutfitPicker()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
+      <span id="glp-outfit-txt">Outfit</span>
+    </div>
+  </div>
+
+  <div id="gen-studio">
+
+    <!-- Result canvas -->
+    <div id="gen-canvas">
+      <div id="gen-canvas-placeholder">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <div id="gen-canvas-placeholder-txt">Your result will appear here</div>
+      </div>
+      <div id="gen-canvas-loader">
+        <div class="gen-canvas-loader-ring"></div>
+        <div id="gen-canvas-loader-txt">Generating...</div>
+      </div>
+      <img id="gen-out-img" alt="">
+      <video id="gen-out-vid" controls loop playsinline></video>
+      <audio id="gen-out-aud" controls style="width:100%;display:none;padding:12px"></audio>
+      <div id="gen-canvas-actions">
+        <button class="gen-ca-btn" onclick="genSaveResult()">Save</button>
+        <button class="gen-ca-btn" onclick="genDownloadResult()">Download</button>
+      </div>
+    </div>
+
+    <div id="gen-controls-wrap">
+
+      <!-- ── PROMPT (all modes except tts) ── -->
+      <div class="gc-card" id="gc-prompt-card">
+        <div class="gc-card-label">Prompt</div>
+        <textarea id="gen-prompt" class="gc-textarea" placeholder="Describe the scene, lighting, style..."></textarea>
+      </div>
+
+      <!-- ── IMAGE SOURCE (i2i) ── -->
+      <div class="gc-card gen-mode-panel" data-panel="i2i">
+        <div class="gc-card-label">Source Image</div>
+        <input type="file" id="gen-i2i-file" accept="image/*" hidden onchange="genPickFile(this,'i2i')">
+        <div class="gc-upload-zone" onclick="document.getElementById('gen-i2i-file').click()" id="gen-i2i-zone">
+          <img id="gen-i2i-prev" alt="" style="display:none">
+          <div class="gc-upload-zone-ph" id="gen-i2i-ph">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Tap to upload</span>
+            <span class="gc-upload-zone-btn">Choose Image</span>
+          </div>
+        </div>
+        <div class="gc-slider-row">
+          <span style="font-size:12px;color:var(--t2)">Strength</span>
+          <input type="range" id="gen-i2i-strength" min="0.3" max="1" step="0.05" value="0.75" oninput="document.getElementById('gen-i2i-sv').textContent=this.value">
+          <span id="gen-i2i-sv" class="gc-slider-val">0.75</span>
+        </div>
+      </div>
+
+      <!-- ── MOTION SOURCE ── -->
+      <div class="gc-card gen-mode-panel" data-panel="motion">
+        <div class="gc-card-label">Image to Animate</div>
+        <input type="file" id="gen-mot-file" accept="image/*" hidden onchange="genPickFile(this,'mot')">
+        <div class="gc-upload-zone" onclick="document.getElementById('gen-mot-file').click()">
+          <img id="gen-mot-prev" alt="" style="display:none">
+          <div class="gc-upload-zone-ph" id="gen-mot-ph">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Tap to upload</span>
+            <span class="gc-upload-zone-btn">Choose Image</span>
+          </div>
+        </div>
+        <div class="gc-row" style="padding-top:0">
+          <button onclick="genUseFaceLock()" style="width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:9px;color:var(--t2);font-size:12px;font-weight:600;cursor:pointer">Use Face Lock as Source</button>
+        </div>
+      </div>
+
+      <!-- ── NSFW ── -->
+      <div class="gc-card gen-mode-panel" data-panel="nsfw">
+        <div class="nsfw-warn">Adult content only. Face and body lock applied automatically when set.</div>
+        <div class="gc-row">
+          <span class="gc-row-label">Nude Mode</span>
+          <button class="tgl" id="gen-nude-tgl" onclick="this.classList.toggle('on')"><div class="tgl-k"></div></button>
+        </div>
+        <input type="file" id="gen-nsfw-file" accept="image/*" hidden onchange="genPickFile(this,'nsfw')">
+        <div class="gc-upload-zone" onclick="document.getElementById('gen-nsfw-file').click()">
+          <img id="gen-nsfw-prev" alt="" style="display:none">
+          <div class="gc-upload-zone-ph" id="gen-nsfw-ph">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            <span>Source image (optional)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TTS ── -->
+      <div class="gc-card gen-mode-panel" data-panel="tts">
+        <div class="gc-card-label">Text to Speak</div>
+        <textarea id="gen-tts-text" class="gc-textarea" placeholder="Enter the text to convert to speech..."></textarea>
+        <div class="gc-card-label" style="padding-top:4px">Provider</div>
+        <div class="gc-prov-row">
+          <div class="gc-prov-chip active" id="tts-prov-car" onclick="setTtsProv('cartesia',this)">Cartesia</div>
+          <div class="gc-prov-chip" id="tts-prov-el" onclick="setTtsProv('elevenlabs',this)">ElevenLabs</div>
+        </div>
+        <div class="gc-card-label">Voice ID</div>
+        <input id="gen-tts-voice" class="gc-input" placeholder="Paste Voice ID..." style="padding-bottom:8px">
+        <div class="gc-card-label" style="padding-bottom:6px" id="tts-preset-label">Presets (Cartesia)</div>
+        <div class="gc-voice-grid" id="gen-tts-presets">
+          <button class="gc-voice-btn" data-id="a0e99841-438c-4a64-b679-ae501e7d6091" onclick="pickTtsVoice(this)">Barbra<span class="gc-voice-sub">Warm Female</span></button>
+          <button class="gc-voice-btn" data-id="79a125e8-cd45-4c13-8a67-188112f4dd22" onclick="pickTtsVoice(this)">British Lady<span class="gc-voice-sub">Refined Female</span></button>
+          <button class="gc-voice-btn" data-id="5c42302c-194b-4d0c-ba1a-8cb485c84ab9" onclick="pickTtsVoice(this)">Newsman<span class="gc-voice-sub">Authoritative Male</span></button>
+          <button class="gc-voice-btn" data-id="729651dc-c6b3-4b55-a43c-8f3ae64f5a2d" onclick="pickTtsVoice(this)">Pleasant Man<span class="gc-voice-sub">Conversational</span></button>
+          <button class="gc-voice-btn" data-id="21b81c14-f85b-436d-aff5-43072529f9f0" onclick="pickTtsVoice(this)">Laidback<span class="gc-voice-sub">Casual Female</span></button>
+          <button class="gc-voice-btn" data-id="e13cae5c-ec59-4f71-b0a6-266df3c9bb8e" onclick="pickTtsVoice(this)">Mischief<span class="gc-voice-sub">Playful Female</span></button>
+        </div>
+      </div>
+
+      <!-- ── PROVIDER ── -->
+      <div class="gc-card" id="gc-provider-card">
+        <div class="gc-card-label">Provider</div>
+        <div class="gc-prov-row" id="gen-prov-row">
+          <div class="gc-prov-chip active" data-prov="fal" onclick="setGenProvider('fal',this)">Fal.ai</div>
+          <div class="gc-prov-chip" data-prov="replicate" onclick="setGenProvider('replicate',this)">Replicate</div>
+          <div class="gc-prov-chip" data-prov="runway" onclick="setGenProvider('runway',this)">Runway ML</div>
+          <div class="gc-prov-chip" data-prov="stability" onclick="setGenProvider('stability',this)">Stability</div>
+        </div>
+        <div class="gc-card-label" style="padding-top:0">API Key</div>
+        <input class="gc-input" id="gen-key-input" type="password" placeholder="Paste your API key..." oninput="genSaveKey()" style="padding-bottom:12px">
+      </div>
+
+    </div>
+  </div>
+
+  <div id="gen-btn-wrap">
+    <button id="gen-btn" onclick="runGenerate()">Generate</button>
+  </div>
+
+</div>
+
+<!-- ══════ WARDROBE VIEW ══════ -->
+<div id="view-wardrobe" class="view">
+
+  <div id="wardrobe-topbar">
+    <button onclick="navTo({dataset:{view:'profile'}})" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06);border:1px solid var(--b1);border-radius:50%;cursor:pointer;flex-shrink:0">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <div id="wardrobe-topbar-title">Wardrobe</div>
+    <div id="wardrobe-count-badge" style="font-size:12px;color:var(--t3)">0 outfits</div>
+  </div>
+
+  <div id="wardrobe-sel-bar">
+    <span id="wardrobe-sel-txt">Tap an outfit to select it for all generations</span>
+    <span id="wardrobe-sel-clear" class="sel-clear" onclick="clearOutfitSelection()" style="display:none">Clear</span>
+  </div>
+
+  <div id="wardrobe-upload-row">
+    <input type="file" id="wardrobe-file-in" accept="image/*" multiple hidden onchange="addWardrobeItems(this)">
+    <button id="wardrobe-upload-btn" onclick="document.getElementById('wardrobe-file-in').click()">+ Add Clothes</button>
+  </div>
+
+  <div id="wardrobe-scroll">
+    <div id="wardrobe-grid"></div>
+    <div id="wardrobe-empty">
+      <div id="wardrobe-empty-icon">&#128248;</div>
+      <div style="font-size:15px;font-weight:600;color:var(--t2);margin-bottom:8px">Wardrobe is empty</div>
+      <div style="font-size:13px">Tap Add Clothes to upload your outfit photos</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════ OUTFIT PICKER MODAL ══════ -->
+<div id="outfit-picker">
+  <div id="outfit-picker-overlay" onclick="closeOutfitPicker()"></div>
+  <div id="outfit-picker-sheet">
+    <div id="outfit-picker-handle"></div>
+    <div id="outfit-picker-topbar">
+      <div id="outfit-picker-title">Pick Outfit</div>
+      <div id="outfit-picker-close" onclick="closeOutfitPicker()">&#10005;</div>
+    </div>
+    <div id="outfit-picker-grid"></div>
+    <div id="outfit-picker-empty">No outfits yet. Go to Profile &rarr; Wardrobe to upload clothes.</div>
+  </div>
+</div>
