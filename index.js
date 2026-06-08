@@ -2361,22 +2361,23 @@ app.delete('/api/media/:id', async (req, res) => {
 // ── AI GENERATION PROXY ───────────────────────────────────────
 
 app.post('/api/generate/image', async (req, res) => {
-  const { provider, apiKey, prompt } = req.body;
+  const { provider, apiKey, prompt, imageUrl, strength } = req.body;
   if (!provider || !apiKey || !prompt) {
     return res.status(400).json({ ok:false, error:'provider, apiKey and prompt required' });
   }
   try {
     if (provider === 'fal') {
-      const r = await axios.post(
-        'https://fal.run/fal-ai/flux/dev',
-        { prompt, image_size:'portrait_4_3', num_inference_steps:28, num_images:1, enable_safety_checker:true },
-        { headers:{ Authorization:`Key ${apiKey}`, 'Content-Type':'application/json' }, timeout:120000 }
-      );
+      // img2img if imageUrl provided, else text-to-image
+      const model = imageUrl ? 'fal-ai/flux/dev/image-to-image' : 'fal-ai/flux/dev';
+      const body = imageUrl
+        ? { image_url: imageUrl, prompt, strength: strength||0.75, num_inference_steps:28, enable_safety_checker:false }
+        : { prompt, image_size:'portrait_4_3', num_inference_steps:28, num_images:1, enable_safety_checker:false };
+      const r = await axios.post(`https://fal.run/${model}`, body,
+        { headers:{ Authorization:`Key ${apiKey}`, 'Content-Type':'application/json' }, timeout:120000 });
       const images = r.data?.images || [];
       if (!images.length) throw new Error('No images returned from Fal.ai');
-      return res.json({ ok:true, urls: images.map(i => i.url) });
+      return res.json({ ok:true, url: images[0].url, urls: images.map(i => i.url) });
     }
-
     if (provider === 'replicate') {
       const r = await axios.post(
         'https://api.replicate.com/v1/models/black-forest-labs/flux-dev/predictions',
@@ -2387,11 +2388,92 @@ app.post('/api/generate/image', async (req, res) => {
       if (!pollId) throw new Error('No prediction ID from Replicate');
       return res.json({ ok:true, pollId });
     }
-
     res.status(400).json({ ok:false, error:`Unknown provider: ${provider}` });
   } catch (e) {
     const msg = e.response?.data?.detail || e.response?.data?.error || e.message;
     res.status(500).json({ ok:false, error:msg });
+  }
+});
+
+// ── NSFW IMAGE ──
+app.post('/api/generate/nsfw', async (req, res) => {
+  const { provider='fal', apiKey, prompt, faceUrl } = req.body;
+  if (!apiKey || !prompt) return res.status(400).json({ ok:false, error:'apiKey and prompt required' });
+  try {
+    if (provider === 'fal') {
+      const model = faceUrl ? 'fal-ai/flux/dev/image-to-image' : 'fal-ai/flux/dev';
+      const body = faceUrl
+        ? { image_url: faceUrl, prompt, strength: 0.72, num_inference_steps:28, enable_safety_checker:false }
+        : { prompt, image_size:'portrait_4_3', num_inference_steps:28, num_images:1, enable_safety_checker:false };
+      const r = await axios.post(`https://fal.run/${model}`, body,
+        { headers:{ Authorization:`Key ${apiKey}`, 'Content-Type':'application/json' }, timeout:120000 });
+      const images = r.data?.images || [];
+      if (!images.length) throw new Error('No images returned');
+      return res.json({ ok:true, url: images[0].url });
+    }
+    res.status(400).json({ ok:false, error:`Unknown provider: ${provider}` });
+  } catch(e) {
+    res.status(500).json({ ok:false, error: e.response?.data?.detail || e.message });
+  }
+});
+
+// ── MOTION (image-to-video) ──
+app.post('/api/generate/motion', async (req, res) => {
+  const { provider='fal', apiKey, prompt='', imageUrl } = req.body;
+  if (!apiKey || !imageUrl) return res.status(400).json({ ok:false, error:'apiKey and imageUrl required' });
+  try {
+    if (provider === 'fal') {
+      const r = await axios.post(
+        'https://queue.fal.run/fal-ai/kling-video/v1.6/standard/image-to-video',
+        { image_url: imageUrl, prompt, duration:'5', aspect_ratio:'9:16' },
+        { headers:{ Authorization:`Key ${apiKey}`, 'Content-Type':'application/json' }, timeout:30000 }
+      );
+      const pollId = r.data?.request_id;
+      if (!pollId) throw new Error('No request_id from FAL queue');
+      return res.json({ ok:true, pollId, provider:'fal-motion' });
+    }
+    if (provider === 'runway') {
+      const r = await axios.post(
+        'https://api.dev.runwayml.com/v1/image_to_video',
+        { model:'gen4_turbo', promptText:prompt||'natural movement', duration:5, ratio:'768:1280', promptImage:imageUrl },
+        { headers:{ Authorization:`Bearer ${apiKey}`, 'Content-Type':'application/json', 'X-Runway-Version':'2024-11-06' }, timeout:30000 }
+      );
+      const pollId = r.data?.id;
+      if (!pollId) throw new Error('No task ID from Runway');
+      return res.json({ ok:true, pollId, provider:'runway' });
+    }
+    res.status(400).json({ ok:false, error:`Unknown provider: ${provider}` });
+  } catch(e) {
+    res.status(500).json({ ok:false, error: e.response?.data?.message || e.message });
+  }
+});
+
+// ── TTS ──
+app.post('/api/generate/tts', async (req, res) => {
+  const { text, voiceId, provider='cartesia', apiKey } = req.body;
+  if (!text || !voiceId || !apiKey) return res.status(400).json({ ok:false, error:'text, voiceId and apiKey required' });
+  try {
+    if (provider === 'elevenlabs') {
+      const r = await axios.post(
+        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+        { text, model_id:'eleven_turbo_v2_5', voice_settings:{ stability:0.5, similarity_boost:0.75 } },
+        { headers:{ 'xi-api-key': apiKey, 'Content-Type':'application/json' }, responseType:'arraybuffer', timeout:30000 }
+      );
+      const b64 = Buffer.from(r.data).toString('base64');
+      return res.json({ ok:true, audioUrl:`data:audio/mpeg;base64,${b64}` });
+    }
+    if (provider === 'cartesia') {
+      const r = await axios.post(
+        'https://api.cartesia.ai/tts/bytes',
+        { model_id:'sonic-2', transcript:text, voice:{ mode:'id', id:voiceId }, output_format:{ container:'mp3', encoding:'mp3', sample_rate:44100 } },
+        { headers:{ 'X-API-Key': apiKey, 'Cartesia-Version':'2024-06-10', 'Content-Type':'application/json' }, responseType:'arraybuffer', timeout:30000 }
+      );
+      const b64 = Buffer.from(r.data).toString('base64');
+      return res.json({ ok:true, audioUrl:`data:audio/mpeg;base64,${b64}` });
+    }
+    res.status(400).json({ ok:false, error:`Unknown TTS provider: ${provider}` });
+  } catch(e) {
+    res.status(500).json({ ok:false, error: e.response?.data?.message || e.message });
   }
 });
 
