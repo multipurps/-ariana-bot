@@ -3395,9 +3395,6 @@ function buildGenPrompt() {
   if(userPrompt) parts.push(userPrompt);
   return parts.join(', ');
 }
-  genLoadKey();
-  renderGenGrid();
-}
 
 function setGenProvider(p,el){
   genProvider=p;
@@ -3539,33 +3536,6 @@ async function runGenerate(){
     alert('Error: '+e.message);
   }
   btn.disabled=false; btn.textContent='Generate';
-}
-  const prompt=(document.getElementById("gen-prompt").value||"").trim();
-  const apiKey=(document.getElementById("gen-key-input").value||"").trim();
-  if(!prompt){showToast("Enter a prompt first");return}
-  if(!apiKey){showToast("Enter your API key first");return}
-  genSaveKey();
-  const btn=document.getElementById("gen-btn");
-  btn.disabled=true;btn.textContent="Generating...";
-  genShowLoading(true,"Sending to "+GEN_PROVIDER_META[genProvider].label+"...");
-  try{
-    const endpoint=genType==="video"?"/api/generate/video":"/api/generate/image";
-    const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({provider:genProvider,apiKey,prompt,type:genType})});
-    const j=await r.json();
-    if(!j.ok)throw new Error(j.error||"Generation failed");
-    if(j.pollId){
-      await genPoll(j.pollId,apiKey,prompt);
-    } else {
-      const urls=j.urls||[j.url];
-      urls.forEach(url=>genResults.unshift({url,type:genType,prompt,provider:genProvider,ts:Date.now()}));
-      genShowLoading(false);renderGenGrid();
-    }
-  }catch(e){
-    genShowLoading(false);
-    showToast("Failed: "+e.message);
-  }finally{
-    btn.disabled=false;btn.textContent="Generate";
-  }
 }
 
 async function genPoll(pollId,apiKey,prompt,attempts=0){
