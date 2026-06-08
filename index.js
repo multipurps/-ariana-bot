@@ -1717,47 +1717,31 @@ app.get("/webhook", (req, res) => {
 
 // ── SIGNAL TRUST + REQUEST ACCEPT ────────────────────────────
 async function trustSignalContact(number) {
-  if (!SIGNAL_CLI_URL || !SIGNAL_NUMBER) return;
-
-  // ── Step 1: Send a typing indicator TO them first ─────────────
-  // This is the most reliable way to establish contact in signal-cli.
-  // A typing indicator initiates the connection from our side and
-  // in most signal-cli versions implicitly accepts the message request
-  // without sending a visible message to the other person.
-  try {
-    await axios.post(
-      `${SIGNAL_CLI_URL}/v1/typing-indicator/${SIGNAL_NUMBER}`,
-      { recipient: number },
-      { timeout: 5000 }
-    );
-    console.log(`[Signal] ✅ Typing indicator sent — contact established: ${number}`);
-  } catch (_) {
-    // Some signal-cli versions use PUT not POST for typing indicator
-    try {
-      await axios.put(
-        `${SIGNAL_CLI_URL}/v1/typing-indicator/${SIGNAL_NUMBER}`,
-        { recipient: number },
-        { timeout: 5000 }
-      );
-      console.log(`[Signal] ✅ Typing indicator (PUT) sent: ${number}`);
-    } catch (_) {}
-  }
-
-  // ── Step 2: Trust the identity key ────────────────────────────
+  // Step 1: Trust directly — no safetyNumber needed in most signal-cli versions.
+  // This is the fastest path and handles new contacts who haven't been seen before.
   try {
     await axios.put(
       `${SIGNAL_CLI_URL}/v1/identities/${SIGNAL_NUMBER}/${encodeURIComponent(number)}`,
-      { trust: 'TRUSTED_UNVERIFIED' },
+      { trust: "TRUSTED_UNVERIFIED" },
       { timeout: 6000 }
     );
-  } catch (_) {
-    // Try with safetyNumber if direct trust failed
+    console.log(`[Signal] ✅ Identity trusted (direct): ${number}`);
+  } catch (e1) {
+    // Step 2: If direct trust failed, get their safetyNumber first then trust
     try {
-      const res = await axios.get(`${SIGNAL_CLI_URL}/v1/identities/${SIGNAL_NUMBER}`, { timeout: 6000 });
+      const res = await axios.get(
+        `${SIGNAL_CLI_URL}/v1/identities/${SIGNAL_NUMBER}`,
+        { timeout: 6000 }
+      );
+      const identities = res.data || [];
+      // Normalise number for comparison (strip spaces/dashes)
       const norm = number.replace(/[\s\-]/g, '');
-      for (const identity of (res.data || [])) {
-        const iNorm = (identity.number || '').replace(/[\s\-]/g, '');
-        if ((identity.number === number || iNorm === norm) && identity.safetyNumber) {
+      const forNumber = identities.filter(i =>
+        i.number === number || i.number === norm ||
+        (i.number || '').replace(/[\s\-]/g,'') === norm
+      );
+      for (const identity of forNumber) {
+        if (identity.safetyNumber && identity.status !== 'TRUSTED') {
           await axios.put(
             `${SIGNAL_CLI_URL}/v1/identities/${SIGNAL_NUMBER}/${encodeURIComponent(number)}`,
             { trust: 'TRUSTED_UNVERIFIED', safetyNumber: identity.safetyNumber },
@@ -1765,23 +1749,36 @@ async function trustSignalContact(number) {
           ).catch(() => {});
         }
       }
-    } catch (_) {}
+      if (!forNumber.length) {
+        console.log(`[Signal] No identity key found yet for ${number} — send will register on first reply`);
+      }
+    } catch (e2) {
+      console.log(`[Signal] Trust lookup skipped for ${number}:`, e2.message);
+    }
   }
 
-  // ── Step 3: Register as contact (all known API variants) ──────
-  const contactBodies = [
-    { number, name: number, expiration_in_seconds: 0 },
-    { recipient: number, name: number, expiration_in_seconds: 0 },
-    { number, name: 'Contact' },
+  // Step 3: Accept message request — try multiple endpoint patterns across signal-cli versions.
+  // Non-fatal — we try all variants and move on.
+  const acceptAttempts = [
+    // v0.11+ explicit accept endpoint
+    () => axios.post(`${SIGNAL_CLI_URL}/v1/accounts/${SIGNAL_NUMBER}/accept-message-request`,
+      { sender: number }, { timeout: 6000 }),
+    // Alternative: contacts PUT (v0.10 style)
+    () => axios.put(`${SIGNAL_CLI_URL}/v1/contacts`,
+      { number, name: number, expiration_in_seconds: 0 }, { timeout: 6000 }),
+    // Alternative: contacts PUT with 'recipient' field (some builds)
+    () => axios.put(`${SIGNAL_CLI_URL}/v1/contacts`,
+      { recipient: number, name: number, expiration_in_seconds: 0 }, { timeout: 6000 }),
+    // v2 contacts endpoint
+    () => axios.put(`${SIGNAL_CLI_URL}/v2/contacts`,
+      { recipient: number, name: number }, { timeout: 6000 }),
   ];
-  for (const body of contactBodies) {
-    for (const ver of ['v1', 'v2']) {
-      try {
-        await axios.put(`${SIGNAL_CLI_URL}/${ver}/contacts`, body, { timeout: 5000 });
-        console.log(`[Signal] ✅ Contact added (${ver}): ${number}`);
-        break;
-      } catch (_) {}
-    }
+  for (const attempt of acceptAttempts) {
+    try {
+      await attempt();
+      console.log(`[Signal] ✅ Contact accepted/added: ${number}`);
+      break; // stop on first success
+    } catch (_) { /* try next */ }
   }
 }
 
@@ -1796,20 +1793,8 @@ app.post("/signal", async (req, res) => {
     if (!from || !text) return;
     const name = envelope.sourceName || from;
     console.log(`📶 Signal ${name}: "${text}"`);
-
-    // Check if this is the first ever message from this contact
-    const isFirstContact = !conversations[`sg_${from}`]?.messages?.length;
-
-    // Trust + accept — typing indicator establishes the connection
+    // Trust new contact before replying (handles message requests)
     await trustSignalContact(from);
-
-    // For first-time contacts, give signal-cli 2s to process the
-    // typing indicator before we attempt to send a reply
-    if (isFirstContact) {
-      console.log(`[Signal] 🆕 First contact from ${from} — waiting 2s for connection to settle`);
-      await new Promise(r => setTimeout(r, 2000));
-    }
-
     await handleMessage({ id: `sg_${from}`, platform: "signal", from, text, chatId: null, phoneNumberId: null, name });
   } catch (e) { console.error("❌ Signal:", e.message); }
 });
@@ -4171,3 +4156,89 @@ server.listen(PORT, async () => {
   console.log(`📶 Signal fix: add  SIGNAL_CLI_OPTS=--trust-new-identities always  to your signal-cli Render service env vars`);
   console.log(`📞 Vapi calling:    ${process.env.VAPI_API_KEY ? "✅" : "— set VAPI_API_KEY + VAPI_PHONE_ID to enable"}`);
 });
+
+// ══════════════════════════════════════════════════════════════
+// WARDROBE ROUTES
+// ══════════════════════════════════════════════════════════════
+
+app.get('/api/wardrobe', async (req, res) => {
+  if (!supabase) return res.json({ ok:true, items:[] });
+  try {
+    const { data, error } = await supabase.from('wardrobe_items').select('*').order('display_order').order('created_at');
+    if (error) throw error;
+    res.json({ ok:true, items: data || [] });
+  } catch(e) { res.status(500).json({ ok:false, error:e.message }); }
+});
+
+app.post('/api/wardrobe/upload', async (req, res) => {
+  const { name, data: b64, mimeType } = req.body;
+  if (!b64 || !name) return res.status(400).json({ ok:false, error:'name and data required' });
+  if (!supabase) return res.status(503).json({ ok:false, error:'Supabase not configured' });
+  try {
+    const base64Data = b64.replace(/^data:[^;]+;base64,/, '');
+    const buf  = Buffer.from(base64Data, 'base64');
+    const ext  = (mimeType || 'image/jpeg').split('/')[1] || 'jpg';
+    const path = `wardrobe/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error: upErr } = await supabase.storage.from('avatars').upload(path, buf, { contentType: mimeType || 'image/jpeg', upsert: false });
+    if (upErr) throw upErr;
+    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+    const order = Date.now();
+    const { data: row, error: dbErr } = await supabase.from('wardrobe_items').insert({ name, url: urlData.publicUrl, storage_path: path, display_order: order }).select().single();
+    if (dbErr) throw dbErr;
+    res.json({ ok:true, item: row });
+  } catch(e) { res.status(500).json({ ok:false, error:e.message }); }
+});
+
+app.delete('/api/wardrobe/:id', async (req, res) => {
+  if (!supabase) return res.status(503).json({ ok:false, error:'Supabase not configured' });
+  try {
+    const { data: row } = await supabase.from('wardrobe_items').select('storage_path').eq('id', req.params.id).single();
+    if (row?.storage_path) await supabase.storage.from('avatars').remove([row.storage_path]);
+    await supabase.from('wardrobe_items').delete().eq('id', req.params.id);
+    res.json({ ok:true });
+  } catch(e) { res.status(500).json({ ok:false, error:e.message }); }
+});
+
+// ══════════════════════════════════════════════════════════════
+// FACE LOCK ROUTES
+// ══════════════════════════════════════════════════════════════
+
+app.get('/api/facelock', async (req, res) => {
+  if (!supabase) return res.json({ ok:true, items:[] });
+  try {
+    const { data, error } = await supabase.from('facelock_images').select('*').order('created_at');
+    if (error) throw error;
+    res.json({ ok:true, items: data || [] });
+  } catch(e) { res.status(500).json({ ok:false, error:e.message }); }
+});
+
+app.post('/api/facelock/upload', async (req, res) => {
+  const { slot, data: b64, mimeType } = req.body;
+  if (!b64 || !slot) return res.status(400).json({ ok:false, error:'slot and data required' });
+  if (!supabase) return res.status(503).json({ ok:false, error:'Supabase not configured' });
+  try {
+    const base64Data = b64.replace(/^data:[^;]+;base64,/, '');
+    const buf  = Buffer.from(base64Data, 'base64');
+    const ext  = (mimeType || 'image/jpeg').split('/')[1] || 'jpg';
+    const path = `facelock/${slot}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error: upErr } = await supabase.storage.from('avatars').upload(path, buf, { contentType: mimeType || 'image/jpeg', upsert: false });
+    if (upErr) throw upErr;
+    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+    const { data: row, error: dbErr } = await supabase.from('facelock_images').insert({ slot, url: urlData.publicUrl, storage_path: path }).select().single();
+    if (dbErr) throw dbErr;
+    res.json({ ok:true, item: row });
+  } catch(e) { res.status(500).json({ ok:false, error:e.message }); }
+});
+
+app.delete('/api/facelock/:id', async (req, res) => {
+  if (!supabase) return res.status(503).json({ ok:false, error:'Supabase not configured' });
+  try {
+    const { data: row } = await supabase.from('facelock_images').select('storage_path').eq('id', req.params.id).single();
+    if (row?.storage_path) await supabase.storage.from('avatars').remove([row.storage_path]);
+    await supabase.from('facelock_images').delete().eq('id', req.params.id);
+    res.json({ ok:true });
+  } catch(e) { res.status(500).json({ ok:false, error:e.message }); }
+});
+
+// Serve generate.html fragment
+app.get('/generate.html', (req, res) => res.sendFile(require('path').join(__dirname, 'public', 'generate.html')));
