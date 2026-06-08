@@ -385,61 +385,59 @@ function cleanAITells(text) {
   if (!text) return text;
   let t = text;
 
-  const actionToEmoji = (str) => {
-    const s = str.toLowerCase();
-    if (/laugh|lmao|dead/.test(s))           return '💀';
-    if (/smirk|grin|half.?smile/.test(s))   return '😏';
-    if (/eye.*roll|roll.*eye/.test(s))       return '🙄';
-    if (/facepalm/.test(s))                  return '🤦';
-    if (/shrug/.test(s))                     return '🤷';
-    if (/sigh/.test(s))                      return '😮‍💨';
-    if (/yawn/.test(s))                      return '🥱';
-    if (/wink/.test(s))                      return '😉';
-    if (/gasp/.test(s))                      return '😮';
-    if (/groan|grunt/.test(s))               return '😩';
-    if (/scoff|snort/.test(s))               return '🙄';
+  const actionToEmoji = (s) => {
+    s = s.toLowerCase();
+    if (/laugh|lmao|dead|chuckle/.test(s))  return '💀';
+    if (/smirk|grin|half.?smile/.test(s))  return '😏';
+    if (/eye.*roll|roll.*eye|scoff/.test(s)) return '🙄';
+    if (/facepalm/.test(s))                 return '🤦';
+    if (/shrug/.test(s))                    return '🤷';
+    if (/sigh|exhale/.test(s))              return '😮‍💨';
+    if (/yawn/.test(s))                     return '🥱';
+    if (/wink/.test(s))                     return '😉';
+    if (/gasp/.test(s))                     return '😮';
+    if (/groan|grunt/.test(s))              return '😩';
+    if (/snort/.test(s))                    return '🙄';
     return null;
   };
 
-  // Comprehensive set of action words — used for precise matching
-  // so we never accidentally strip real words like "Miami" or "Friday"
-  const ACTION_WORDS = new Set([
-    'laughs','laugh','laughed','chuckles','chuckle','snorts','snort',
-    'scoffs','scoff','gasps','gasp','groans','groan','exhales','exhale',
-    'pouts','pout','smirks','smirk','grins','grin','leans','lean',
-    'pauses','pause','tilts','tilt','raises','raise','stretches','stretch',
-    'yawns','yawn','nods','nod','winks','wink','drops','drop',
-    'walks','walk','looks','look','glances','glance','blinks','blink',
-    'sighs','sigh','shrugs','shrug','crosses','cross','narrows','narrow',
-    'arches','arch','stares','stare','rolls','roll','turns','turn',
-    'flips','flip','facepalms','facepalm','eyerolls','eyeroll',
-    'grumbles','grumble','mumbles','mumble','sniffs','sniff',
-    'gulps','gulp','fidgets','fidget',
-  ]);
+  // Pattern-based stage direction detector — catches ANY action line,
+  // not just words we know in advance.
+  // A stage direction line is short, starts with a capital, has no ending
+  // punctuation, no personal pronouns, and its first word looks like a verb.
+  function isStageDirection(line) {
+    const l = line.trim();
+    if (!l || l.length > 55) return false;           // too long
+    if (!/^[A-Z]/.test(l)) return false;             // must start capital
+    if (/[.?!]$/.test(l)) return false;              // real sentences end with punctuation
+    if (/"/.test(l)) return false;                   // quoted speech — keep
+    // Personal pronouns = real conversational text, not a stage direction
+    if (/\b(I|you|we|me|my|your|our|they|he|she|it|his|her|their|we're|you're|i'm|i've|i'll)\b/i.test(l)) return false;
+    // First word must look like a verb (3rd-person -s, -es, present participle -ing, past -ed)
+    const firstWord = l.split(/[\s,]/)[0];
+    if (!/s$|ing$|ed$/.test(firstWord)) return false;
+    // Exclude common non-verb words that end in s (nouns, adjectives, places)
+    const nonVerbs = new Set(['this','his','its','yes','always','sometimes','perhaps','plus','thus','versus','across','unless','whereas','thanks','things','thoughts','words','sounds','feels','seems','means','needs','makes','takes','says','goes','comes','knows','shows','news','details','ideas','updates','areas','series']);
+    if (nonVerbs.has(firstWord.toLowerCase())) return false;
+    return true;
+  }
 
-  // Step 1 — **Bold action lines** e.g. **Shrugs** **Facepalms** **Leans back, unfazed**
+  // Step 1 — **Bold action lines** e.g. **Shrugs** **Facepalms** **Leans back unfazed**
   t = t.replace(/\*\*([A-Z][^*\n]{0,80})\*\*/g, (match, inner) => {
-    const trimmed = inner.trim();
-    const emoji = actionToEmoji(trimmed);
-    if (emoji) return emoji;
-    // Single-word bold action verb (Shrugs, Facepalms, Scoffs...)
-    if (ACTION_WORDS.has(trimmed.toLowerCase())) return '';
-    // Multi-word stage direction (Leans back unfazed, Walks away slowly...)
-    const firstWord = trimmed.split(/[\s,]/)[0].toLowerCase();
-    if (ACTION_WORDS.has(firstWord) && trimmed.includes(' ')) return '';
-    return match; // keep — probably real emphasis
+    if (isStageDirection(inner)) return actionToEmoji(inner) || '';
+    return match; // keep — real emphasis like **finally** or a proper noun
   });
 
   // Step 2 — Standalone action-only lines (no bold)
-  // e.g. a whole line that is just "Shrugs" or "Leans back, unfazed"
-  t = t.replace(/^([A-Z][a-z]+)([a-z]*)s?(?:[,\s][^\n]*)?$/gm, (line) => {
-    const firstWord = line.split(/[\s,]/)[0].toLowerCase();
-    if (!ACTION_WORDS.has(firstWord)) return line; // not an action word — keep
-    const emoji = actionToEmoji(line);
-    return emoji || '';
+  // Split into lines, filter each one individually
+  const lines = t.split('\n');
+  const cleaned = lines.map(line => {
+    if (isStageDirection(line.trim())) return actionToEmoji(line) || '';
+    return line;
   });
+  t = cleaned.join('\n');
 
-  // Step 3 — Spanish endearments slipping through
+  // Step 3 — Spanish endearments
   t = t.replace(/\bamor\b/gi, 'babe');
   t = t.replace(/\bmi amor\b/gi, 'babe');
   t = t.replace(/\bcari[ñn]o\b/gi, '');
