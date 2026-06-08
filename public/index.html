@@ -348,6 +348,41 @@ input,textarea{font-family:inherit;color:inherit}
 #gen-type-toggle{display:flex;background:var(--s2);border-radius:10px;padding:3px;gap:2px;border:1px solid var(--b1);flex-shrink:0}
 .gen-type-btn{padding:6px 16px;border-radius:8px;font-size:13px;font-weight:600;color:var(--t2);transition:all .18s;cursor:pointer;border:none}
 .gen-type-btn.active{background:rgba(168,85,247,.25);color:#c084fc}
+/* ── GENERATE MODES ── */
+#gen-mode-row{display:flex;gap:6px;overflow-x:auto;padding:12px 16px 0;scrollbar-width:none}
+#gen-mode-row::-webkit-scrollbar{display:none}
+.gen-mode-chip{flex-shrink:0;padding:7px 14px;border-radius:20px;font-size:12px;font-weight:700;color:var(--t2);background:var(--s1);border:1px solid var(--b1);cursor:pointer;transition:all .15s;white-space:nowrap}
+.gen-mode-chip.active{color:#c084fc;background:rgba(168,85,247,.15);border-color:rgba(168,85,247,.35)}
+.gen-mode-chip.nsfw-chip.active{color:#f87171;background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3)}
+/* ── LOCK BAR ── */
+#gen-lock-bar{display:flex;gap:6px;padding:8px 16px;flex-wrap:wrap}
+.gen-lock-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;background:var(--s1);border:1px solid var(--b1);color:var(--t2);cursor:pointer}
+.gen-lock-pill.active{background:rgba(168,85,247,.12);border-color:rgba(168,85,247,.3);color:#c084fc}
+.gen-lock-pill.clothes-active{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3);color:#4ade80}
+/* ── MODE PANELS ── */
+.gen-mode-panel{display:none}.gen-mode-panel.on{display:flex;flex-direction:column;gap:0}
+.gen-upload-zone{background:var(--s2);border:1.5px dashed var(--b1);border-radius:12px;padding:20px;text-align:center;cursor:pointer;margin-bottom:8px}
+.gen-upload-zone img{max-height:160px;width:100%;object-fit:cover;border-radius:10px;display:none}
+.gen-upload-ph{display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--t3);font-size:13px}
+/* ── TTS PANEL ── */
+#gen-tts-panel .tts-voice-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.tts-vbtn{padding:10px 8px;border-radius:10px;background:var(--s2);border:1px solid var(--b1);color:var(--t2);font-size:12px;font-weight:600;cursor:pointer;text-align:left;transition:all .15s}
+.tts-vbtn.active{background:rgba(168,85,247,.12);border-color:rgba(168,85,247,.35);color:#c084fc}
+/* ── WARDROBE VIEW ── */
+#view-wardrobe{padding:0 0 80px}
+#wardrobe-topbar{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--s1);border-bottom:1px solid var(--b1);position:sticky;top:0;z-index:5}
+#wardrobe-topbar-title{flex:1;font-weight:700;font-size:16px}
+#wardrobe-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:2px}
+.wardrobe-card{position:relative;aspect-ratio:3/4;overflow:hidden;background:var(--s2);cursor:pointer}
+.wardrobe-card img{width:100%;height:100%;object-fit:cover;transition:transform .2s}
+.wardrobe-card.selected::after{content:'✓';position:absolute;inset:0;background:rgba(139,92,246,.45);display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;font-weight:700}
+.wardrobe-card.selected img{transform:scale(1.04)}
+.wardrobe-upload-btn{position:fixed;bottom:90px;right:20px;width:52px;height:52px;border-radius:50%;background:#8b5cf6;border:none;color:#fff;font-size:26px;cursor:pointer;box-shadow:0 4px 20px rgba(139,92,246,.4);display:flex;align-items:center;justify-content:center;z-index:10}
+/* ── PROFILE FACE LOCK ── */
+.fl-upload-box{background:var(--s2);border:1px solid var(--b1);border-radius:12px;overflow:hidden;position:relative;aspect-ratio:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;color:var(--t3);font-size:12px}
+.fl-upload-box img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
+.fl-upload-box.has-img img{display:block}
+.fl-upload-box.has-img span,.fl-upload-box.has-img svg{display:none}
 #gen-body{flex:1;display:flex;overflow:hidden}
 #gen-controls{width:300px;min-width:300px;display:flex;flex-direction:column;overflow-y:auto;background:rgba(8,8,12,.98);border-right:1px solid var(--b1);padding:16px;gap:0}
 #gen-controls::-webkit-scrollbar{width:0}
@@ -1543,7 +1578,87 @@ body.in-chat       #global-back { display:flex !important; }
         </div>
       </div>
 
+      <!-- FACE LOCK section -->
+      <div class="pv-section-wrap">
+        <div class="pv-section-label">Generation Locks</div>
+        <div style="padding:14px 16px;background:var(--bg);border-radius:14px;border:1px solid var(--b1);margin:0 16px 12px">
+          <p style="font-size:12px;color:var(--t3);line-height:1.7;margin-bottom:14px">Upload reference photos below. When set, every generated image will match this face, body shape, and outfit.</p>
+
+          <!-- Face toggle -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <span style="font-size:14px;font-weight:600">Enable Face Lock</span>
+            <button class="tgl" id="prof-fl-tgl" onclick="toggleProfFaceLock()"><div class="tgl-k"></div></button>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+            <!-- Face -->
+            <div>
+              <div style="font-size:11px;color:var(--t3);margin-bottom:4px;text-align:center">Face</div>
+              <div class="fl-upload-box" id="fl-face-box" onclick="document.getElementById('fl-face-file').click()">
+                <input type="file" id="fl-face-file" accept="image/*" hidden onchange="profUploadLock(this,'face')">
+                <img id="fl-face-img" alt="">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                <span>Upload</span>
+              </div>
+            </div>
+            <!-- Body -->
+            <div>
+              <div style="font-size:11px;color:var(--t3);margin-bottom:4px;text-align:center">Body</div>
+              <div class="fl-upload-box" id="fl-body-box" onclick="document.getElementById('fl-body-file').click()">
+                <input type="file" id="fl-body-file" accept="image/*" hidden onchange="profUploadLock(this,'body')">
+                <img id="fl-body-img" alt="">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2a5 5 0 010 10M4 22v-2a8 8 0 0116 0v2"/></svg>
+                <span>Upload</span>
+              </div>
+            </div>
+            <!-- Environment -->
+            <div>
+              <div style="font-size:11px;color:var(--t3);margin-bottom:4px;text-align:center">Room</div>
+              <div class="fl-upload-box" id="fl-env-box" onclick="document.getElementById('fl-env-file').click()">
+                <input type="file" id="fl-env-file" accept="image/*" hidden onchange="profUploadLock(this,'env')">
+                <img id="fl-env-img" alt="">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                <span>Optional</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button onclick="clearProfLock('face')" style="flex:1;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:8px;color:var(--t3);font-size:12px;cursor:pointer">Clear Face</button>
+            <button onclick="clearProfLock('body')" style="flex:1;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:8px;color:var(--t3);font-size:12px;cursor:pointer">Clear Body</button>
+            <button onclick="clearProfLock('env')" style="flex:1;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:8px;color:var(--t3);font-size:12px;cursor:pointer">Clear Room</button>
+          </div>
+        </div>
+        <div class="pv-list">
+          <div class="pv-row" onclick="navTo({dataset:{view:'wardrobe'}})">
+            <div class="pv-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg></div>
+            <div class="pv-row-text"><div class="pv-row-label">Wardrobe</div><div class="pv-row-sub" id="prof-wardrobe-count">0 outfits</div></div>
+            <div class="pv-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg></div>
+          </div>
+        </div>
+      </div>
+
       <div class="pv-bottom-space"></div>
+    </div>
+
+    <!-- ══════════ WARDROBE ══════════ -->
+    <div id="view-wardrobe" class="view">
+      <div id="wardrobe-topbar">
+        <button onclick="navTo({dataset:{view:'generate'}})" style="background:none;border:none;color:var(--t2);cursor:pointer;padding:4px 8px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </button>
+        <div id="wardrobe-topbar-title">Wardrobe</div>
+        <button onclick="document.getElementById('wardrobe-file-input').click()" style="background:none;border:none;color:#c084fc;cursor:pointer;font-size:13px;font-weight:700;padding:4px 8px">+ Add</button>
+        <input type="file" id="wardrobe-file-input" accept="image/*" multiple hidden onchange="addWardrobeItems(this)">
+      </div>
+      <div style="padding:12px 16px;background:var(--s1);border-bottom:1px solid var(--b1)">
+        <div id="wardrobe-selected-bar" style="font-size:13px;color:var(--t2)">Tap any outfit to select it — it will be applied to all generations.</div>
+      </div>
+      <div id="wardrobe-grid"></div>
+      <div id="wardrobe-empty" style="text-align:center;padding:60px 20px;color:var(--t3)">
+        <div style="font-size:48px;margin-bottom:12px">👗</div>
+        <div style="font-size:15px;font-weight:600;color:var(--t2);margin-bottom:8px">Your wardrobe is empty</div>
+        <div style="font-size:13px">Tap <strong style="color:var(--t2)">+ Add</strong> to upload your clothes photos</div>
+      </div>
     </div>
 
     <!-- ══════════ HOME ══════════ -->
@@ -1710,9 +1825,30 @@ body.in-chat       #global-back { display:flex !important; }
       <div id="gen-topbar">
         <div style="width:40px;flex-shrink:0"></div>
         <span id="gen-topbar-title">Generate</span>
-        <div id="gen-type-toggle">
-          <button class="gen-type-btn active" onclick="setGenType('image',this)">Image</button>
-          <button class="gen-type-btn" onclick="setGenType('video',this)">Video</button>
+        <div style="width:40px;flex-shrink:0"></div>
+      </div>
+      <!-- Mode chips -->
+      <div id="gen-mode-row">
+        <div class="gen-mode-chip active" data-mode="pimg" onclick="setGenMode('pimg',this)">🖼️ Text→Image</div>
+        <div class="gen-mode-chip" data-mode="i2i"  onclick="setGenMode('i2i',this)">🔄 Image→Image</div>
+        <div class="gen-mode-chip" data-mode="pvid" onclick="setGenMode('pvid',this)">🎬 Text→Video</div>
+        <div class="gen-mode-chip nsfw-chip" data-mode="nsfw" onclick="setGenMode('nsfw',this)">🔞 NSFW</div>
+        <div class="gen-mode-chip" data-mode="motion" onclick="setGenMode('motion',this)">✨ Motion</div>
+        <div class="gen-mode-chip" data-mode="tts"   onclick="setGenMode('tts',this)">🔊 TTS</div>
+      </div>
+      <!-- Lock bar -->
+      <div id="gen-lock-bar">
+        <div class="gen-lock-pill" id="lb-face" onclick="navTo({dataset:{view:'profile'}})">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          <span id="lb-face-txt">Face: Off</span>
+        </div>
+        <div class="gen-lock-pill" id="lb-body" onclick="navTo({dataset:{view:'profile'}})">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a5 5 0 010 10M4 22v-2a8 8 0 0116 0v2"/></svg>
+          <span id="lb-body-txt">Body: Off</span>
+        </div>
+        <div class="gen-lock-pill" id="lb-clothes" onclick="navTo({dataset:{view:'wardrobe'}})">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
+          <span id="lb-clothes-txt">Outfit: None</span>
         </div>
       </div>
       <div id="gen-body">
@@ -1730,6 +1866,77 @@ body.in-chat       #global-back { display:flex !important; }
           <div class="gen-section">
             <div class="gen-section-label">Prompt</div>
             <textarea id="gen-prompt" placeholder="Describe the scene — outfit, setting, expression, lighting..."></textarea>
+          </div>
+
+          <!-- ── MODE PANELS ── -->
+          <!-- Image to Image -->
+          <div id="gen-i2i-panel" class="gen-mode-panel gen-section">
+            <div class="gen-section-label">Source Image</div>
+            <div class="gen-upload-zone" onclick="document.getElementById('gen-i2i-file').click()" id="gen-i2i-zone">
+              <input type="file" id="gen-i2i-file" accept="image/*" hidden onchange="genPickFile(this,'i2i')">
+              <img id="gen-i2i-prev" alt="">
+              <div class="gen-upload-ph" id="gen-i2i-ph">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span>Tap to upload source image</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+              <label style="font-size:12px;color:var(--t2)">Strength</label>
+              <input type="range" id="gen-i2i-strength" min="0.3" max="1" step="0.05" value="0.75" style="flex:1">
+              <span id="gen-i2i-strength-val" style="font-size:12px;color:var(--t3);width:30px">0.75</span>
+            </div>
+            <p style="font-size:11px;color:var(--t3)">Face Lock reference is applied automatically when set.</p>
+          </div>
+
+          <!-- Motion (image to video) -->
+          <div id="gen-motion-panel" class="gen-mode-panel gen-section">
+            <div class="gen-section-label">Image to Animate</div>
+            <div class="gen-upload-zone" onclick="document.getElementById('gen-mot-file').click()" id="gen-mot-zone">
+              <input type="file" id="gen-mot-file" accept="image/*" hidden onchange="genPickFile(this,'mot')">
+              <img id="gen-mot-prev" alt="">
+              <div class="gen-upload-ph" id="gen-mot-ph">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span>Tap to upload image</span>
+              </div>
+            </div>
+            <button onclick="genUseFaceLockAsMotion()" style="background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:9px;color:var(--t2);font-size:13px;cursor:pointer;width:100%;margin-bottom:4px">Use Face Lock as source</button>
+          </div>
+
+          <!-- NSFW -->
+          <div id="gen-nsfw-panel" class="gen-mode-panel gen-section">
+            <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:12px;color:#f87171">🔞 Adult content only. Face & body lock applied automatically.</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--b1)">
+              <span style="font-size:14px;font-weight:600">Nude Mode</span>
+              <button class="tgl" id="gen-nude-tgl" onclick="this.classList.toggle('on');localStorage.setItem('nsfw_nude',this.classList.contains('on')?'1':'0')"><div class="tgl-k"></div></button>
+            </div>
+            <div class="gen-upload-zone" style="margin-top:10px" onclick="document.getElementById('gen-nsfw-file').click()" id="gen-nsfw-zone">
+              <input type="file" id="gen-nsfw-file" accept="image/*" hidden onchange="genPickFile(this,'nsfw')">
+              <img id="gen-nsfw-prev" alt="">
+              <div class="gen-upload-ph" id="gen-nsfw-ph">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                <span>Optional: source image (or use face lock)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TTS panel -->
+          <div id="gen-tts-panel" class="gen-mode-panel gen-section">
+            <div class="gen-section-label">Provider</div>
+            <div style="display:flex;gap:6px;margin-bottom:10px">
+              <button class="gen-mode-chip active" id="tts-prov-car" onclick="setTtsProv('cartesia',this)">Cartesia</button>
+              <button class="gen-mode-chip" id="tts-prov-el" onclick="setTtsProv('elevenlabs',this)">ElevenLabs</button>
+            </div>
+            <div class="gen-section-label">Voice ID</div>
+            <input class="gen-key-input" id="gen-tts-voice" placeholder="Paste Voice ID..." style="margin-bottom:8px">
+            <div class="gen-section-label" style="margin-bottom:6px">Preset Voices (Cartesia)</div>
+            <div class="tts-voice-grid" id="gen-tts-voice-grid">
+              <button class="tts-vbtn" data-id="a0e99841-438c-4a64-b679-ae501e7d6091" onclick="pickTtsVoice(this)">Barbra<br><span style="font-weight:400;font-size:10px">Warm Female</span></button>
+              <button class="tts-vbtn" data-id="79a125e8-cd45-4c13-8a67-188112f4dd22" onclick="pickTtsVoice(this)">British Lady<br><span style="font-weight:400;font-size:10px">Refined Female</span></button>
+              <button class="tts-vbtn" data-id="5c42302c-194b-4d0c-ba1a-8cb485c84ab9" onclick="pickTtsVoice(this)">Newsman<br><span style="font-weight:400;font-size:10px">Authoritative Male</span></button>
+              <button class="tts-vbtn" data-id="729651dc-c6b3-4b55-a43c-8f3ae64f5a2d" onclick="pickTtsVoice(this)">Pleasant Man<br><span style="font-weight:400;font-size:10px">Conversational</span></button>
+              <button class="tts-vbtn" data-id="21b81c14-f85b-436d-aff5-43072529f9f0" onclick="pickTtsVoice(this)">Laidback<br><span style="font-weight:400;font-size:10px">Casual Female</span></button>
+              <button class="tts-vbtn" data-id="e13cae5c-ec59-4f71-b0a6-266df3c9bb8e" onclick="pickTtsVoice(this)">Mischief<br><span style="font-weight:400;font-size:10px">Playful Female</span></button>
+            </div>
           </div>
           <div class="gen-section">
             <div class="gen-section-label">Quick Start</div>
@@ -2290,6 +2497,8 @@ function _applyView(view,filter,el){
   if(view==="brain")initBrainView();
   if(view==="media")initMediaView();
   if(view==="generate")initGenerateView();
+  if(view==="wardrobe")initWardrobeView();
+  if(view==="profile")initProfileLocks();
   if(view==="extras"){window._cachedConvos=convos;initExtras();}
   if(view==="talk"){window._cachedConvos=convos;talkInit();}
 }
@@ -2811,6 +3020,188 @@ const GEN_PROVIDER_META={
 };
 
 function initGenerateView(){
+  // Restore gen mode
+  const saved = localStorage.getItem('gen_mode') || 'pimg';
+  const chip = document.querySelector(`.gen-mode-chip[data-mode="${saved}"]`);
+  if(chip) setGenMode(saved, chip);
+  // Restore nude tgl
+  if(localStorage.getItem('nsfw_nude')==='1') document.getElementById('gen-nude-tgl')?.classList.add('on');
+  // Update lock bar
+  updateLockBar();
+  // Strength display
+  const s = document.getElementById('gen-i2i-strength');
+  if(s) s.addEventListener('input', ()=>{ document.getElementById('gen-i2i-strength-val').textContent = s.value; });
+}
+
+// ── GEN MODE ──
+let genMode = 'pimg';
+const GEN_MODES = ['pimg','i2i','pvid','nsfw','motion','tts'];
+function setGenMode(mode, el) {
+  genMode = mode;
+  localStorage.setItem('gen_mode', mode);
+  document.querySelectorAll('.gen-mode-chip').forEach(c=>c.classList.remove('active'));
+  if(el) el.classList.add('active');
+  // Show/hide mode panels
+  GEN_MODES.forEach(m => {
+    const p = document.getElementById(`gen-${m==='i2i'?'i2i':m==='motion'?'motion':m==='nsfw'?'nsfw':m==='tts'?'tts':''}-panel`);
+    if(p) p.classList.remove('on');
+  });
+  const panel = document.getElementById(`gen-${mode==='i2i'?'i2i':mode==='motion'?'motion':mode==='nsfw'?'nsfw':mode==='tts'?'tts':''}-panel`);
+  if(panel) panel.classList.add('on');
+  // Hide prompt for TTS
+  const promptSec = document.getElementById('gen-prompt')?.closest('.gen-section');
+  if(promptSec) promptSec.style.display = mode==='tts' ? 'none' : '';
+  // Update button label
+  const btn = document.getElementById('gen-btn');
+  if(btn) btn.textContent = mode==='tts'?'Generate Speech':'Generate';
+  updateLockBar();
+}
+
+// ── LOCK BAR ──
+function updateLockBar() {
+  const fl = getFL();
+  const lbFace = document.getElementById('lb-face');
+  const lbBody = document.getElementById('lb-body');
+  const lbClothes = document.getElementById('lb-clothes');
+  const outfit = getSelectedOutfit();
+  if(lbFace){ const on=fl.on&&fl.faceUrl; lbFace.classList.toggle('active',!!on); document.getElementById('lb-face-txt').textContent = on?'Face: On':'Face: Off'; }
+  if(lbBody){ const on=fl.on&&fl.bodyUrl; lbBody.classList.toggle('active',!!on); document.getElementById('lb-body-txt').textContent = on?'Body: On':'Body: Off'; }
+  if(lbClothes){ lbClothes.classList.toggle('clothes-active',!!outfit); document.getElementById('lb-clothes-txt').textContent = outfit?`Outfit: ${outfit.name}`:'Outfit: None'; }
+}
+function getFL(){ return { on: localStorage.getItem('fl_on')==='1', faceUrl: localStorage.getItem('fl_face_url')||null, bodyUrl: localStorage.getItem('fl_body_url')||null, envUrl: localStorage.getItem('fl_env_url')||null, prompt: localStorage.getItem('fl_prompt')||'' }; }
+
+// ── PROFILE FACE LOCK ──
+function initProfileLocks() {
+  const fl = getFL();
+  document.getElementById('prof-fl-tgl')?.classList.toggle('on', fl.on);
+  if(fl.faceUrl){ const b=document.getElementById('fl-face-box'); if(b){b.classList.add('has-img'); document.getElementById('fl-face-img').src=fl.faceUrl;} }
+  if(fl.bodyUrl){ const b=document.getElementById('fl-body-box'); if(b){b.classList.add('has-img'); document.getElementById('fl-body-img').src=fl.bodyUrl;} }
+  if(fl.envUrl){ const b=document.getElementById('fl-env-box'); if(b){b.classList.add('has-img'); document.getElementById('fl-env-img').src=fl.envUrl;} }
+  const wardrobe = JSON.parse(localStorage.getItem('wardrobe')||'[]');
+  const el = document.getElementById('prof-wardrobe-count'); if(el) el.textContent = wardrobe.length + ' outfits';
+}
+function toggleProfFaceLock() {
+  const tgl = document.getElementById('prof-fl-tgl');
+  const isOn = tgl.classList.toggle('on');
+  localStorage.setItem('fl_on', isOn?'1':'0');
+  updateLockBar();
+}
+function profUploadLock(inp, slot) {
+  const file = inp.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const url = e.target.result;
+    localStorage.setItem(`fl_${slot}_url`, url);
+    const box = document.getElementById(`fl-${slot}-box`);
+    const img = document.getElementById(`fl-${slot}-img`);
+    if(box) box.classList.add('has-img');
+    if(img) img.src = url;
+    updateLockBar();
+  };
+  reader.readAsDataURL(file);
+}
+function clearProfLock(slot) {
+  localStorage.removeItem(`fl_${slot}_url`);
+  const box = document.getElementById(`fl-${slot}-box`);
+  const img = document.getElementById(`fl-${slot}-img`);
+  if(box) box.classList.remove('has-img');
+  if(img) img.src = '';
+  updateLockBar();
+}
+
+// ── WARDROBE ──
+function getSelectedOutfit(){ const id=localStorage.getItem('selected_outfit'); if(!id) return null; const w=JSON.parse(localStorage.getItem('wardrobe')||'[]'); return w.find(x=>x.id===id)||null; }
+function initWardrobeView() {
+  const wardrobe = JSON.parse(localStorage.getItem('wardrobe')||'[]');
+  const grid = document.getElementById('wardrobe-grid');
+  const empty = document.getElementById('wardrobe-empty');
+  const selId = localStorage.getItem('selected_outfit');
+  if(!wardrobe.length){ grid.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  grid.innerHTML = wardrobe.map(item => `
+    <div class="wardrobe-card ${item.id===selId?'selected':''}" id="wcard-${item.id}" onclick="selectOutfit('${item.id}')">
+      <img src="${item.url}" alt="${item.name}" loading="lazy">
+    </div>`).join('');
+  updateWardrobeBar();
+}
+function addWardrobeItems(inp) {
+  const files = [...inp.files]; if(!files.length) return;
+  const wardrobe = JSON.parse(localStorage.getItem('wardrobe')||'[]');
+  let done = 0;
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      wardrobe.push({ id: Date.now()+'_'+Math.random().toString(36).slice(2), name: file.name.replace(/\.[^.]+$/,''), url: e.target.result });
+      done++;
+      if(done===files.length){ localStorage.setItem('wardrobe', JSON.stringify(wardrobe)); initWardrobeView(); }
+    };
+    reader.readAsDataURL(file);
+  });
+  inp.value='';
+}
+function selectOutfit(id) {
+  const current = localStorage.getItem('selected_outfit');
+  if(current===id){ localStorage.removeItem('selected_outfit'); }
+  else { localStorage.setItem('selected_outfit', id); }
+  initWardrobeView();
+  updateLockBar();
+}
+function updateWardrobeBar() {
+  const bar = document.getElementById('wardrobe-selected-bar');
+  const outfit = getSelectedOutfit();
+  if(bar) bar.textContent = outfit ? `✓ Selected: ${outfit.name} — applied to all generations` : 'Tap any outfit to select it — it will be applied to all generations.';
+}
+
+// ── GEN FILE PICKS ──
+const genFileSrcs = {};
+function genPickFile(inp, slot) {
+  const file = inp.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    genFileSrcs[slot] = e.target.result;
+    const prev = document.getElementById(`gen-${slot}-prev`);
+    const ph = document.getElementById(`gen-${slot}-ph`);
+    if(prev){ prev.src=e.target.result; prev.style.display='block'; }
+    if(ph) ph.style.display='none';
+  };
+  reader.readAsDataURL(file);
+}
+function genUseFaceLockAsMotion() {
+  const fl = getFL();
+  if(!fl.faceUrl){ alert('No face lock set. Go to Profile → Generation Locks to upload a face photo.'); return; }
+  genFileSrcs['mot'] = fl.faceUrl;
+  const prev = document.getElementById('gen-mot-prev');
+  const ph = document.getElementById('gen-mot-ph');
+  if(prev){ prev.src=fl.faceUrl; prev.style.display='block'; }
+  if(ph) ph.style.display='none';
+}
+
+// ── TTS IN GENERATE ──
+let ttsProv = 'cartesia';
+function setTtsProv(p, el) {
+  ttsProv = p;
+  document.querySelectorAll('#gen-tts-panel .gen-mode-chip').forEach(c=>c.classList.remove('active'));
+  if(el) el.classList.add('active');
+  const grid = document.getElementById('gen-tts-voice-grid');
+  if(grid) grid.style.display = p==='cartesia'?'':'none';
+}
+function pickTtsVoice(btn) {
+  document.querySelectorAll('.tts-vbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('gen-tts-voice').value = btn.dataset.id;
+}
+
+// ── BUILD FULL PROMPT (face + clothes + user) ──
+function buildGenPrompt() {
+  const fl = getFL();
+  const outfit = getSelectedOutfit();
+  let parts = [];
+  if(fl.on && fl.prompt) parts.push(fl.prompt.trim());
+  if(outfit) parts.push(`wearing ${outfit.name}`);
+  const userPrompt = document.getElementById('gen-prompt')?.value.trim();
+  if(userPrompt) parts.push(userPrompt);
+  return parts.join(', ');
+}
   genLoadKey();
   renderGenGrid();
 }
@@ -2879,6 +3270,83 @@ function buildStylePrompt(){
 }
 
 async function runGenerate(){
+  const apiKey = document.getElementById('gen-key-input')?.value.trim() || localStorage.getItem(`gen_key_${genProvider}`) || '';
+  const fl = getFL();
+  const outfit = getSelectedOutfit();
+
+  // ── TTS mode ──
+  if(genMode==='tts'){
+    const text = document.getElementById('gen-prompt')?.value.trim() || document.getElementById('gen-tts-voice')?.placeholder;
+    const voiceId = document.getElementById('gen-tts-voice')?.value.trim();
+    if(!text){ alert('Enter text to speak'); return; }
+    if(!voiceId){ alert('Select or enter a Voice ID'); return; }
+    const btn = document.getElementById('gen-btn');
+    btn.disabled=true; btn.textContent='Generating...';
+    try {
+      const r = await fetch('/api/generate/tts', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ text, voiceId, provider: ttsProv, apiKey })
+      });
+      const data = await r.json();
+      if(data.audioUrl){ renderGenResult({type:'audio',url:data.audioUrl,provider:'tts'}); }
+      else throw new Error(data.error||'TTS failed');
+    } catch(e){ alert('TTS error: '+e.message); }
+    btn.disabled=false; btn.textContent='Generate Speech';
+    return;
+  }
+
+  // ── Image/Video modes ──
+  const fullPrompt = buildGenPrompt();
+  if(!fullPrompt){ alert('Write a prompt first'); return; }
+
+  let endpoint, body;
+  const faceUrl = fl.on ? fl.faceUrl : null;
+  const bodyUrl = fl.on ? fl.bodyUrl : null;
+  const outfitUrl = outfit ? outfit.url : null;
+
+  if(genMode==='nsfw'){
+    const nudeOn = localStorage.getItem('nsfw_nude')==='1';
+    const nsfwBase = nudeOn ? 'NSFW, explicit nudity, fully nude, realistic skin, ' : 'NSFW, sensual, intimate, suggestive, ';
+    endpoint = '/api/generate/nsfw';
+    body = { prompt: nsfwBase + fullPrompt, faceUrl: genFileSrcs['nsfw']||faceUrl, bodyUrl, outfitUrl, provider: genProvider, apiKey };
+  } else if(genMode==='i2i'){
+    const srcUrl = genFileSrcs['i2i'] || faceUrl;
+    if(!srcUrl){ alert('Upload a source image or set Face Lock'); return; }
+    endpoint = '/api/generate/image';
+    body = { prompt: fullPrompt, imageUrl: srcUrl, strength: parseFloat(document.getElementById('gen-i2i-strength')?.value||'0.75'), faceUrl, bodyUrl, outfitUrl, provider: genProvider, apiKey };
+  } else if(genMode==='motion'){
+    const srcUrl = genFileSrcs['mot'] || faceUrl;
+    if(!srcUrl){ alert('Upload an image or set Face Lock'); return; }
+    endpoint = '/api/generate/motion';
+    body = { prompt: fullPrompt, imageUrl: srcUrl, faceUrl, bodyUrl, outfitUrl, provider: genProvider, apiKey };
+  } else if(genMode==='pvid'){
+    endpoint = '/api/generate/video';
+    body = { prompt: fullPrompt, faceUrl, bodyUrl, outfitUrl, provider: genProvider, apiKey };
+  } else {
+    endpoint = '/api/generate/image';
+    body = { prompt: fullPrompt, faceUrl, bodyUrl, outfitUrl, provider: genProvider, apiKey };
+  }
+
+  const btn = document.getElementById('gen-btn');
+  const loadTxt = document.getElementById('gen-loading-txt');
+  btn.disabled=true; btn.textContent='Generating...';
+  document.getElementById('gen-empty-state').style.display='none';
+  document.getElementById('gen-loading-state').style.display='flex';
+  if(loadTxt) loadTxt.textContent='Generating...';
+
+  try {
+    const r = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await r.json();
+    document.getElementById('gen-loading-state').style.display='none';
+    if(data.pollId){ await pollGenResult(data.pollId, genProvider, apiKey); }
+    else if(data.url){ renderGenResult({type: genMode==='motion'||genMode==='pvid'?'video':'image', url:data.url, provider:genProvider}); }
+    else throw new Error(data.error||'Generation failed');
+  } catch(e){
+    document.getElementById('gen-loading-state').style.display='none';
+    alert('Error: '+e.message);
+  }
+  btn.disabled=false; btn.textContent='Generate';
+}
   const prompt=(document.getElementById("gen-prompt").value||"").trim();
   const apiKey=(document.getElementById("gen-key-input").value||"").trim();
   if(!prompt){showToast("Enter a prompt first");return}
