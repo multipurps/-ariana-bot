@@ -386,12 +386,12 @@ async function openOutfitPicker() {
   if (!wardrobeItems.length) await loadWardrobeFromServer();
   renderOutfitPickerGrid();
   const p = document.getElementById('outfit-picker');
-  if (p) p.classList.add('open');
+  if (p) { p.style.display='flex'; p.style.pointerEvents='auto'; }
 }
 
 function closeOutfitPicker() {
   const p = document.getElementById('outfit-picker');
-  if (p) p.classList.remove('open');
+  if (p) { p.style.display='none'; p.style.pointerEvents='none'; }
   updateLockBar();
 }
 
