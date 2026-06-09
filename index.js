@@ -403,21 +403,27 @@ function cleanAITells(text) {
 
   // Pattern-based stage direction detector — catches ANY action line,
   // not just words we know in advance.
-  // A stage direction line is short, starts with a capital, has no ending
-  // punctuation, no personal pronouns, and its first word looks like a verb.
   function isStageDirection(line) {
     const l = line.trim();
-    if (!l || l.length > 55) return false;           // too long
+    if (!l || l.length > 100) return false;          // generous limit — long stage dirs too
     if (!/^[A-Z]/.test(l)) return false;             // must start capital
     if (/[.?!]$/.test(l)) return false;              // real sentences end with punctuation
     if (/"/.test(l)) return false;                   // quoted speech — keep
-    // Personal pronouns = real conversational text, not a stage direction
-    if (/\b(I|you|we|me|my|your|our|they|he|she|it|his|her|their|we're|you're|i'm|i've|i'll)\b/i.test(l)) return false;
-    // First word must look like a verb (3rd-person -s, -es, present participle -ing, past -ed)
+    // ONLY first/second person pronouns exclude — "her/his/she/he" can appear
+    // in stage directions ("a slight smile playing on her lips") so don't exclude them
+    if (/\b(I|you|we|me|my|your|our|i'm|i've|i'll|you're|we're|yourself|myself)\b/i.test(l)) return false;
+    // First word must look like a verb (-s/-es, -ing, -ed)
     const firstWord = l.split(/[\s,]/)[0];
     if (!/s$|ing$|ed$/.test(firstWord)) return false;
-    // Exclude common non-verb words that end in s (nouns, adjectives, places)
-    const nonVerbs = new Set(['this','his','its','yes','always','sometimes','perhaps','plus','thus','versus','across','unless','whereas','thanks','things','thoughts','words','sounds','feels','seems','means','needs','makes','takes','says','goes','comes','knows','shows','news','details','ideas','updates','areas','series']);
+    // Exclude common non-verb words that end in s/ed/ing
+    const nonVerbs = new Set([
+      'this','his','its','yes','always','sometimes','perhaps','plus','thus',
+      'versus','across','unless','whereas','thanks','things','thoughts','words',
+      'sounds','feels','seems','means','needs','makes','takes','says','goes',
+      'comes','knows','shows','news','details','ideas','updates','areas','series',
+      'hers','theirs','others','hours','days','years','months','minutes','seconds',
+      'results','changes','points','parts','lines','times','sides','eyes',
+    ]);
     if (nonVerbs.has(firstWord.toLowerCase())) return false;
     return true;
   }
@@ -858,15 +864,10 @@ async function getReply(id, userMsg, systemOverride, imageBase64 = null) {
     ? engineV2.buildSystemPrompt(id, userMsg, convo.platform || 'whatsapp')
     : SYSTEM_PROMPT);
 
-  // Inject live date/time so Ariana always knows exactly when it is
-  if (!systemOverride) {
-    const now = new Date();
-    const tz = 'America/New_York';
-    const dayName = now.toLocaleDateString('en-US', { weekday: 'long', timeZone: tz });
-    const dateStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: tz });
-    const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: tz });
-    sys += `\n\nCURRENT DATE & TIME: It is ${dayName}, ${dateStr} at ${timeStr} Miami time (ET). You live in Miami. This is your local time — use it when anyone asks the date, day, or time. Never guess.`;
-  }
+  // Always inject live Miami time — never let her guess or hallucinate it
+  const _now = new Date();
+  const _tz  = 'America/New_York';
+  sys += `\n\nCURRENT DATE & TIME: It is ${_now.toLocaleDateString('en-US',{weekday:'long',timeZone:_tz})}, ${_now.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric',timeZone:_tz})} at ${_now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:_tz})} Miami time (ET). You live in Miami. Never guess the time — this is exact.`;
 
   if (extrasMood && !systemOverride) {
     sys += `\n\nCURRENT MOOD OVERRIDE: You are feeling ${extrasMood} right now. Let this genuinely influence your tone, energy, and word choice.`;
