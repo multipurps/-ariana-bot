@@ -4257,3 +4257,30 @@ app.delete('/api/facelock/:id', async (req, res) => {
 
 // Serve generate.html fragment
 app.get('/generate.html', (req, res) => res.sendFile(require('path').join(__dirname, 'public', 'generate.html')));
+
+// ══════════════════════════════════════════════════════════════
+// SETTINGS — key/value store in Supabase (replaces localStorage)
+// ══════════════════════════════════════════════════════════════
+app.get('/api/settings', async (req, res) => {
+  if (!supabase) return res.json({ ok:true, settings:{} });
+  const keys = (req.query.keys || '').split(',').filter(Boolean);
+  if (!keys.length) return res.json({ ok:true, settings:{} });
+  try {
+    const { data, error } = await supabase.from('user_settings').select('key,value').in('key', keys);
+    if (error) throw error;
+    const settings = {};
+    (data || []).forEach(row => { settings[row.key] = row.value; });
+    res.json({ ok:true, settings });
+  } catch(e) { res.status(500).json({ ok:false, error:e.message }); }
+});
+
+app.post('/api/settings', async (req, res) => {
+  const { key, value } = req.body;
+  if (!key) return res.status(400).json({ ok:false, error:'key required' });
+  if (!supabase) return res.json({ ok:true });
+  try {
+    const { error } = await supabase.from('user_settings').upsert({ key, value }, { onConflict: 'key' });
+    if (error) throw error;
+    res.json({ ok:true });
+  } catch(e) { res.status(500).json({ ok:false, error:e.message }); }
+});
