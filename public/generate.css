@@ -4,10 +4,12 @@
 
 /* ── VIEW SHELL ── */
 #view-generate {
-  display:flex;
   flex-direction:column;
   overflow:hidden;
   background:var(--bg);
+}
+#view-generate.active {
+  display:flex;
 }
 
 /* ── TOPBAR ── */
@@ -353,10 +355,12 @@
 
 /* ── WARDROBE VIEW ── */
 #view-wardrobe {
-  display:flex;
   flex-direction:column;
   overflow:hidden;
   background:var(--bg);
+}
+#view-wardrobe.active {
+  display:flex;
 }
 #wardrobe-topbar {
   display:flex;
