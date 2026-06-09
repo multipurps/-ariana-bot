@@ -1,14 +1,13 @@
 // ══════════════════════════════════════════════════════════════
-// GENERATE.JS — Studio, Wardrobe, Face Lock
-// All storage goes through the backend → Supabase (no localStorage for files)
+// GENERATE.JS — No localStorage. All state via backend or sessionStorage for
+// transient UI only (mode, selected outfit during session).
 // ══════════════════════════════════════════════════════════════
 
-// ── STATE ──
-let genMode     = 'pimg';
-let genProvider = 'fal';
-let ttsProv     = 'cartesia';
-let genFileSrcs = {};
-let wardrobeItems = [];
+let genMode      = 'pimg';
+let genProvider  = 'fal';
+let ttsProv      = 'cartesia';
+let genFileSrcs  = {};
+let wardrobeItems   = [];
 let selectedOutfitId = null;
 let faceLockData = { on:false, face:[], body:[], env:[], facePrompt:'', bodyPrompt:'', envPrompt:'' };
 let genLastResult = null;
@@ -27,8 +26,11 @@ function initGenerateView() {
   const savedMode = sessionStorage.getItem('gen_mode') || 'pimg';
   const chip = document.querySelector(`.gen-chip[data-mode="${savedMode}"]`);
   setGenMode(savedMode, chip || document.querySelector('.gen-chip'));
-  loadGenKey();
+  loadGenKeys();
   updateLockBar();
+  if (sessionStorage.getItem('nsfw_nude') === '1') {
+    document.getElementById('gen-nude-tgl')?.classList.add('on');
+  }
 }
 
 // ── MODE ──
@@ -37,24 +39,14 @@ function setGenMode(mode, el) {
   sessionStorage.setItem('gen_mode', mode);
   document.querySelectorAll('.gen-chip').forEach(c => c.classList.remove('active'));
   if (el) el.classList.add('active');
-
-  // Show/hide mode panels
   document.querySelectorAll('.gen-mode-panel').forEach(p => p.style.display = 'none');
   const panel = document.querySelector(`.gen-mode-panel[data-panel="${mode}"]`);
   if (panel) panel.style.display = '';
-
-  // Prompt card
   const pc = document.getElementById('gc-prompt-card');
   if (pc) pc.style.display = mode === 'tts' ? 'none' : '';
-
-  // Provider card
   const prc = document.getElementById('gc-provider-card');
   if (prc) prc.style.display = mode === 'tts' ? 'none' : '';
-
-  // Update providers shown
   updateProviderChips(mode);
-
-  // Button label / style
   const btn = document.getElementById('gen-btn');
   if (btn) {
     btn.textContent = mode === 'tts' ? 'Generate Speech' : 'Generate';
@@ -65,11 +57,11 @@ function setGenMode(mode, el) {
 function updateProviderChips(mode) {
   const available = GEN_PROVIDERS[mode] || [];
   document.querySelectorAll('#gen-prov-row .gc-prov-chip').forEach(c => {
-    const prov = c.dataset.prov;
-    c.style.display = available.includes(prov) ? '' : 'none';
+    c.style.display = available.includes(c.dataset.prov) ? '' : 'none';
   });
   if (!available.includes(genProvider) && available.length) {
-    setGenProvider(available[0], document.querySelector(`#gen-prov-row .gc-prov-chip[data-prov="${available[0]}"]`));
+    const first = document.querySelector(`#gen-prov-row .gc-prov-chip[data-prov="${available[0]}"]`);
+    setGenProvider(available[0], first);
   }
 }
 
@@ -77,27 +69,28 @@ function setGenProvider(prov, el) {
   genProvider = prov;
   document.querySelectorAll('#gen-prov-row .gc-prov-chip').forEach(c => c.classList.remove('active'));
   if (el) el.classList.add('active');
-  loadGenKey();
+  loadGenKeys();
 }
 
-function loadGenKey() {
-  const stored = JSON.parse(sessionStorage.getItem('_genKeys') || '{}');
+// ── API KEYS (sessionStorage only — cleared when tab closes, never persisted) ──
+function loadGenKeys() {
+  const keys = JSON.parse(sessionStorage.getItem('_sGenKeys') || '{}');
   const inp = document.getElementById('gen-key-input');
-  if (inp && stored[genProvider]) inp.value = '•'.repeat(16);
+  if (inp && keys[genProvider]) inp.value = '•'.repeat(16);
 }
 
 function genSaveKey() {
   const inp = document.getElementById('gen-key-input');
   if (!inp || inp.value.includes('•')) return;
-  const keys = JSON.parse(sessionStorage.getItem('_genKeys') || '{}');
+  const keys = JSON.parse(sessionStorage.getItem('_sGenKeys') || '{}');
   keys[genProvider] = inp.value.trim();
-  sessionStorage.setItem('_genKeys', JSON.stringify(keys));
+  sessionStorage.setItem('_sGenKeys', JSON.stringify(keys));
 }
 
 function getGenKey() {
   const inp = document.getElementById('gen-key-input');
   if (inp && !inp.value.includes('•') && inp.value.trim()) return inp.value.trim();
-  const keys = JSON.parse(sessionStorage.getItem('_genKeys') || '{}');
+  const keys = JSON.parse(sessionStorage.getItem('_sGenKeys') || '{}');
   return keys[genProvider] || '';
 }
 
@@ -116,12 +109,11 @@ function genPickFile(inp, slot) {
 }
 
 function genUseFaceLock() {
-  const faceImgs = faceLockData.face;
-  if (!faceImgs.length) { alert('No face lock set. Go to Profile to upload face photos.'); return; }
-  genFileSrcs['mot'] = faceImgs[0].url;
+  if (!faceLockData.face.length) { alert('No face lock set. Go to Profile to upload face photos.'); return; }
+  genFileSrcs['mot'] = faceLockData.face[0].url;
   const prev = document.getElementById('gen-mot-prev');
   const ph   = document.getElementById('gen-mot-ph');
-  if (prev) { prev.src = faceImgs[0].url; prev.style.display = 'block'; }
+  if (prev) { prev.src = faceLockData.face[0].url; prev.style.display = 'block'; }
   if (ph)   ph.style.display = 'none';
 }
 
@@ -142,22 +134,18 @@ function buildGenPrompt() {
 
 // ── LOCK BAR ──
 function updateLockBar() {
-  const faceOn  = faceLockData.on && (faceLockData.face.length > 0 || faceLockData.facePrompt);
-  const bodyOn  = faceLockData.on && (faceLockData.body.length > 0 || faceLockData.bodyPrompt);
-  const outfit  = wardrobeItems.find(w => w.id === selectedOutfitId);
-
-  const pFace = document.getElementById('glp-face');
-  const pBody = document.getElementById('glp-body');
-  const pOut  = document.getElementById('glp-outfit');
-
+  const faceOn = faceLockData.on && (faceLockData.face.length > 0 || faceLockData.facePrompt);
+  const bodyOn = faceLockData.on && (faceLockData.body.length > 0 || faceLockData.bodyPrompt);
+  const outfit = wardrobeItems.find(w => w.id === selectedOutfitId);
+  const pFace  = document.getElementById('glp-face');
+  const pBody  = document.getElementById('glp-body');
+  const pOut   = document.getElementById('glp-outfit');
   if (pFace) { pFace.classList.toggle('on', faceOn); document.getElementById('glp-face-txt').textContent = faceOn ? 'Face: On' : 'Face'; }
   if (pBody) { pBody.classList.toggle('on', bodyOn); document.getElementById('glp-body-txt').textContent = bodyOn ? 'Body: On' : 'Body'; }
   if (pOut)  { pOut.classList.toggle('outfit-on', !!outfit); document.getElementById('glp-outfit-txt').textContent = outfit ? outfit.name : 'Outfit'; }
 }
 
-function openFaceLockFromGen() {
-  navTo({ dataset: { view: 'profile' } });
-}
+function openFaceLockFromGen() { navTo({ dataset: { view: 'profile' } }); }
 
 // ── RUN GENERATE ──
 async function runGenerate() {
@@ -169,11 +157,11 @@ async function runGenerate() {
     const voiceId = document.getElementById('gen-tts-voice')?.value.trim();
     if (!text)    { alert('Enter text to speak'); return; }
     if (!voiceId) { alert('Select or enter a Voice ID'); return; }
-    if (!apiKey)  { alert('Paste your API key for the selected TTS provider'); return; }
+    if (!apiKey)  { alert('Paste your API key above'); return; }
     setGenLoading(true, 'Synthesising...');
     try {
       const r = await fetch('/api/generate/tts', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ text, voiceId, provider: ttsProv, apiKey })
       });
       const d = await r.json();
@@ -191,9 +179,8 @@ async function runGenerate() {
   const fullPrompt = buildGenPrompt();
   if (!fullPrompt) { alert('Write a prompt first'); return; }
 
-  const fl = faceLockData;
-  const faceUrl   = fl.on && fl.face.length  ? fl.face[0].url  : null;
-  const bodyUrl   = fl.on && fl.body.length  ? fl.body[0].url  : null;
+  const faceUrl   = faceLockData.on && faceLockData.face.length ? faceLockData.face[0].url : null;
+  const bodyUrl   = faceLockData.on && faceLockData.body.length ? faceLockData.body[0].url : null;
   const outfit    = wardrobeItems.find(w => w.id === selectedOutfitId);
   const outfitUrl = outfit ? outfit.url : null;
 
@@ -201,7 +188,9 @@ async function runGenerate() {
 
   if (genMode === 'nsfw') {
     const nudeOn = document.getElementById('gen-nude-tgl')?.classList.contains('on');
-    const base   = nudeOn ? 'NSFW, explicit nudity, fully nude, realistic skin texture, ' : 'NSFW, sensual, intimate, suggestive, ';
+    const base   = nudeOn
+      ? 'NSFW, explicit nudity, fully nude, realistic skin texture, '
+      : 'NSFW, sensual, intimate, suggestive, ';
     endpoint = '/api/generate/nsfw';
     body = { prompt: base + fullPrompt, faceUrl: genFileSrcs['nsfw'] || faceUrl, bodyUrl, outfitUrl, provider: genProvider, apiKey };
   } else if (genMode === 'i2i') {
@@ -224,15 +213,12 @@ async function runGenerate() {
 
   setGenLoading(true, 'Generating...');
   try {
-    const r = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const r = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
     const d = await r.json();
     if (!d.ok && !d.url && !d.pollId) throw new Error(d.error || 'Generation failed');
-    if (d.pollId) {
-      await pollGenResult(d.pollId, genProvider, apiKey);
-    } else {
-      showGenResult(d);
-    }
-  } catch (e) { setGenLoading(false); alert('Error: ' + e.message); }
+    if (d.pollId) { await pollGenResult(d.pollId, genProvider, apiKey); }
+    else { showGenResult(d); }
+  } catch(e) { setGenLoading(false); alert('Error: ' + e.message); }
 }
 
 function setGenLoading(on, txt = 'Generating...') {
@@ -241,7 +227,7 @@ function setGenLoading(on, txt = 'Generating...') {
   const btn    = document.getElementById('gen-btn');
   if (canvas) canvas.classList.toggle('loading', on);
   if (loader) loader.textContent = txt;
-  if (btn) { btn.disabled = on; btn.textContent = on ? txt : (genMode === 'tts' ? 'Generate Speech' : 'Generate'); }
+  if (btn)  { btn.disabled = on; btn.textContent = on ? txt : (genMode === 'tts' ? 'Generate Speech' : 'Generate'); }
 }
 
 function showGenResult(d) {
@@ -267,16 +253,16 @@ function showGenResult(d) {
 }
 
 async function pollGenResult(pollId, provider, apiKey, attempts = 0) {
-  if (attempts > 60) { setGenLoading(false); alert('Generation timed out. Try again.'); return; }
+  if (attempts > 60) { setGenLoading(false); alert('Timed out. Try again.'); return; }
   setGenLoading(true, `Generating... (${Math.round(attempts * 3)}s)`);
   await new Promise(r => setTimeout(r, 3000));
   try {
     const r = await fetch(`/api/generate/poll/${provider}/${pollId}?apiKey=${encodeURIComponent(apiKey)}`);
     const d = await r.json();
     if (d.status === 'ready' || d.url || d.urls) { showGenResult(d); }
-    else if (d.status === 'failed') { setGenLoading(false); alert('Generation failed: ' + (d.error || 'Unknown error')); }
+    else if (d.status === 'failed') { setGenLoading(false); alert('Generation failed: ' + (d.error || '')); }
     else { await pollGenResult(pollId, provider, apiKey, attempts + 1); }
-  } catch (e) { setGenLoading(false); alert('Poll error: ' + e.message); }
+  } catch(e) { setGenLoading(false); alert('Poll error: ' + e.message); }
 }
 
 function genSaveResult() {
@@ -287,22 +273,22 @@ function genSaveResult() {
 
 function genDownloadResult() {
   if (!genLastResult) return;
+  const ext = genLastResult.type === 'video' ? 'mp4' : genLastResult.type === 'audio' ? 'mp3' : 'jpg';
   const a = document.createElement('a');
   a.href = genLastResult.url;
-  a.download = `ariana_${genMode}_${Date.now()}.${genLastResult.type === 'video' ? 'mp4' : genLastResult.type === 'audio' ? 'mp3' : 'jpg'}`;
+  a.download = `ariana_${genMode}_${Date.now()}.${ext}`;
   a.click();
 }
 
 // ── TTS ──
 function setTtsProv(p, el) {
   ttsProv = p;
-  document.querySelectorAll('#gen-tts-panel .gc-prov-chip, #outfit-picker .gc-prov-chip').forEach(c => c.classList.remove('active'));
-  document.querySelectorAll(`[id^="tts-prov"]`).forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('[id^="tts-prov"]').forEach(c => c.classList.remove('active'));
   if (el) el.classList.add('active');
-  const presetLabel = document.getElementById('tts-preset-label');
-  const presetGrid  = document.getElementById('gen-tts-presets');
-  if (presetLabel) presetLabel.style.display = p === 'cartesia' ? '' : 'none';
-  if (presetGrid)  presetGrid.style.display  = p === 'cartesia' ? '' : 'none';
+  const pl = document.getElementById('tts-preset-label');
+  const pg = document.getElementById('gen-tts-presets');
+  if (pl) pl.style.display = p === 'cartesia' ? '' : 'none';
+  if (pg) pg.style.display = p === 'cartesia' ? '' : 'none';
   const inp = document.getElementById('gen-tts-voice');
   if (inp) inp.placeholder = p === 'elevenlabs' ? 'ElevenLabs Voice ID...' : 'Cartesia Voice ID...';
 }
@@ -315,7 +301,7 @@ function pickTtsVoice(btn) {
 }
 
 // ══════════════════════════════════════════════════════════════
-// WARDROBE
+// WARDROBE — all via backend
 // ══════════════════════════════════════════════════════════════
 
 async function initWardrobeView() {
@@ -328,43 +314,49 @@ async function loadWardrobeFromServer() {
     const r = await fetch('/api/wardrobe');
     const d = await r.json();
     if (d.ok) wardrobeItems = d.items || [];
-  } catch (e) { console.warn('Wardrobe load failed:', e.message); }
+  } catch(e) { console.warn('Wardrobe load:', e.message); }
 }
 
 function renderWardrobeGrid() {
   const grid  = document.getElementById('wardrobe-grid');
   const empty = document.getElementById('wardrobe-empty');
   const count = document.getElementById('wardrobe-count-badge');
-  if (count) count.textContent = wardrobeItems.length + ' outfit' + (wardrobeItems.length !== 1 ? 's' : '');
+  if (count) count.textContent = wardrobeItems.length + (wardrobeItems.length === 1 ? ' outfit' : ' outfits');
   if (!grid) return;
-  if (!wardrobeItems.length) { grid.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
+  if (!wardrobeItems.length) {
+    grid.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
   if (empty) empty.style.display = 'none';
   grid.innerHTML = wardrobeItems.map(item => `
     <div class="wcard ${item.id === selectedOutfitId ? 'selected' : ''}" onclick="selectWardrobe('${item.id}')">
       <img src="${item.url}" alt="${escHtml(item.name)}" loading="lazy">
       <div class="wcard-name">${escHtml(item.name)}</div>
     </div>`).join('');
+  // Update selected bar
   const selTxt   = document.getElementById('wardrobe-sel-txt');
   const selClear = document.getElementById('wardrobe-sel-clear');
   const selItem  = wardrobeItems.find(w => w.id === selectedOutfitId);
-  if (selTxt)   selTxt.textContent = selItem ? `Selected: ${selItem.name}` : 'Tap an outfit to select it for all generations';
+  if (selTxt)   selTxt.textContent = selItem ? `Selected: ${selItem.name}` : 'Tap an outfit to select it';
   if (selClear) selClear.style.display = selItem ? '' : 'none';
+  // Profile count
+  const pc = document.getElementById('prof-wardrobe-count');
+  if (pc) pc.textContent = wardrobeItems.length + ' outfit' + (wardrobeItems.length !== 1 ? 's' : '');
 }
 
 async function addWardrobeItems(inp) {
   const files = [...inp.files]; if (!files.length) return;
-  let done = 0;
   for (const file of files) {
     const b64 = await fileToBase64(file);
     try {
       const r = await fetch('/api/wardrobe/upload', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ name: file.name.replace(/\.[^.]+$/, ''), data: b64, mimeType: file.type })
       });
       const d = await r.json();
       if (d.ok && d.item) wardrobeItems.push(d.item);
-    } catch (e) { console.warn('Upload failed:', e.message); }
-    done++;
+    } catch(e) { console.warn('Upload failed:', e.message); }
   }
   inp.value = '';
   renderWardrobeGrid();
@@ -374,6 +366,9 @@ async function addWardrobeItems(inp) {
 
 function selectWardrobe(id) {
   selectedOutfitId = selectedOutfitId === id ? null : id;
+  // Store in sessionStorage only — transient UI selection
+  if (selectedOutfitId) sessionStorage.setItem('_selectedOutfit', id);
+  else sessionStorage.removeItem('_selectedOutfit');
   renderWardrobeGrid();
   renderOutfitPickerGrid();
   updateLockBar();
@@ -381,21 +376,22 @@ function selectWardrobe(id) {
 
 function clearOutfitSelection() {
   selectedOutfitId = null;
+  sessionStorage.removeItem('_selectedOutfit');
   renderWardrobeGrid();
   updateLockBar();
 }
 
-// ── OUTFIT PICKER (dropdown in generate) ──
+// Outfit picker (bottom sheet in generate)
 async function openOutfitPicker() {
   if (!wardrobeItems.length) await loadWardrobeFromServer();
   renderOutfitPickerGrid();
-  const picker = document.getElementById('outfit-picker');
-  if (picker) picker.classList.add('open');
+  const p = document.getElementById('outfit-picker');
+  if (p) p.classList.add('open');
 }
 
 function closeOutfitPicker() {
-  const picker = document.getElementById('outfit-picker');
-  if (picker) picker.classList.remove('open');
+  const p = document.getElementById('outfit-picker');
+  if (p) p.classList.remove('open');
   updateLockBar();
 }
 
@@ -414,15 +410,18 @@ function renderOutfitPickerGrid() {
 
 function selectOutfitPicker(id) {
   selectedOutfitId = selectedOutfitId === id ? null : id;
+  if (selectedOutfitId) sessionStorage.setItem('_selectedOutfit', id);
+  else sessionStorage.removeItem('_selectedOutfit');
   renderOutfitPickerGrid();
   updateLockBar();
 }
 
 // ══════════════════════════════════════════════════════════════
-// FACE LOCK (profile)
+// FACE LOCK — all images via backend, prompts via /api/settings
 // ══════════════════════════════════════════════════════════════
 
 async function initFaceLockSection() {
+  // Load images from backend
   try {
     const r = await fetch('/api/facelock');
     const d = await r.json();
@@ -431,11 +430,21 @@ async function initFaceLockSection() {
       faceLockData.body = d.items.filter(i => i.slot === 'body');
       faceLockData.env  = d.items.filter(i => i.slot === 'env');
     }
-  } catch (e) { console.warn('Face lock load:', e.message); }
-  faceLockData.on          = localStorage.getItem('fl_on') === '1';
-  faceLockData.facePrompt  = localStorage.getItem('fl_face_prompt') || '';
-  faceLockData.bodyPrompt  = localStorage.getItem('fl_body_prompt') || '';
-  faceLockData.envPrompt   = localStorage.getItem('fl_env_prompt')  || '';
+  } catch(e) { console.warn('Face lock load:', e.message); }
+  // Load settings (on/off state + prompts) from backend
+  try {
+    const r = await fetch('/api/settings?keys=fl_on,fl_face_prompt,fl_body_prompt,fl_env_prompt');
+    const d = await r.json();
+    if (d.ok) {
+      faceLockData.on         = d.settings.fl_on === '1';
+      faceLockData.facePrompt = d.settings.fl_face_prompt || '';
+      faceLockData.bodyPrompt = d.settings.fl_body_prompt || '';
+      faceLockData.envPrompt  = d.settings.fl_env_prompt  || '';
+    }
+  } catch(e) { console.warn('Settings load:', e.message); }
+  // Restore session outfit selection
+  const savedOutfit = sessionStorage.getItem('_selectedOutfit');
+  if (savedOutfit) selectedOutfitId = savedOutfit;
   renderFaceLockSection();
   updateLockBar();
 }
@@ -444,31 +453,28 @@ function renderFaceLockSection() {
   const tgl = document.getElementById('prof-fl-toggle');
   if (tgl) tgl.classList.toggle('on', faceLockData.on);
   ['face','body','env'].forEach(slot => {
-    const row = document.getElementById(`fl-${slot}-row`);
-    if (!row) return;
+    const thumbsEl = document.getElementById(`fl-${slot}-photos`);
+    if (!thumbsEl) return;
     const items = faceLockData[slot];
-    const thumbsEl = row.querySelector('.fl-photos-row');
-    if (thumbsEl) {
-      thumbsEl.innerHTML = items.map(img => `
-        <div class="fl-thumb">
-          <img src="${img.url}" alt="">
-          <div class="fl-thumb-del" onclick="deleteFaceLockImg('${img.id}','${slot}')">&#10005;</div>
-        </div>`).join('') +
-        `<label class="fl-add-btn" for="fl-${slot}-file">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          <span>Add</span>
-        </label>`;
-    }
+    thumbsEl.innerHTML = items.map(img => `
+      <div class="fl-thumb">
+        <img src="${img.url}" alt="">
+        <div class="fl-thumb-del" onclick="deleteFaceLockImg('${img.id}','${slot}')">&#10005;</div>
+      </div>`).join('') +
+      `<label class="fl-add-btn" for="fl-${slot}-file">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>Add</span>
+      </label>`;
     const promptEl = document.getElementById(`fl-${slot}-prompt`);
     if (promptEl) promptEl.value = faceLockData[`${slot}Prompt`];
   });
 }
 
-function toggleFaceLock() {
+async function toggleFaceLock() {
   faceLockData.on = !faceLockData.on;
-  localStorage.setItem('fl_on', faceLockData.on ? '1' : '0');
   const tgl = document.getElementById('prof-fl-toggle');
   if (tgl) tgl.classList.toggle('on', faceLockData.on);
+  await saveSetting('fl_on', faceLockData.on ? '1' : '0');
   updateLockBar();
 }
 
@@ -478,12 +484,12 @@ async function uploadFaceLockImg(inp, slot) {
     const b64 = await fileToBase64(file);
     try {
       const r = await fetch('/api/facelock/upload', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ slot, data: b64, mimeType: file.type })
       });
       const d = await r.json();
       if (d.ok && d.item) faceLockData[slot].push(d.item);
-    } catch (e) { alert('Upload failed: ' + e.message); }
+    } catch(e) { alert('Upload failed: ' + e.message); }
   }
   inp.value = '';
   renderFaceLockSection();
@@ -492,18 +498,40 @@ async function uploadFaceLockImg(inp, slot) {
 
 async function deleteFaceLockImg(id, slot) {
   try {
-    await fetch(`/api/facelock/${id}`, { method: 'DELETE' });
+    await fetch(`/api/facelock/${id}`, { method:'DELETE' });
     faceLockData[slot] = faceLockData[slot].filter(i => i.id !== id);
     renderFaceLockSection();
     updateLockBar();
-  } catch (e) { alert('Delete failed: ' + e.message); }
+  } catch(e) { alert('Delete failed: ' + e.message); }
 }
 
-function saveFaceLockPrompt(slot) {
+async function saveFaceLockPrompt(slot) {
   const val = (document.getElementById(`fl-${slot}-prompt`)?.value || '').trim();
   faceLockData[`${slot}Prompt`] = val;
-  localStorage.setItem(`fl_${slot}_prompt`, val);
+  await saveSetting(`fl_${slot}_prompt`, val);
   updateLockBar();
+}
+
+async function clearFaceLockSlot(slot) {
+  // Delete all images for this slot from backend
+  for (const img of [...faceLockData[slot]]) {
+    await fetch(`/api/facelock/${img.id}`, { method:'DELETE' }).catch(() => {});
+  }
+  faceLockData[slot] = [];
+  faceLockData[`${slot}Prompt`] = '';
+  await saveSetting(`fl_${slot}_prompt`, '');
+  renderFaceLockSection();
+  updateLockBar();
+}
+
+// ── SETTINGS HELPERS ──
+async function saveSetting(key, value) {
+  try {
+    await fetch('/api/settings', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ key, value })
+    });
+  } catch(e) { console.warn('saveSetting failed:', e.message); }
 }
 
 // ── UTIL ──
