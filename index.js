@@ -864,10 +864,14 @@ async function getReply(id, userMsg, systemOverride, imageBase64 = null) {
     ? engineV2.buildSystemPrompt(id, userMsg, convo.platform || 'whatsapp')
     : SYSTEM_PROMPT);
 
-  // Always inject live Miami time — never let her guess or hallucinate it
+  // ── Inject live Miami time at the TOP of the prompt ──────────
+  // Must be first thing the model sees — appending at end meant it was ignored
   const _now = new Date();
   const _tz  = 'America/New_York';
-  sys += `\n\nCURRENT DATE & TIME: It is ${_now.toLocaleDateString('en-US',{weekday:'long',timeZone:_tz})}, ${_now.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric',timeZone:_tz})} at ${_now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:_tz})} Miami time (ET). You live in Miami. Never guess the time — this is exact.`;
+  const _timeStr = _now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: _tz });
+  const _dayStr  = _now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: _tz });
+  const _timePrefix = `TODAY IS ${_dayStr.toUpperCase()} AND THE CURRENT TIME IN MIAMI IS ${_timeStr} ET. IF ANYONE ASKS THE TIME OR DATE — USE ONLY THIS. DO NOT GUESS.\n\n`;
+  sys = _timePrefix + sys;
 
   if (extrasMood && !systemOverride) {
     sys += `\n\nCURRENT MOOD OVERRIDE: You are feeling ${extrasMood} right now. Let this genuinely influence your tone, energy, and word choice.`;
