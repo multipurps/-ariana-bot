@@ -1378,7 +1378,7 @@ body.in-chat       #global-back { display:flex !important; }
 .orb-ctrl-btn.muted svg{stroke:#ef4444}
 
 /* ── FLOATING BOTTOM NAV — liquid glass ── */
-/* Shimmer runs around the pill border as a conic gradient rotating continuously */
+/* Shimmer: silver light traces the pill border edge continuously */
 @keyframes navBorderSpin {
   from { --nav-angle: 0deg; }
   to   { --nav-angle: 360deg; }
@@ -1402,27 +1402,38 @@ body.in-chat       #global-back { display:flex !important; }
   backdrop-filter:blur(56px) saturate(240%) brightness(1.1);
   -webkit-backdrop-filter:blur(56px) saturate(240%) brightness(1.1);
   border-radius:40px;
-  border:1.5px solid transparent;
-  background-image:
-    linear-gradient(rgba(16,16,22,0.55), rgba(16,16,22,0.55)),
-    conic-gradient(from var(--nav-angle),
-      rgba(255,255,255,0.0)  0deg,
-      rgba(200,200,220,0.3) 60deg,
-      rgba(255,255,255,0.9) 90deg,
-      rgba(220,220,255,0.95) 100deg,
-      rgba(255,255,255,0.9) 110deg,
-      rgba(200,200,220,0.3) 150deg,
-      rgba(255,255,255,0.0) 210deg,
-      rgba(255,255,255,0.0) 360deg
-    );
-  background-origin: border-box;
-  background-clip: padding-box, border-box;
-  animation: navBorderSpin 2.5s linear infinite;
+  border:none;
   box-shadow:
     0 12px 48px rgba(0,0,0,0.6),
-    0 2px 8px rgba(0,0,0,0.35),
-    inset 0 1.5px 0 rgba(255,255,255,0.14),
-    inset 0 -1px 0 rgba(0,0,0,0.25);
+    0 2px 8px rgba(0,0,0,0.35);
+  position:relative;
+}
+/* The silver light that chases itself around the pill edge */
+#bottom-nav::before{
+  content:'';
+  position:absolute;
+  inset:-1.5px;
+  border-radius:42px;
+  padding:1.5px;
+  background:conic-gradient(from var(--nav-angle),
+    transparent   0deg,
+    transparent  70deg,
+    rgba(180,180,200,0.25) 80deg,
+    rgba(255,255,255,0.9)  90deg,
+    rgba(230,230,255,1.0)  95deg,
+    rgba(255,255,255,0.9) 100deg,
+    rgba(180,180,200,0.25) 110deg,
+    transparent  130deg,
+    transparent  360deg
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: navBorderSpin 2s linear infinite;
+  pointer-events:none;
+  z-index:1;
 }
 .bn-btn{
   width:46px;height:46px;
@@ -1773,13 +1784,15 @@ body.in-chat       #global-back { display:flex !important; }
       <div style="padding:12px 16px;background:var(--s1);border-bottom:1px solid var(--b1)">
         <div id="wardrobe-selected-bar" style="font-size:13px;color:var(--t2)">Tap any outfit to select it — it will be applied to all generations.</div>
       </div>
+      <div id="wardrobe-scroll">
       <div id="wardrobe-grid"></div>
       <div id="wardrobe-empty" style="text-align:center;padding:60px 20px;color:var(--t3)">
         <div style="font-size:48px;margin-bottom:12px">👗</div>
         <div style="font-size:15px;font-weight:600;color:var(--t2);margin-bottom:8px">Your wardrobe is empty</div>
         <div style="font-size:13px">Tap <strong style="color:var(--t2)">+ Add</strong> to upload your clothes photos</div>
       </div>
-    </div>
+      </div><!-- end wardrobe-scroll -->
+    </div><!-- end view-wardrobe -->
 
     <!-- ══════════ HOME ══════════ -->
     <div id="view-home" class="view active">
