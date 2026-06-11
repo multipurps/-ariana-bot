@@ -1378,21 +1378,15 @@ body.in-chat       #global-back { display:flex !important; }
 .orb-ctrl-btn.muted svg{stroke:#ef4444}
 
 /* ── FLOATING BOTTOM NAV — liquid glass ── */
-/* Glass filler covers the safe area zone below the pill */
-#nav-safe-fill{
-  position:fixed;
-  bottom:0;left:0;right:0;
-  height:env(safe-area-inset-bottom);
-  background:rgba(10,10,16,0.85);
-  backdrop-filter:blur(40px) saturate(200%);
-  -webkit-backdrop-filter:blur(40px) saturate(200%);
-  z-index:299;
-  pointer-events:none;
+/* Shimmer runs around the pill border as a conic gradient rotating continuously */
+@keyframes navBorderSpin {
+  from { --nav-angle: 0deg; }
+  to   { --nav-angle: 360deg; }
 }
-/* Shimmer keyframe */
-@keyframes navShimmer{
-  0%   { background-position: -300% center; }
-  100% { background-position:  300% center; }
+@property --nav-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
 }
 #bottom-nav{
   position:fixed;
@@ -1408,28 +1402,27 @@ body.in-chat       #global-back { display:flex !important; }
   backdrop-filter:blur(56px) saturate(240%) brightness(1.1);
   -webkit-backdrop-filter:blur(56px) saturate(240%) brightness(1.1);
   border-radius:40px;
-  border:1px solid transparent;
+  border:1.5px solid transparent;
+  background-image:
+    linear-gradient(rgba(16,16,22,0.55), rgba(16,16,22,0.55)),
+    conic-gradient(from var(--nav-angle),
+      rgba(255,255,255,0.0)  0deg,
+      rgba(200,200,220,0.3) 60deg,
+      rgba(255,255,255,0.9) 90deg,
+      rgba(220,220,255,0.95) 100deg,
+      rgba(255,255,255,0.9) 110deg,
+      rgba(200,200,220,0.3) 150deg,
+      rgba(255,255,255,0.0) 210deg,
+      rgba(255,255,255,0.0) 360deg
+    );
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  animation: navBorderSpin 2.5s linear infinite;
   box-shadow:
     0 12px 48px rgba(0,0,0,0.6),
     0 2px 8px rgba(0,0,0,0.35),
     inset 0 1.5px 0 rgba(255,255,255,0.14),
     inset 0 -1px 0 rgba(0,0,0,0.25);
-  /* Shimmer silver border via background-clip */
-  background-image:
-    linear-gradient(rgba(16,16,22,0.55),rgba(16,16,22,0.55)),
-    linear-gradient(90deg,
-      transparent 0%,
-      rgba(220,220,240,0.0) 20%,
-      rgba(255,255,255,0.55) 40%,
-      rgba(192,192,210,0.85) 50%,
-      rgba(255,255,255,0.55) 60%,
-      rgba(220,220,240,0.0) 80%,
-      transparent 100%
-    );
-  background-origin: border-box;
-  background-clip: padding-box, border-box;
-  background-size: 100% 100%, 300% 100%;
-  animation: navShimmer 3s linear infinite;
 }
 .bn-btn{
   width:46px;height:46px;
@@ -5592,9 +5585,6 @@ document.addEventListener("DOMContentLoaded",()=>{
   }
 });
 </script>
-
-<!-- Safe-area glass filler — kills the black strip below the nav pill -->
-<div id="nav-safe-fill"></div>
 
 <!-- FLOATING BOTTOM NAV -->
 <div id="bottom-nav">
