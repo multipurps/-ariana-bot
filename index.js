@@ -1318,11 +1318,22 @@ async function sendSignalImage(to, imageUrl, caption = '') {
 
 // ── SMS / MMS SENDERS ─────────────────────────────────────────
 async function sendSMS(to, message) {
-  await axios.post(
-    `https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/Messages.json`,
-    new URLSearchParams({ From: process.env.TWILIO_NUMBER, To: to, Body: message }),
-    { auth: { username: process.env.TWILIO_ACCOUNT_SID, password: process.env.TWILIO_AUTH_TOKEN } }
-  );
+  if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_NUMBER) {
+    console.error('❌ SMS blocked — TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_NUMBER not set in env');
+    return;
+  }
+  try {
+    const r = await axios.post(
+      `https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/Messages.json`,
+      new URLSearchParams({ From: process.env.TWILIO_NUMBER, To: to, Body: message }),
+      { auth: { username: process.env.TWILIO_ACCOUNT_SID, password: process.env.TWILIO_AUTH_TOKEN }, timeout: 15000 }
+    );
+    console.log(`📟 SMS sent → ${to} (SID: ${r.data?.sid})`);
+  } catch(e) {
+    const errBody = e.response?.data ? JSON.stringify(e.response.data).slice(0,300) : e.message;
+    console.error(`❌ SMS FAILED → ${to}: HTTP ${e.response?.status} — ${errBody}`);
+    throw e;
+  }
 }
 
 async function sendMMS(to, message, mediaUrl) {
@@ -4164,7 +4175,8 @@ server.listen(PORT, async () => {
   console.log(`☁️  Cloudinary:  ${process.env.CLOUDINARY_CLOUD_NAME ? "✅" : "❌ voice notes disabled"}`);
   console.log(`📸 Unsplash:    ${process.env.UNSPLASH_ACCESS_KEY ? "✅" : "—"}`);
   console.log(`🔍 Serper:      ${process.env.SERPER_API_KEY      ? "✅" : "—"}`);
-  console.log(`📟 Twilio:      ${process.env.TWILIO_ACCOUNT_SID  ? "✅" : "— SMS disabled"}`);
+  const twilioOk = process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_NUMBER;
+  console.log(`📟 Twilio SMS:  ${twilioOk ? '✅ webhook URL → ' + RENDER_URL + '/sms' : '❌ missing TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_NUMBER'}`);
   console.log(`💬 Telegram:    ${TG_SESSION                      ? "✅ session found" : "❌ run gen-session.js"}`);
   console.log(`📶 Signal:      ${SIGNAL_NUMBER                   ? "✅ " + SIGNAL_NUMBER : "❌"}`);
   await initTelegram();

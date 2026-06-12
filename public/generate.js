@@ -317,6 +317,8 @@ async function loadWardrobeFromServer() {
   } catch(e) { console.warn('Wardrobe load:', e.message); }
 }
 
+let wardrobeSelected = new Set();
+
 function renderWardrobeGrid() {
   const grid  = document.getElementById('wardrobe-grid');
   const empty = document.getElementById('wardrobe-empty');
@@ -326,14 +328,23 @@ function renderWardrobeGrid() {
   if (!wardrobeItems.length) {
     grid.innerHTML = '';
     if (empty) empty.style.display = 'block';
+    _updateWardrobeDeleteBar();
     return;
   }
   if (empty) empty.style.display = 'none';
   grid.innerHTML = wardrobeItems.map(item => `
-    <div class="wcard ${item.id === selectedOutfitId ? 'selected' : ''}" onclick="selectWardrobe('${item.id}')">
+    <div class="wcard ${item.id === selectedOutfitId ? 'selected' : ''} ${wardrobeSelected.has(item.id) ? 'wcard-checked' : ''}"
+         onclick="wCardTap('${item.id}')" onlongpress="wCardLong('${item.id}')">
+      <div class="wcard-check ${wardrobeSelected.has(item.id) ? 'show' : ''}" onclick="event.stopPropagation();wCardToggle('${item.id}')">
+        <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" width="14" height="14">
+          <circle cx="10" cy="10" r="9" fill="${wardrobeSelected.has(item.id) ? '#a78bfa' : 'rgba(0,0,0,0.5)'}"/>
+          ${wardrobeSelected.has(item.id) ? '<path d="M5.5 10.5l3 3 6-6" stroke="white" stroke-width="2" stroke-linecap="round"/>' : ''}
+        </svg>
+      </div>
       <img src="${item.url}" alt="${escHtml(item.name)}" loading="lazy">
       <div class="wcard-name">${escHtml(item.name)}</div>
     </div>`).join('');
+  _updateWardrobeDeleteBar();
   // Update selected bar
   const selTxt   = document.getElementById('wardrobe-sel-txt');
   const selClear = document.getElementById('wardrobe-sel-clear');
@@ -364,6 +375,53 @@ async function addWardrobeItems(inp) {
   updateLockBar();
 }
 
+function wCardTap(id) {
+  if (wardrobeSelected.size > 0) { wCardToggle(id); return; }
+  selectWardrobe(id);
+}
+function wCardLong(id) { wCardToggle(id); }
+function wCardToggle(id) {
+  if (wardrobeSelected.has(id)) wardrobeSelected.delete(id);
+  else wardrobeSelected.add(id);
+  renderWardrobeGrid();
+}
+function _updateWardrobeDeleteBar() {
+  let bar = document.getElementById('wardrobe-delete-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'wardrobe-delete-bar';
+    bar.style.cssText = 'position:sticky;bottom:0;left:0;right:0;background:rgba(10,10,16,0.95);backdrop-filter:blur(20px);padding:12px 16px;display:flex;align-items:center;gap:10px;border-top:1px solid rgba(255,255,255,0.08);z-index:20;transition:opacity .2s';
+    bar.innerHTML = `<span id="wdb-count" style="flex:1;font-size:13px;color:rgba(255,255,255,0.5)"></span>
+      <button onclick="wardrobeClearSel()" style="padding:8px 14px;border-radius:9px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.6);font-size:13px;cursor:pointer">Cancel</button>
+      <button onclick="wardrobeDeleteSelected()" style="padding:8px 16px;border-radius:9px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#f87171;font-size:13px;font-weight:600;cursor:pointer">Delete</button>`;
+    const scroll = document.getElementById('wardrobe-scroll');
+    if (scroll) scroll.appendChild(bar);
+  }
+  const countEl = document.getElementById('wdb-count');
+  if (wardrobeSelected.size === 0) {
+    bar.style.opacity = '0'; bar.style.pointerEvents = 'none';
+    if (countEl) countEl.textContent = '';
+  } else {
+    bar.style.opacity = '1'; bar.style.pointerEvents = 'all';
+    if (countEl) countEl.textContent = wardrobeSelected.size + ' selected';
+  }
+}
+function wardrobeClearSel() { wardrobeSelected.clear(); renderWardrobeGrid(); }
+async function wardrobeDeleteSelected() {
+  if (!wardrobeSelected.size) return;
+  const ids = [...wardrobeSelected];
+  if (!confirm(`Delete ${ids.length} item${ids.length > 1 ? 's' : ''}?`)) return;
+  for (const id of ids) {
+    try {
+      await fetch('/api/wardrobe/' + id, { method: 'DELETE' });
+      wardrobeItems = wardrobeItems.filter(w => w.id !== id);
+    } catch(e) { console.warn('Delete failed:', id, e.message); }
+  }
+  wardrobeSelected.clear();
+  renderWardrobeGrid();
+  renderOutfitPickerGrid();
+  updateLockBar();
+}
 function selectWardrobe(id) {
   selectedOutfitId = selectedOutfitId === id ? null : id;
   // Store in sessionStorage only — transient UI selection
