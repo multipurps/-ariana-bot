@@ -334,13 +334,13 @@ function renderWardrobeGrid() {
   if (empty) empty.style.display = 'none';
   grid.innerHTML = wardrobeItems.map(item => `
     <div class="wcard ${item.id === selectedOutfitId ? 'selected' : ''} ${wardrobeSelected.has(item.id) ? 'wcard-checked' : ''}"
-         onclick="wCardTap('${item.id}')" onlongpress="wCardLong('${item.id}')">
-      <div class="wcard-check ${wardrobeSelected.has(item.id) ? 'show' : ''}" onclick="event.stopPropagation();wCardToggle('${item.id}')">
-        <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" width="14" height="14">
-          <circle cx="10" cy="10" r="9" fill="${wardrobeSelected.has(item.id) ? '#a78bfa' : 'rgba(0,0,0,0.5)'}"/>
-          ${wardrobeSelected.has(item.id) ? '<path d="M5.5 10.5l3 3 6-6" stroke="white" stroke-width="2" stroke-linecap="round"/>' : ''}
-        </svg>
-      </div>
+         onclick="wCardTap('${item.id}')">
+      <button class="wcard-del-btn" onclick="event.stopPropagation();wCardToggle('${item.id}')" title="Select to delete">
+        ${wardrobeSelected.has(item.id)
+          ? '<svg viewBox="0 0 20 20" width="16" height="16"><circle cx="10" cy="10" r="9" fill="#a78bfa"/><path d="M5.5 10.5l3 3 6-6" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>'
+          : '<svg viewBox="0 0 20 20" width="16" height="16" fill="none"><circle cx="10" cy="10" r="9" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/></svg>'
+        }
+      </button>
       <img src="${item.url}" alt="${escHtml(item.name)}" loading="lazy">
       <div class="wcard-name">${escHtml(item.name)}</div>
     </div>`).join('');
@@ -444,12 +444,12 @@ async function openOutfitPicker() {
   if (!wardrobeItems.length) await loadWardrobeFromServer();
   renderOutfitPickerGrid();
   const p = document.getElementById('outfit-picker');
-  if (p) { p.style.display='flex'; p.style.pointerEvents='auto'; }
+  if (p) p.classList.add('open');
 }
 
 function closeOutfitPicker() {
   const p = document.getElementById('outfit-picker');
-  if (p) { p.style.display='none'; p.style.pointerEvents='none'; }
+  if (p) p.classList.remove('open');
   updateLockBar();
 }
 
@@ -494,10 +494,10 @@ async function initFaceLockSection() {
     const r = await fetch('/api/settings?keys=fl_on,fl_face_prompt,fl_body_prompt,fl_env_prompt');
     const d = await r.json();
     if (d.ok) {
-      faceLockData.on         = d.settings.fl_on === '1';
-      faceLockData.facePrompt = d.settings.fl_face_prompt || '';
-      faceLockData.bodyPrompt = d.settings.fl_body_prompt || '';
-      faceLockData.envPrompt  = d.settings.fl_env_prompt  || '';
+      faceLockData.on         = (d.settings.fl_on         ?? loadSettingLocal('fl_on',          '0')) === '1';
+      faceLockData.facePrompt = d.settings.fl_face_prompt ?? loadSettingLocal('fl_face_prompt', '') ?? '';
+      faceLockData.bodyPrompt = d.settings.fl_body_prompt ?? loadSettingLocal('fl_body_prompt', '') ?? '';
+      faceLockData.envPrompt  = d.settings.fl_env_prompt  ?? loadSettingLocal('fl_env_prompt',  '') ?? '';
     }
   } catch(e) { console.warn('Settings load:', e.message); }
   // Restore session outfit selection
@@ -584,12 +584,20 @@ async function clearFaceLockSlot(slot) {
 
 // ── SETTINGS HELPERS ──
 async function saveSetting(key, value) {
+  // Always save to localStorage first as instant fallback
+  try { localStorage.setItem('_setting_' + key, JSON.stringify(value)); } catch(e) {}
   try {
-    await fetch('/api/settings', {
+    const r = await fetch('/api/settings', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ key, value })
     });
-  } catch(e) { console.warn('saveSetting failed:', e.message); }
+    const d = await r.json();
+    if (!d.ok) console.warn('saveSetting server error:', d.error);
+  } catch(e) { console.warn('saveSetting fetch failed (using localStorage):', e.message); }
+}
+
+function loadSettingLocal(key, fallback) {
+  try { const v = localStorage.getItem('_setting_' + key); return v !== null ? JSON.parse(v) : fallback; } catch(e) { return fallback; }
 }
 
 // ── UTIL ──
