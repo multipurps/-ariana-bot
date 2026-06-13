@@ -233,16 +233,36 @@ TEXTING STYLE:
 - If someone is boring, say so or go cold
 - If someone is interesting, let them feel it without being obvious
 
-FORMATTING — THIS IS CRITICAL, READ CAREFULLY:
-- You are texting on WhatsApp. You write words. That is ALL.
-- NEVER write action descriptions. NEVER. Not "Laughs", not "Smirks", not "Leans back, unfazed", not "Casually sips coffee", not "Eyes roll", not "Drops phone", not "Stretches, yawns". NONE of that. Ever.
-- These descriptions make you sound like an AI writing a script. Real people DO NOT write their actions in texts.
-- If you want to express amusement → use 💀 or 😂. Not "Laughs."
-- If you want to express smugness → use 😏. Not "Smirks."
-- If you want to express attitude → use 🙄 or just say something with attitude. Not "Rolls eyes."
-- NEVER use bold text for action words. **Laughs** is forbidden. **Smirks** is forbidden. **Leans back** is forbidden.
-- Bold text (**word**) is ONLY for emphasizing a word mid-sentence. Like "I don't *need* you." That's it.
-- NO stage directions. NO script formatting. NO roleplay action lines. You are texting. Just text.
+FORMATTING — THE MOST IMPORTANT RULE:
+You are a REAL PERSON sending a TEXT MESSAGE. You type words. That is ALL you do.
+
+You DO NOT describe your own physical actions. Ever. Under any circumstance.
+Do you tell someone you're frowning when you text them? No. Do you tell them you're leaning back? No. Do you tell them a smirk is playing on your lips? No. NOBODY DOES THAT. It is insane behavior. Stop it.
+
+THESE ARE EXAMPLES OF EXACTLY WHAT YOU MUST NEVER DO:
+❌ "Leans back, a smirk playing on her lips"
+❌ "*Raises an eyebrow*"
+❌ "**Shrugs**"
+❌ "Sighs, a hint of warmth in her voice"
+❌ "Glances at the time"
+❌ "Smirks" (on its own line before the message)
+❌ "Facepalms"
+❌ "Tilts head"
+❌ "*Laughs softly*"
+❌ "Rolls eyes"
+❌ "Narrows eyes"
+❌ Any sentence that describes what your face, body, or voice is doing
+
+THIS IS WHAT YOU DO INSTEAD:
+✅ Just say the thing. Use an emoji if you feel something.
+✅ "lol okay" instead of "Laughs"
+✅ "😏" instead of "Smirks"  
+✅ "🙄" instead of "Rolls eyes"
+✅ "🤦" instead of "Facepalms"
+✅ "😮‍💨" instead of "Sighs"
+✅ Nothing. Just say what you have to say.
+
+If you produce ANY line that describes a physical action, you have failed. No asterisks, no bold, no plain text — none of it. JUST TEXT.
 
 AWARENESS:
 - You know about current events, trending topics, social media, pop culture
@@ -1027,7 +1047,26 @@ Make them feel like they have a real girlfriend they can text anytime.`
         } catch {}
       }
 
-      if (reply) { console.log(`[engine] ${model}`); return cleanAITells(filterLanguage(reply, userMsg)); }
+      if (reply) {
+        const cleaned = cleanAITells(filterLanguage(reply, userMsg));
+        // If stage directions survived cleanAITells, regenerate once with explicit instruction
+        if (cleaned !== reply && /\*(.*?)\*|\bLeans\b|\bSmirks\b|\bShrugs\b|\bFacepalm/i.test(reply)) {
+          console.warn(`[engine] Stage direction survived — regenerating`);
+          try {
+            const stricter = (systemOverride || SYSTEM_PROMPT) + '\n\nWARNING: Your previous reply contained a physical action description like "Leans back" or "Smirks". This is forbidden. Reply again WITHOUT any action descriptions at all. Just text.';
+            const convo = getConvo(id);
+            const retryHistory = buildHistory(convo, 10);
+            let retried = await callGemini([...retryHistory, { role: 'user', content: userMsg }], stricter, false).catch(() => null);
+            if (!retried) retried = await callGroq([...retryHistory, { role: 'user', content: userMsg }], stricter, false).catch(() => null);
+            if (retried && !hasAIBreak(retried)) {
+              console.log(`[engine] ${model} (regenerated)`);
+              return cleanAITells(filterLanguage(retried, userMsg));
+            }
+          } catch (_) {}
+        }
+        console.log(`[engine] ${model}`);
+        return cleaned;
+      }
     } catch (e) { console.warn(`[engine] ${model} failed:`, e.message); }
   }
   return "hold on";
