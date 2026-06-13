@@ -37,7 +37,7 @@ input,textarea{font-family:inherit;color:inherit}
 
 /* ── SIDEBAR TOGGLE BTN (ElevenLabs style) ── */
 #sidebar-toggle{
-  position:fixed;top:62px;left:14px;z-index:500;
+  position:fixed;top:70px;left:14px;z-index:500;
   width:40px;height:40px;border-radius:11px;
   background:rgba(18,18,22,0.92);
   border:1px solid rgba(255,255,255,0.1);
@@ -128,7 +128,7 @@ input,textarea{font-family:inherit;color:inherit}
 /* top bar of chat list — leaves room for sidebar toggle */
 #chat-list-topbar{
   display:flex;align-items:center;gap:10px;
-  padding:12px 14px;padding-top:60px;
+  padding:12px 14px;padding-top:72px;
   background:rgba(0,0,0,.6);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
   border-bottom:1px solid var(--b1);min-height:58px;flex-shrink:0;
 }
@@ -373,6 +373,11 @@ input,textarea{font-family:inherit;color:inherit}
 #wardrobe-topbar{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--s1);border-bottom:1px solid var(--b1);position:sticky;top:0;z-index:5}
 #wardrobe-topbar-title{flex:1;font-weight:700;font-size:16px}
 #wardrobe-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:2px}
+.wardrobe-card{position:relative;aspect-ratio:3/4;overflow:hidden;cursor:pointer;border-radius:4px;}
+.wardrobe-card img{width:100%;height:100%;object-fit:cover;}
+.wardrobe-card.selected{outline:2px solid #a78bfa;outline-offset:-2px;}
+.wardrobe-card.wd-sel{outline:2px solid #a78bfa;outline-offset:-2px;}
+.wd-del-btn{position:absolute;top:5px;right:5px;z-index:5;background:rgba(0,0,0,0.6);border:none;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
 .wardrobe-card{position:relative;aspect-ratio:3/4;overflow:hidden;background:var(--s2);cursor:pointer}
 .wardrobe-card img{width:100%;height:100%;object-fit:cover;transition:transform .2s}
 .wardrobe-card.selected::after{content:'✓';position:absolute;inset:0;background:rgba(139,92,246,.45);display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;font-weight:700}
@@ -1053,7 +1058,7 @@ input,textarea{font-family:inherit;color:inherit}
 
 /* ── PROFILE BUTTON (top-right) ── */
 #profile-btn{
-  position:fixed;top:62px;right:14px;z-index:500;
+  position:fixed;top:70px;right:14px;z-index:500;
   width:40px;height:40px;border-radius:50%;
   background:rgba(18,18,22,0.92);
   border:1.5px solid rgba(255,255,255,0.15);
@@ -1122,7 +1127,7 @@ body.in-chat       #global-back { display:flex !important; }
 
 /* ── GLOBAL BACK BUTTON (← arrow only, no text) ── */
 #global-back{
-  position:fixed;top:60px;left:12px;z-index:510;
+  position:fixed;top:70px;left:12px;z-index:510;
   width:36px;height:36px;border-radius:50%;
   align-items:center;justify-content:center;
   cursor:pointer;-webkit-tap-highlight-color:transparent;
@@ -1980,7 +1985,7 @@ body.in-chat       #global-back { display:flex !important; }
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a5 5 0 010 10M4 22v-2a8 8 0 0116 0v2"/></svg>
           <span id="lb-body-txt">Body: Off</span>
         </div>
-        <div class="gen-lock-pill" id="lb-clothes" onclick="navTo({dataset:{view:'wardrobe'}})">
+        <div class="gen-lock-pill" id="lb-clothes" onclick="openWardrobeSheet()">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg>
           <span id="lb-clothes-txt">Outfit: None</span>
         </div>
@@ -3343,20 +3348,96 @@ function clearProfLock(slot) {
   updateLockBar();
 }
 
+// ── WARDROBE SHEET (inline dropdown from generate) ──
+function openWardrobeSheet() {
+  const overlay = document.getElementById('wd-sheet-overlay');
+  const sheet   = document.getElementById('wd-sheet');
+  const grid    = document.getElementById('wd-sheet-grid');
+  const empty   = document.getElementById('wd-sheet-empty');
+  if(!sheet) { navTo({dataset:{view:'wardrobe'}}); return; }
+  const wardrobe = JSON.parse(localStorage.getItem('wardrobe')||'[]');
+  const selId = localStorage.getItem('selected_outfit');
+  if(!wardrobe.length){
+    grid.innerHTML=''; empty.style.display='block';
+  } else {
+    empty.style.display='none';
+    grid.innerHTML = wardrobe.map(item => `
+      <div onclick="pickOutfitSheet('${item.id}')" style="border-radius:10px;overflow:hidden;cursor:pointer;position:relative;aspect-ratio:3/4;border:2px solid ${item.id===selId?'#a78bfa':'transparent'}">
+        <img src="${item.url}" alt="${item.name}" style="width:100%;height:100%;object-fit:cover;" loading="lazy">
+        ${item.id===selId?'<div style="position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:10px;color:#a78bfa;font-weight:700;background:rgba(0,0,0,0.6);padding:2px">✓ Selected</div>':''}
+      </div>`).join('');
+  }
+  overlay.style.display='block'; sheet.style.display='flex';
+}
+function closeWardrobeSheet() {
+  const overlay = document.getElementById('wd-sheet-overlay');
+  const sheet   = document.getElementById('wd-sheet');
+  if(overlay) overlay.style.display='none';
+  if(sheet)   sheet.style.display='none';
+}
+function pickOutfitSheet(id) {
+  const selId = localStorage.getItem('selected_outfit');
+  if(selId===id) localStorage.removeItem('selected_outfit');
+  else localStorage.setItem('selected_outfit', id);
+  updateLockBar();
+  closeWardrobeSheet();
+}
+
 // ── WARDROBE ──
 function getSelectedOutfit(){ const id=localStorage.getItem('selected_outfit'); if(!id) return null; const w=JSON.parse(localStorage.getItem('wardrobe')||'[]'); return w.find(x=>x.id===id)||null; }
+let _wdSelected = new Set();
+
 function initWardrobeView() {
   const wardrobe = JSON.parse(localStorage.getItem('wardrobe')||'[]');
   const grid = document.getElementById('wardrobe-grid');
   const empty = document.getElementById('wardrobe-empty');
   const selId = localStorage.getItem('selected_outfit');
-  if(!wardrobe.length){ grid.innerHTML=''; empty.style.display='block'; return; }
+  if(!wardrobe.length){ grid.innerHTML=''; empty.style.display='block'; _renderWdDeleteBar(wardrobe); return; }
   empty.style.display='none';
   grid.innerHTML = wardrobe.map(item => `
-    <div class="wardrobe-card ${item.id===selId?'selected':''}" id="wcard-${item.id}" onclick="selectOutfit('${item.id}')">
+    <div class="wardrobe-card ${item.id===selId?'selected':''} ${_wdSelected.has(item.id)?'wd-sel':''}" id="wcard-${item.id}" onclick="selectOutfit('${item.id}')">
       <img src="${item.url}" alt="${item.name}" loading="lazy">
+      <button class="wd-del-btn" onclick="event.stopPropagation();_wdToggle('${item.id}')" title="Select to delete">
+        ${_wdSelected.has(item.id)
+          ? '<svg viewBox="0 0 20 20" width="16" height="16"><circle cx="10" cy="10" r="9" fill="#a78bfa"/><path d="M5.5 10.5l3 3 6-6" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/></svg>'
+          : '<svg viewBox="0 0 20 20" width="16" height="16" fill="none"><circle cx="10" cy="10" r="9" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/></svg>'
+        }
+      </button>
     </div>`).join('');
   updateWardrobeBar();
+  _renderWdDeleteBar(wardrobe);
+}
+function _wdToggle(id) {
+  if(_wdSelected.has(id)) _wdSelected.delete(id); else _wdSelected.add(id);
+  initWardrobeView();
+}
+function _renderWdDeleteBar(wardrobe) {
+  let bar = document.getElementById('wd-delete-bar');
+  if(!bar){
+    bar = document.createElement('div');
+    bar.id = 'wd-delete-bar';
+    bar.style.cssText = 'position:sticky;bottom:0;left:0;right:0;background:rgba(10,10,16,0.95);backdrop-filter:blur(20px);padding:12px 16px;display:flex;align-items:center;gap:10px;border-top:1px solid rgba(255,255,255,0.08);z-index:20;transition:opacity .2s;';
+    bar.innerHTML = '<span id="wd-sel-count" style="flex:1;font-size:13px;color:rgba(255,255,255,0.5)"></span>' +
+      '<button onclick="_wdCancelSel()" style="padding:8px 14px;border-radius:9px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.6);font-size:13px;cursor:pointer">Cancel</button>' +
+      '<button onclick="_wdDeleteSel()" style="padding:8px 16px;border-radius:9px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#f87171;font-size:13px;font-weight:600;cursor:pointer">Delete</button>';
+    const scroll = document.getElementById('wardrobe-scroll');
+    if(scroll) scroll.appendChild(bar);
+  }
+  const cnt = document.getElementById('wd-sel-count');
+  if(_wdSelected.size===0){ bar.style.opacity='0'; bar.style.pointerEvents='none'; if(cnt) cnt.textContent=''; }
+  else { bar.style.opacity='1'; bar.style.pointerEvents='all'; if(cnt) cnt.textContent=_wdSelected.size+' selected'; }
+}
+function _wdCancelSel(){ _wdSelected.clear(); initWardrobeView(); }
+function _wdDeleteSel(){
+  if(!_wdSelected.size) return;
+  const wardrobe = JSON.parse(localStorage.getItem('wardrobe')||'[]');
+  const remaining = wardrobe.filter(w => !_wdSelected.has(w.id));
+  const selId = localStorage.getItem('selected_outfit');
+  if(_wdSelected.has(selId)) localStorage.removeItem('selected_outfit');
+  localStorage.setItem('wardrobe', JSON.stringify(remaining));
+  _wdSelected.clear();
+  initWardrobeView();
+  updateLockBar();
 }
 function addWardrobeItems(inp) {
   const files = [...inp.files]; if(!files.length) return;
@@ -5781,5 +5862,17 @@ navTo=function(el){
 };
 </script>
 <script src="/generate.js"></script>
+
+<!-- Outfit picker sheet (slides up from generate view) -->
+<div id="wd-sheet-overlay" onclick="closeWardrobeSheet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:800;"></div>
+<div id="wd-sheet" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:801;background:#0e0e14;border-radius:22px 22px 0 0;border-top:1px solid rgba(255,255,255,0.1);max-height:70vh;flex-direction:column;overflow:hidden;">
+  <div style="width:36px;height:4px;background:rgba(255,255,255,0.18);border-radius:2px;margin:12px auto 8px;"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px 12px;">
+    <span style="font-weight:700;font-size:15px;">Pick Outfit</span>
+    <button onclick="closeWardrobeSheet()" style="background:none;border:none;color:rgba(255,255,255,0.5);font-size:20px;cursor:pointer;padding:4px;">&#10005;</button>
+  </div>
+  <div id="wd-sheet-grid" style="overflow-y:auto;flex:1;padding:8px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;-webkit-overflow-scrolling:touch;"></div>
+  <div id="wd-sheet-empty" style="display:none;padding:40px;text-align:center;color:rgba(255,255,255,0.3);font-size:13px;">No outfits yet. Go to Wardrobe to upload clothes.</div>
+</div>
 </body>
 </html>
