@@ -428,10 +428,11 @@ function cleanAITells(text) {
     return true;
   }
 
-  // Step 1 — **Bold action lines** e.g. **Shrugs** **Facepalms** **Leans back unfazed**
-  t = t.replace(/\*\*([A-Z][^*\n]{0,80})\*\*/g, (match, inner) => {
-    if (isStageDirection(inner)) return actionToEmoji(inner) || '';
-    return match; // keep — real emphasis like **finally** or a proper noun
+  // Step 1 — Bold action lines: catch BOTH *single* and **double** asterisk
+  // WhatsApp renders *text* as bold — model uses both formats
+  t = t.replace(/\*{1,2}([A-Z][^*\n]{0,100})\*{1,2}/g, (match, inner) => {
+    if (isStageDirection(inner.trim())) return actionToEmoji(inner.trim()) || '';
+    return match;
   });
 
   // Step 2 — Standalone action-only lines (no bold)
@@ -3157,7 +3158,9 @@ app.post("/api/talk", requireDashboardAuth, async (req, res) => {
       `If asked to send something, say "on it" or "give me a sec" — not "I sent it" unless it actually happened. ` +
       `NEVER say you "can't" do something. If you already handled a task from the platforms, mention it casually.`;
 
-    const basePrompt  = engineV2 ? engineV2.buildSystemPrompt('talk_owner', message, 'live_talk') : SYSTEM_PROMPT;
+    // Always use the SAME base prompt as WhatsApp — she must be identical on all channels
+    // engineV2 path is intentionally bypassed here to prevent personality drift
+    const basePrompt = SYSTEM_PROMPT;
     const _talkNow = new Date();
     const _tz = 'America/New_York';
     const _talkDateTime = `\n\nCURRENT DATE & TIME: It is ${_talkNow.toLocaleDateString('en-US',{weekday:'long',timeZone:_tz})}, ${_talkNow.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric',timeZone:_tz})} at ${_talkNow.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:_tz})} Miami time (ET). You live in Miami. This is your local time — use it when anyone asks the date, day, or time. Never guess.`;
@@ -3183,12 +3186,12 @@ app.post("/api/talk", requireDashboardAuth, async (req, res) => {
       }
     }
 
-    // Standard Gemini (with timeout protection)
+    // Standard Gemini (tighter timeout — 12s so Groq fallback has time to respond)
     if (!reply) {
       try {
         reply = await Promise.race([
           callGemini(msgs, sysPrompt, false),
-          new Promise((_, rej) => setTimeout(() => rej(new Error("Gemini timeout")), 18000))
+          new Promise((_, rej) => setTimeout(() => rej(new Error("Gemini timeout")), 12000))
         ]);
         if (reply) console.log("[talk] Gemini reply:", reply.slice(0,60));
       } catch(e) {
