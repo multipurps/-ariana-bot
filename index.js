@@ -233,36 +233,27 @@ TEXTING STYLE:
 - If someone is boring, say so or go cold
 - If someone is interesting, let them feel it without being obvious
 
-FORMATTING — THE MOST IMPORTANT RULE:
-You are a REAL PERSON sending a TEXT MESSAGE. You type words. That is ALL you do.
+FORMATTING — THE ONLY RULE THAT MATTERS:
+You are a REAL PERSON sending a TEXT MESSAGE. You type words. That is ALL.
 
-You DO NOT describe your own physical actions. Ever. Under any circumstance.
-Do you tell someone you're frowning when you text them? No. Do you tell them you're leaning back? No. Do you tell them a smirk is playing on your lips? No. NOBODY DOES THAT. It is insane behavior. Stop it.
+NEVER describe physical actions. Not in asterisks. Not in bold. Not as plain text. NEVER.
 
-THESE ARE EXAMPLES OF EXACTLY WHAT YOU MUST NEVER DO:
-❌ "Leans back, a smirk playing on her lips"
-❌ "*Raises an eyebrow*"
-❌ "**Shrugs**"
-❌ "Sighs, a hint of warmth in her voice"
-❌ "Glances at the time"
-❌ "Smirks" (on its own line before the message)
-❌ "Facepalms"
-❌ "Tilts head"
-❌ "*Laughs softly*"
-❌ "Rolls eyes"
-❌ "Narrows eyes"
-❌ Any sentence that describes what your face, body, or voice is doing
+❌ BANNED — DELETE THESE FROM YOUR BRAIN FOREVER:
+"Sighs, shaking head with a smirk"
+"Scoffs, a wry smile in her voice"
+"Leans back, a smirk playing on her lips"
+"*Raises an eyebrow*" / "**Shrugs**" / "*Laughs softly*"
+"Smirks" / "Sighs" / "Scoffs" / "Chuckles" — as a standalone line
+"Tilts head" / "Rolls eyes" / "Narrows eyes" / "Glances at the time"
+ANY sentence describing your face, body, voice, or expression
 
-THIS IS WHAT YOU DO INSTEAD:
-✅ Just say the thing. Use an emoji if you feel something.
-✅ "lol okay" instead of "Laughs"
-✅ "😏" instead of "Smirks"  
-✅ "🙄" instead of "Rolls eyes"
-✅ "🤦" instead of "Facepalms"
-✅ "😮‍💨" instead of "Sighs"
-✅ Nothing. Just say what you have to say.
+✅ WHAT YOU DO INSTEAD:
+Just say the actual words. That's it.
+If something is funny — say "lol" or nothing.
+If you're annoyed — say it or say nothing.
+Do NOT describe the emotion. EXPRESS it in words or don't mention it.
 
-If you produce ANY line that describes a physical action, you have failed. No asterisks, no bold, no plain text — none of it. JUST TEXT.
+There is no exception to this rule. You are texting. People do not narrate their own faces while texting.
 
 AWARENESS:
 - You know about current events, trending topics, social media, pop culture
@@ -405,37 +396,37 @@ function cleanAITells(text) {
   if (!text) return text;
   let t = text;
 
-  const actionToEmoji = (s) => {
-    s = s.toLowerCase();
-    if (/laugh|lmao|dead|chuckle/.test(s))  return '💀';
-    if (/smirk|grin|half.?smile/.test(s))  return '😏';
-    if (/eye.*roll|roll.*eye|scoff/.test(s)) return '🙄';
-    if (/facepalm/.test(s))                 return '🤦';
-    if (/shrug/.test(s))                    return '🤷';
-    if (/sigh|exhale/.test(s))              return '😮‍💨';
-    if (/yawn/.test(s))                     return '🥱';
-    if (/wink/.test(s))                     return '😉';
-    if (/gasp/.test(s))                     return '😮';
-    if (/groan|grunt/.test(s))              return '😩';
-    if (/snort/.test(s))                    return '🙄';
-    return null;
-  };
+  // Explicit known action verbs — fast-path detection.
+  // Any line that starts with one of these is a stage direction and gets deleted.
+  const KNOWN_ACTION_VERBS = new Set([
+    'sighs','scoffs','laughs','chuckles','smirks','grins','groans','shrugs',
+    'leans','tilts','nods','winks','gasps','snorts','yawns','rolls',
+    'crosses','folds','raises','narrows','cocks','blinks','stares','glances',
+    'shakes','turns','looks','pauses','clears','purrs','whispers','exhales',
+    'inhales','sniffs','tsks','clicks','taps','drums','flips','twirls',
+    'stretches','arches','shifts','settles','reaches','waves','claps',
+    'snaps','points','smiles','beams','frowns','pouts','huffs','scrunches',
+    'quirks','widens','softens','darkens','flashes','glints','sinking',
+  ]);
 
-  // Pattern-based stage direction detector — catches ANY action line,
-  // not just words we know in advance.
   function isStageDirection(line) {
     const l = line.trim();
-    if (!l || l.length > 100) return false;          // generous limit — long stage dirs too
-    if (!/^[A-Z]/.test(l)) return false;             // must start capital
-    if (/[.?!]$/.test(l)) return false;              // real sentences end with punctuation
-    if (/"/.test(l)) return false;                   // quoted speech — keep
-    // ONLY first/second person pronouns exclude — "her/his/she/he" can appear
-    // in stage directions ("a slight smile playing on her lips") so don't exclude them
+    if (!l || l.length > 120) return false;
+    if (!/^[A-Z]/.test(l)) return false;
+    // Real sentences end with sentence punctuation — stage directions don't
+    if (/[.?!]$/.test(l)) return false;
+    // Quoted speech is never a stage direction
+    if (/"/.test(l)) return false;
+    // Has first/second person pronouns → real message, not stage direction
     if (/\b(I|you|we|me|my|your|our|i'm|i've|i'll|you're|we're|yourself|myself)\b/i.test(l)) return false;
-    // First word must look like a verb (-s/-es, -ing, -ed)
-    const firstWord = l.split(/[\s,]/)[0];
+
+    const firstWord = l.split(/[\s,]/)[0].toLowerCase();
+
+    // Fast path — known action verbs are always stage directions
+    if (KNOWN_ACTION_VERBS.has(firstWord)) return true;
+
+    // Heuristic — first word looks like a verb (-s, -ing, -ed)
     if (!/s$|ing$|ed$/.test(firstWord)) return false;
-    // Exclude common non-verb words that end in s/ed/ing
     const nonVerbs = new Set([
       'this','his','its','yes','always','sometimes','perhaps','plus','thus',
       'versus','across','unless','whereas','thanks','things','thoughts','words',
@@ -444,36 +435,32 @@ function cleanAITells(text) {
       'hers','theirs','others','hours','days','years','months','minutes','seconds',
       'results','changes','points','parts','lines','times','sides','eyes',
     ]);
-    if (nonVerbs.has(firstWord.toLowerCase())) return false;
+    if (nonVerbs.has(firstWord)) return false;
     return true;
   }
 
-  // Step 1 — Bold action lines: catch BOTH *single* and **double** asterisk
-  // WhatsApp renders *text* as bold — model uses both formats
-  t = t.replace(/\*{1,2}([A-Z][^*\n]{0,100})\*{1,2}/g, (match, inner) => {
-    if (isStageDirection(inner.trim())) return actionToEmoji(inner.trim()) || '';
-    return match;
+  // Step 1 — Strip bold/italic stage directions: *text*, **text**, * text *
+  t = t.replace(/\*{1,2}\s*([A-Z][^*\n]{0,120}?)\s*\*{1,2}/g, (match, inner) => {
+    return isStageDirection(inner.trim()) ? '' : match;
   });
 
-  // Step 2 — Standalone action-only lines (no bold)
-  // Split into lines, filter each one individually
-  const lines = t.split('\n');
-  const cleaned = lines.map(line => {
-    if (isStageDirection(line.trim())) return actionToEmoji(line) || '';
-    return line;
-  });
-  t = cleaned.join('\n');
+  // Step 2 — Strip standalone plain-text stage direction lines
+  t = t.split('\n').map(line => {
+    const trimmed = line.trim();
+    return isStageDirection(trimmed) ? '' : line;
+  }).join('\n');
 
   // Step 3 — Spanish endearments
   t = t.replace(/\bamor\b/gi, 'babe');
   t = t.replace(/\bmi amor\b/gi, 'babe');
   t = t.replace(/\bcari[ñn]o\b/gi, '');
 
-  // Step 4 — Clean leftover blank lines
+  // Step 4 — Clean up blank lines left behind
   t = t.replace(/\n{3,}/g, '\n\n').trim();
 
   return t;
 }
+
 
 // Detect responses that got cut off mid-sentence
 function isTruncated(text) {
@@ -1050,7 +1037,8 @@ Make them feel like they have a real girlfriend they can text anytime.`
       if (reply) {
         const cleaned = cleanAITells(filterLanguage(reply, userMsg));
         // If stage directions survived cleanAITells, regenerate once with explicit instruction
-        if (cleaned !== reply && /\*(.*?)\*|\bLeans\b|\bSmirks\b|\bShrugs\b|\bFacepalm/i.test(reply)) {
+        // Check if stage directions survived in the CLEANED output (not original)
+        if (/\*[^*\n]+\*|\bLeans\b|\bSmirks\b|\bShrugs\b|\bScoffs\b|\bSighs\b|\bFacepalm/i.test(cleaned)) {
           console.warn(`[engine] Stage direction survived — regenerating`);
           try {
             const stricter = (systemOverride || SYSTEM_PROMPT) + '\n\nWARNING: Your previous reply contained a physical action description like "Leans back" or "Smirks". This is forbidden. Reply again WITHOUT any action descriptions at all. Just text.';
