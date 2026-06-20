@@ -1258,7 +1258,6 @@ body.in-chat       #global-back { display:flex !important; }
 
 /* ── HOME SCREEN (default when app opens) ── */
 #view-home{
-  padding-bottom:calc(90px + env(safe-area-inset-bottom));
   flex-direction:column;align-items:center;justify-content:center;
   background:
     radial-gradient(ellipse 120% 80% at 50% 110%,rgba(15,40,100,0.85) 0%,transparent 65%),
@@ -1397,7 +1396,7 @@ body.in-chat       #global-back { display:flex !important; }
 }
 #bottom-nav{
   position:fixed;
-  bottom:calc(env(safe-area-inset-bottom) + 10px);
+  bottom:0;
   left:50%;
   transform:translateX(-50%);
   z-index:300;
@@ -1405,10 +1404,11 @@ body.in-chat       #global-back { display:flex !important; }
   align-items:center;
   gap:2px;
   padding:6px 8px;
+  padding-bottom:calc(env(safe-area-inset-bottom) + 6px);
   background:rgba(16,16,22,0.55);
   backdrop-filter:blur(56px) saturate(240%) brightness(1.1);
   -webkit-backdrop-filter:blur(56px) saturate(240%) brightness(1.1);
-  border-radius:40px;
+  border-radius:40px 40px 0 0;
   border:none;
   box-shadow:
     0 12px 48px rgba(0,0,0,0.6),
@@ -1419,7 +1419,7 @@ body.in-chat       #global-back { display:flex !important; }
   content:'';
   position:absolute;
   inset:-1.5px;
-  border-radius:42px;
+  border-radius:42px 42px 0 0;
   padding:1.5px;
   background:conic-gradient(from var(--nav-angle),
     transparent            0deg,
