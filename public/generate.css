@@ -641,12 +641,4 @@
   min-height:60px;
 }
 
-/* ── BOTTOM BLEED FIX ── */
-#bottom-safe-fill {
-  position:fixed;
-  bottom:0; left:0; right:0;
-  height:env(safe-area-inset-bottom);
-  background:var(--bg);
-  z-index:299;
-  pointer-events:none;
-}
+
