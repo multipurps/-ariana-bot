@@ -31,7 +31,7 @@
   --sent-sg:#1d3461;--sent-sg-b:rgba(58,118,240,0.35);
   --sent-sms:#1a4d1e;--sent-sms-b:rgba(52,199,89,0.3);
 }
-html{height:-webkit-fill-available}body{min-height:100vh;min-height:-webkit-fill-available;background:#00061a;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;overflow:hidden;overscroll-behavior:none}
+html{height:-webkit-fill-available;background:#000}body{min-height:100vh;min-height:-webkit-fill-available;background:#00061a;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;overflow:hidden;overscroll-behavior:none}
 button{cursor:pointer;border:none;background:none;color:inherit;font-family:inherit}
 input,textarea{font-family:inherit;color:inherit}
 
@@ -1396,7 +1396,7 @@ body.in-chat       #global-back { display:flex !important; }
 }
 #bottom-nav{
   position:fixed;
-  bottom:10px;
+  bottom:calc(env(safe-area-inset-bottom) + 10px);
   left:50%;
   transform:translateX(-50%);
   z-index:300;
