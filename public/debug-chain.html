@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { background:#000; }
+  body { background:#00061a; font-family:monospace; color:#0f0; padding:14px; font-size:12px; line-height:1.7; }
+  h2 { color:#0ff; font-size:11px; letter-spacing:.1em; text-transform:uppercase; margin:12px 0 4px; border-bottom:1px solid rgba(0,255,255,.2); padding-bottom:2px; }
+  .row { display:flex; justify-content:space-between; gap:8px; }
+  .label { color:rgba(255,255,255,.5); }
+  .val { color:#0f0; text-align:right; }
+  .chain { font-size:11px; color:#ff0; margin:6px 0; }
+  .ERR { color:#f55; font-weight:bold; }
+  .OK  { color:#0f0; }
+</style>
+</head>
+<body>
+<pre id="out">measuring...</pre>
+<script>
+function r(n) { return n === null ? 'null' : (typeof n === 'number' ? n.toFixed(1) : n); }
+
+function measure() {
+  const lines = [];
+  const vph = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+
+  function inspect(id, label) {
+    const el = document.getElementById(id) || document.querySelector(id);
+    if (!el) { lines.push(`\n[${label}] — NOT FOUND`); return null; }
+    const rect = el.getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    const oh = el.offsetHeight;
+    const reachesBottom = rect.bottom >= vph - 2;
+    const bg = cs.backgroundImage !== 'none' ? 'gradient/image' : cs.backgroundColor;
+    lines.push('');
+    lines.push(`=== ${label} (${id}) ===`);
+    lines.push(`  offsetHeight:     ${oh}px`);
+    lines.push(`  rect top/bottom:  ${r(rect.top)} / ${r(rect.bottom)}`);
+    lines.push(`  visual VP height: ${r(vph)}px`);
+    lines.push(`  background:       ${bg.slice(0, 60)}`);
+    lines.push(`  display:          ${cs.display}`);
+    lines.push(`  flex:             ${cs.flex}`);
+    lines.push(`  overflow:         ${cs.overflow}`);
+    lines.push(`  reaches bottom:   ${reachesBottom ? '✅ YES (' + r(rect.bottom) + ' >= ' + r(vph) + ')' : '❌ NO  (' + r(rect.bottom) + ' < ' + r(vph) + ')  GAP = ' + r(vph - rect.bottom) + 'px'}`);
+    const parent = el.parentElement;
+    if (parent) lines.push(`  parent:           ${parent.id ? '#' + parent.id : parent.tagName.toLowerCase() + '.' + [...parent.classList].join('.')}`);
+    return el;
+  }
+
+  // Trace the chain
+  inspect('#app',       '#app');
+  inspect('#views',     '#views');
+  inspect('#view-home', '#view-home');
+
+  // First child of #view-home
+  lines.push('');
+  lines.push('=== FIRST CHILD OF #view-home ===');
+  const vh = document.getElementById('view-home');
+  if (vh) {
+    const first = vh.firstElementChild;
+    if (first) {
+      const rect = first.getBoundingClientRect();
+      const cs = getComputedStyle(first);
+      lines.push(`  tag/id/class: ${first.tagName.toLowerCase()}${first.id?'#'+first.id:''}.${[...first.classList].join('.')}`);
+      lines.push(`  rect top:     ${r(rect.top)}`);
+    }
+  }
+
+  // Last child of #view-home
+  lines.push('');
+  lines.push('=== LAST CHILD OF #view-home ===');
+  if (vh) {
+    const last = vh.lastElementChild;
+    if (last) {
+      const rect = last.getBoundingClientRect();
+      const cs = getComputedStyle(last);
+      lines.push(`  tag/id/class: ${last.tagName.toLowerCase()}${last.id?'#'+last.id:''}.${[...last.classList].join('.')}`);
+      lines.push(`  rect bottom:  ${r(rect.bottom)}`);
+      lines.push(`  offsetHeight: ${last.offsetHeight}px`);
+    }
+  }
+
+  // What's immediately after #views in #app?
+  lines.push('');
+  lines.push('=== SIBLINGS OF #views INSIDE #app ===');
+  const app = document.getElementById('app');
+  if (app) {
+    [...app.children].forEach((c, i) => {
+      const rect = c.getBoundingClientRect();
+      const cs = getComputedStyle(c);
+      lines.push(`  [${i}] ${c.tagName.toLowerCase()}${c.id?'#'+c.id:''} h=${c.offsetHeight}px bottom=${r(rect.bottom)} display=${cs.display}`);
+    });
+  }
+
+  // Elements outside #app that are position:fixed and at the bottom
+  lines.push('');
+  lines.push('=== FIXED ELEMENTS OUTSIDE #app AT BOTTOM ===');
+  const all = document.querySelectorAll('body > *:not(#app), body > *:not(#app) *');
+  const fixed = [];
+  document.querySelectorAll('*').forEach(el => {
+    if (el.closest('#app')) return;
+    const cs = getComputedStyle(el);
+    if (cs.position === 'fixed') {
+      const rect = el.getBoundingClientRect();
+      if (rect.bottom > vph * 0.5) {
+        fixed.push(`  ${el.tagName.toLowerCase()}${el.id?'#'+el.id:''} bottom=${r(rect.bottom)} h=${el.offsetHeight}px`);
+      }
+    }
+  });
+  if (fixed.length) fixed.forEach(l => lines.push(l));
+  else lines.push('  (none)');
+
+  // #bottom-nav specifics
+  lines.push('');
+  lines.push('=== #bottom-nav ===');
+  const bn = document.getElementById('bottom-nav');
+  if (bn) {
+    const rect = bn.getBoundingClientRect();
+    const cs = getComputedStyle(bn);
+    lines.push(`  display:        ${cs.display}`);
+    lines.push(`  rect top/bot:   ${r(rect.top)} / ${r(rect.bottom)}`);
+    lines.push(`  offsetHeight:   ${bn.offsetHeight}px`);
+    lines.push(`  bottom CSS:     ${cs.bottom}`);
+    lines.push(`  gap to vp btm:  ${r(vph - rect.bottom)}px (space below nav pill)`);
+  } else {
+    lines.push('  NOT FOUND');
+  }
+
+  document.getElementById('out').textContent = lines.join('\n');
+}
+
+// Wait for DOM to be fully laid out
+if (document.readyState === 'complete') measure();
+else window.addEventListener('load', measure);
+window.visualViewport?.addEventListener('resize', measure);
+</script>
+</body>
+</html>
