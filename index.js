@@ -4305,6 +4305,9 @@ app.delete('/api/facelock/:id', async (req, res) => {
 // Serve generate.html fragment
 app.get('/generate.html', (req, res) => res.sendFile(require('path').join(__dirname, 'public', 'generate.html')));
 
+// Explicit route for debug layout page (belt-and-suspenders alongside express.static)
+app.get('/debug-layout.html', (req, res) => res.sendFile(require('path').join(__dirname, 'public', 'debug-layout.html')));
+
 // ══════════════════════════════════════════════════════════════
 // SETTINGS — key/value store in Supabase (replaces localStorage)
 // ══════════════════════════════════════════════════════════════
