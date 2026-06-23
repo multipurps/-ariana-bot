@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  html { height:-webkit-fill-available; background:#000; }
+  body { min-height:100vh; min-height:-webkit-fill-available; margin:0; background:#00061a; font-family:monospace; color:#0f0; padding:16px; box-sizing:border-box; }
+  #app { position:fixed; inset:0; display:flex; flex-direction:column; min-height:-webkit-fill-available; background:transparent; pointer-events:none; }
+  pre { font-size:13px; line-height:1.8; white-space:pre-wrap; }
+  h2 { color:#0ff; font-size:14px; margin:8px 0 4px; }
+</style>
+</head>
+<body>
+<pre id="out">measuring...</pre>
+<div id="app"></div>
+<script>
+function measure() {
+  const html = document.documentElement;
+  const body = document.body;
+  const app  = document.getElementById('app');
+
+  const htmlRect  = html.getBoundingClientRect();
+  const bodyRect  = body.getBoundingClientRect();
+  const appRect   = app.getBoundingClientRect();
+
+  const visualVP  = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  const innerH    = window.innerHeight;
+  const outerH    = window.outerHeight;
+  const screenH   = window.screen.height;
+
+  const htmlH     = html.offsetHeight;
+  const bodyH     = body.offsetHeight;
+  const appH      = app.offsetHeight;
+
+  const safeTop    = parseInt(getComputedStyle(html).getPropertyValue('--sat') || 0);
+  const safeBottom = parseInt(getComputedStyle(html).getPropertyValue('--sab') || 0);
+
+  // measure safe area via env()
+  const ruler = document.createElement('div');
+  ruler.style.cssText = 'position:fixed;top:env(safe-area-inset-top);left:0;width:1px;height:1px;pointer-events:none;';
+  document.body.appendChild(ruler);
+  const safeTopPx = ruler.getBoundingClientRect().top;
+  ruler.style.top = '0';
+  ruler.style.bottom = 'env(safe-area-inset-bottom)';
+  const safeBottomPx = innerH - ruler.getBoundingClientRect().bottom;
+  ruler.remove();
+
+  const diff_appVsVP   = appH - visualVP;
+  const diff_bodyVsApp = bodyH - appH;
+  const diff_htmlVsApp = htmlH - appH;
+
+  document.getElementById('out').textContent = [
+    '=== VISUAL VIEWPORT ===',
+    'window.innerHeight:         ' + innerH + 'px',
+    'window.outerHeight:         ' + outerH + 'px',
+    'window.screen.height:       ' + screenH + 'px',
+    'visualViewport.height:      ' + visualVP + 'px',
+    '',
+    '=== SAFE AREAS ===',
+    'safe-area-inset-top:        ' + safeTopPx.toFixed(1) + 'px',
+    'safe-area-inset-bottom:     ' + safeBottomPx.toFixed(1) + 'px',
+    '',
+    '=== COMPUTED HEIGHTS (offsetHeight) ===',
+    'html offsetHeight:          ' + htmlH + 'px',
+    'body offsetHeight:          ' + bodyH + 'px',
+    '#app offsetHeight:          ' + appH + 'px',
+    '',
+    '=== BOUNDING RECTS ===',
+    'html  top/bottom:           ' + htmlRect.top.toFixed(1) + ' / ' + htmlRect.bottom.toFixed(1),
+    'body  top/bottom:           ' + bodyRect.top.toFixed(1) + ' / ' + bodyRect.bottom.toFixed(1),
+    '#app  top/bottom:           ' + appRect.top.toFixed(1)  + ' / ' + appRect.bottom.toFixed(1),
+    '',
+    '=== DIFFERENCES ===',
+    '#app height vs visualVP:    ' + diff_appVsVP + 'px  ← SHOULD BE 0',
+    'body height vs #app:        ' + diff_bodyVsApp + 'px',
+    'html height vs #app:        ' + diff_htmlVsApp + 'px',
+    '',
+    '=== VERDICT ===',
+    diff_appVsVP < -2
+      ? '🔴 #app is ' + Math.abs(diff_appVsVP) + 'px SHORTER than visual viewport → BLACK STRIP = ' + Math.abs(diff_appVsVP) + 'px'
+      : diff_appVsVP > 2
+      ? '🟡 #app is ' + diff_appVsVP + 'px TALLER than visual viewport → overflow'
+      : '🟢 #app height matches visual viewport — #app is NOT the cause',
+    '',
+    safeBottomPx > 1
+      ? '⚠️  safe-area-inset-bottom = ' + safeBottomPx.toFixed(1) + 'px is active'
+      : '✅ safe-area-inset-bottom = 0 (not active)',
+  ].join('\n');
+}
+
+measure();
+window.visualViewport?.addEventListener('resize', measure);
+window.addEventListener('resize', measure);
+</script>
+</body>
+</html>
