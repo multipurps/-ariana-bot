@@ -5875,5 +5875,67 @@ navTo=function(el){
   <div id="wd-sheet-grid" style="overflow-y:auto;flex:1;padding:8px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;-webkit-overflow-scrolling:touch;"></div>
   <div id="wd-sheet-empty" style="display:none;padding:40px;text-align:center;color:rgba(255,255,255,0.3);font-size:13px;">No outfits yet. Go to Wardrobe to upload clothes.</div>
 </div>
+
+<!-- DEBUG OVERLAY: remove after fix -->
+<div id="__dbg" style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:rgba(0,0,0,.92);color:#0f0;font:11px/1.6 monospace;padding:10px 12px;max-height:55vh;overflow-y:auto;border-top:1px solid #0f0;display:none"></div>
+<script>
+(function(){
+  function run(){
+    const out=document.getElementById('__dbg');
+    if(!out) return;
+    const vph=window.visualViewport?window.visualViewport.height:window.innerHeight;
+    const f=n=>typeof n==='number'?n.toFixed(1):n;
+    const lines=[];
+    ['#app','#views','#view-home'].forEach(sel=>{
+      const el=document.querySelector(sel);
+      if(!el){lines.push(sel+' NOT FOUND');return;}
+      const r=el.getBoundingClientRect();
+      const cs=getComputedStyle(el);
+      const bg=cs.backgroundImage!=='none'?'gradient/image':cs.backgroundColor;
+      const gap=vph-r.bottom;
+      lines.push(sel);
+      lines.push('  h='+el.offsetHeight+'px  top='+f(r.top)+' bot='+f(r.bottom));
+      lines.push('  bg='+bg.slice(0,50));
+      lines.push('  gap to vp bottom='+f(gap)+'px '+(gap>2?'⚠️':'✅'));
+    });
+    // last child of view-home
+    const vh=document.getElementById('view-home');
+    if(vh){
+      const lc=vh.lastElementChild;
+      if(lc){
+        const r=lc.getBoundingClientRect();
+        lines.push('view-home last child: '+(lc.id||lc.className||lc.tagName));
+        lines.push('  bot='+f(r.bottom)+' h='+lc.offsetHeight+'px');
+      }
+    }
+    // bottom-nav
+    const bn=document.getElementById('bottom-nav');
+    if(bn){
+      const r=bn.getBoundingClientRect();
+      const cs=getComputedStyle(bn);
+      lines.push('#bottom-nav');
+      lines.push('  display='+cs.display+' top='+f(r.top)+' bot='+f(r.bottom));
+      lines.push('  space below pill='+f(vph-r.bottom)+'px');
+    }
+    lines.push('VP height='+f(vph));
+    out.textContent=lines.join('\n');
+    out.style.display='block';
+  }
+  // tap status bar area (top-left corner) 3 times to toggle
+  let taps=0,timer;
+  document.addEventListener('touchstart',e=>{
+    if(e.touches[0].clientY<60&&e.touches[0].clientX<80){
+      taps++;clearTimeout(timer);
+      timer=setTimeout(()=>taps=0,800);
+      if(taps>=3){
+        taps=0;run();
+        const out=document.getElementById('__dbg');
+        if(out&&out.style.display==='block') out.style.display='none';
+        else run();
+      }
+    }
+  });
+})();
+</script>
 </body>
 </html>
