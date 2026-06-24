@@ -33,11 +33,10 @@ body::before{content:'';position:fixed;inset:0;background:var(--bg);z-index:-10;
 /* HEADER — bleeds under notch, no safe area */
 .hdr{
   display:flex;align-items:center;gap:10px;
-  padding:14px 16px;
+  padding:calc(env(safe-area-inset-top) + 10px) 16px 12px;
   flex-shrink:0;
 }
-/* Inner screens have less top padding since they have back button */
-.hdr.inner{padding-top:14px;}
+.hdr.inner{padding-top:calc(env(safe-area-inset-top) + 10px);}
 .hdr-title{flex:1;font-size:16px;font-weight:600;color:var(--txt)}
 .ib{width:36px;height:36px;border-radius:10px;background:none;border:none;color:var(--txt2);
   cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;flex-shrink:0}
