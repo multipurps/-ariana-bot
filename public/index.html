@@ -19,48 +19,48 @@
   --bdr:rgba(255,255,255,.07);--bdr2:rgba(255,255,255,.13);
   --txt:#f0f0f0;--txt2:#888;--txt3:#555;
   --red:#ff4455;--grn:#33cc88;
-  --nb:rgba(8,8,8,.82);--nbb:rgba(255,255,255,.1);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans',system-ui,sans-serif;overflow:hidden;overscroll-behavior:none}
-/* Full-bleed fixed backdrop — fixes the blue strip on all safe-area zones */
 body::before{content:'';position:fixed;inset:0;background:var(--bg);z-index:-10;pointer-events:none}
 ::-webkit-scrollbar{display:none}
 *{scrollbar-width:none}
-img,video{max-width:100%}
-button,input,select,textarea{font-family:inherit}
 
 /* SCREENS */
 .scr{position:fixed;inset:0;display:none;flex-direction:column;background:var(--bg)}
 .scr.on{display:flex}
 
-/* HEADER */
+/* HEADER — bleeds under notch, no safe area */
 .hdr{
   display:flex;align-items:center;gap:10px;
-  padding:calc(14px + env(safe-area-inset-top)) 16px 14px;
-  flex-shrink:0;border-bottom:1px solid var(--bdr);
+  padding:14px 16px;
+  flex-shrink:0;
 }
+/* Inner screens have less top padding since they have back button */
+.hdr.inner{padding-top:14px;}
 .hdr-title{flex:1;font-size:16px;font-weight:600;color:var(--txt)}
 .ib{width:36px;height:36px;border-radius:10px;background:none;border:none;color:var(--txt2);
   cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;flex-shrink:0}
 .ib:active{background:var(--s2);color:var(--txt)}
 
-/* SCROLLABLE CONTENT */
+/* SCROLLABLE BODY */
 .sbody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
-  padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+  padding-bottom:90px}
+/* inner screens don't have bottom nav */
+.sbody.no-nav{padding-bottom:24px}
 
-/* BOTTOM NAV */
+/* BOTTOM NAV — home only */
 #bnav{
-  position:fixed;bottom:env(safe-area-inset-bottom);left:50%;
+  position:fixed;bottom:0;left:50%;
   transform:translateX(-50%);
   display:flex;align-items:center;gap:2px;padding:7px 8px;
   z-index:90;border-radius:50px;
-  background:var(--nb);
+  background:rgba(8,8,8,.82);
   backdrop-filter:blur(56px) saturate(240%) brightness(1.1);
   -webkit-backdrop-filter:blur(56px) saturate(240%) brightness(1.1);
   box-shadow:0 10px 40px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.05);
-  transition:transform .3s,opacity .25s;
 }
+#bnav.hidden{display:none}
 .bnav-shine{position:absolute;inset:-1px;border-radius:52px;overflow:hidden;pointer-events:none;z-index:0}
 .bnav-shine::before{
   content:'';position:absolute;inset:0;border-radius:52px;padding:1.5px;
@@ -80,16 +80,16 @@ button,input,select,textarea{font-family:inherit}
 /* FEATURE GRID */
 .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px}
 .fc{background:var(--s1);border:1px solid var(--bdr);border-radius:16px;
-  padding:16px 14px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:background .15s}
+  padding:18px 14px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:background .15s}
 .fc:active{background:var(--s2)}
-.fc-ic{width:36px;height:36px;border-radius:10px;background:var(--s2);
+.fc-ic{width:38px;height:38px;border-radius:11px;background:var(--s2);
   display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.fc-label{font-size:13px;font-weight:600;color:var(--txt)}
+.fc-label{font-size:14px;font-weight:600;color:var(--txt)}
 .fc-sub{font-size:11px;color:var(--txt2);margin-top:2px}
 
 /* SECTION LABEL */
 .slbl{font-size:11px;font-weight:700;color:var(--txt2);
-  text-transform:uppercase;letter-spacing:.1em;padding:16px 16px 8px}
+  text-transform:uppercase;letter-spacing:.1em;padding:20px 16px 10px}
 
 /* CARD & ROW */
 .card{background:var(--s1);border:1px solid var(--bdr);border-radius:16px;overflow:hidden}
@@ -98,7 +98,7 @@ button,input,select,textarea{font-family:inherit}
 .row:last-child{border-bottom:none}
 .row:active{background:var(--s2)}
 .row-ic{width:40px;height:40px;border-radius:12px;background:var(--s2);
-  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
 .row-body{flex:1;min-width:0}
 .row-title{font-size:14px;font-weight:600;color:var(--txt);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -106,7 +106,7 @@ button,input,select,textarea{font-family:inherit}
 .row-right{font-size:11px;color:var(--txt3);flex-shrink:0}
 
 /* PLATFORM TABS */
-.ptabs{display:flex;padding:12px 16px;gap:8px;flex-shrink:0;border-bottom:1px solid var(--bdr)}
+.ptabs{display:flex;padding:0 16px 14px;gap:8px;flex-shrink:0}
 .ptab{flex:1;padding:9px 6px;border-radius:12px;background:var(--s2);border:1px solid var(--bdr);
   color:var(--txt2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;
   display:flex;align-items:center;justify-content:center;gap:5px}
@@ -127,7 +127,7 @@ button,input,select,textarea{font-family:inherit}
 @keyframes td{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
 
 /* INPUT BAR */
-.ibar{padding:8px 12px;padding-bottom:calc(8px + env(safe-area-inset-bottom));
+.ibar{padding:8px 12px;
   border-top:1px solid var(--bdr);background:var(--bg);flex-shrink:0}
 .irow{display:flex;align-items:flex-end;gap:8px;background:var(--s2);
   border:1px solid var(--bdr);border-radius:24px;padding:7px 7px 7px 14px}
@@ -141,8 +141,7 @@ button,input,select,textarea{font-family:inherit}
 
 /* CALL OVERLAY */
 #call-overlay{position:fixed;inset:0;background:var(--bg);z-index:200;display:none;
-  flex-direction:column;align-items:center;justify-content:center;gap:20px;
-  padding:40px 24px;padding-top:calc(40px + env(safe-area-inset-top))}
+  flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:40px 24px}
 #call-overlay.on{display:flex}
 .call-ring{width:88px;height:88px;border-radius:50%;background:var(--s2);
   display:flex;align-items:center;justify-content:center;position:relative}
@@ -153,12 +152,9 @@ button,input,select,textarea{font-family:inherit}
 @keyframes cr{0%{transform:scale(.85);opacity:.8}100%{transform:scale(1.1);opacity:0}}
 .call-status-txt{font-size:15px;color:var(--txt2);text-align:center;font-weight:500}
 .call-end-btn{width:62px;height:62px;border-radius:50%;background:var(--red);
-  border:none;display:flex;align-items:center;justify-content:center;
-  cursor:pointer;color:#fff;margin-top:12px}
+  border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;margin-top:12px}
 #call-transcript{max-height:180px;overflow-y:auto;width:100%;max-width:340px;
-  background:var(--s2);border-radius:14px;padding:14px;font-size:13px;
-  color:var(--txt2);line-height:1.7;display:none}
-.call-instruct-row{display:flex;gap:10px;width:100%;max-width:340px}
+  background:var(--s2);border-radius:14px;padding:14px;font-size:13px;color:var(--txt2);line-height:1.7}
 
 /* BOTTOM SHEET */
 .bsheet-ovl{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:149;
@@ -167,7 +163,7 @@ button,input,select,textarea{font-family:inherit}
 .bsheet{position:fixed;bottom:0;left:0;right:0;background:var(--s1);
   border-radius:22px 22px 0 0;z-index:150;
   transform:translateY(100%);transition:transform .32s cubic-bezier(.25,.1,.25,1);
-  padding-bottom:env(safe-area-inset-bottom)}
+  padding-bottom:0}
 .bsheet.on{transform:translateY(0)}
 .bsheet-handle{width:36px;height:4px;border-radius:2px;background:var(--s3);margin:12px auto 16px}
 
@@ -175,7 +171,6 @@ button,input,select,textarea{font-family:inherit}
 .av{width:36px;height:36px;border-radius:50%;background:var(--s3);
   display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;
   color:var(--txt);cursor:pointer;flex-shrink:0;overflow:hidden;border:1.5px solid var(--bdr2)}
-.av img{width:100%;height:100%;object-fit:cover;display:block}
 
 /* FORM */
 .inp{background:var(--s2);border:1px solid var(--bdr);border-radius:12px;
@@ -186,7 +181,7 @@ button,input,select,textarea{font-family:inherit}
 textarea.inp{resize:vertical;min-height:180px}
 .btn{background:var(--txt);border:none;border-radius:14px;padding:15px 20px;
   color:var(--bg);font-weight:700;font-size:15px;cursor:pointer;width:100%;
-  display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .18s}
+  display:flex;align-items:center;justify-content:center;transition:opacity .18s}
 .btn:active{opacity:.82}
 .btn-ghost{background:transparent;border:1px solid var(--bdr2);border-radius:12px;
   padding:12px 16px;color:var(--txt);font-size:14px;cursor:pointer;width:100%;
@@ -196,27 +191,28 @@ textarea.inp{resize:vertical;min-height:180px}
   letter-spacing:.08em;display:block;margin-bottom:6px}
 .sec{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
 
-/* MEDIA GRID */
+/* MEDIA / WARDROBE GRIDS */
 .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 16px 0}
 .mi{position:relative;border-radius:14px;overflow:hidden;background:var(--s2);aspect-ratio:3/4}
 .mi img,.mi video{width:100%;height:100%;object-fit:cover;display:block}
-.mi-del{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.65);
-  border:none;border-radius:8px;width:30px;height:30px;
+.del-btn{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.65);
+  border:none;border-radius:8px;width:28px;height:28px;
   display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer}
-
-/* WARDROBE GRID */
 .wgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:16px 16px 0}
 .wi{position:relative;border-radius:12px;overflow:hidden;background:var(--s2);aspect-ratio:1}
 .wi img{width:100%;height:100%;object-fit:cover;display:block}
-.wi-del{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.65);
-  border:none;border-radius:6px;width:26px;height:26px;
-  display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer}
 
 /* BRAIN */
 .bkey-row{display:flex;align-items:center;justify-content:space-between;
   padding:14px 16px;background:var(--s1);border:1px solid var(--bdr);
   border-radius:14px;cursor:pointer;margin-bottom:8px;transition:background .15s}
 .bkey-row:active{background:var(--s2)}
+
+/* TAKEOVER TOGGLE */
+.tog{width:40px;height:22px;border-radius:11px;border:none;cursor:pointer;
+  position:relative;transition:background .2s;flex-shrink:0;background:var(--s3)}
+.tog-k{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;
+  background:#fff;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
 
 /* PRELOADER */
 #preloader{position:fixed;inset:0;z-index:9999;background:var(--bg);
@@ -232,12 +228,6 @@ textarea.inp{resize:vertical;min-height:180px}
   box-shadow:0 8px 32px rgba(0,0,0,.45);opacity:0;pointer-events:none;
   transition:all .3s;z-index:500;white-space:nowrap}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-
-/* TAKEOVER TOGGLE */
-.tog{width:40px;height:22px;border-radius:11px;border:none;cursor:pointer;
-  position:relative;transition:background .2s;flex-shrink:0}
-.tog-k{position:absolute;top:3px;width:16px;height:16px;border-radius:50%;
-  background:#fff;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
 </style>
 </head>
 <body>
@@ -266,12 +256,6 @@ textarea.inp{resize:vertical;min-height:180px}
   </div>
 
   <div class="sbody">
-    <div class="slbl">Recent</div>
-    <div style="padding:0 16px;display:flex;flex-direction:column;gap:8px" id="home-recent">
-      <div style="color:var(--txt3);font-size:13px;padding:4px 0">No recent activity</div>
-    </div>
-
-    <div class="slbl" style="margin-top:4px">Features</div>
     <div class="fgrid">
 
       <div class="fc" onclick="go('talk')">
@@ -325,50 +309,29 @@ textarea.inp{resize:vertical;min-height:180px}
         <div><div class="fc-label">Wardrobe</div><div class="fc-sub">Outfits</div></div>
       </div>
 
-      <div class="fc" onclick="openGenerate()">
-        <div class="fc-ic">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--txt2)" stroke-width="1.8" stroke-linecap="round">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-          </svg>
-        </div>
-        <div><div class="fc-label">Generate</div><div class="fc-sub">Image · Video · TTS</div></div>
-      </div>
-
-      <div class="fc" onclick="go('settings')">
-        <div class="fc-ic">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--txt2)" stroke-width="1.8" stroke-linecap="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
-          </svg>
-        </div>
-        <div><div class="fc-label">Settings</div><div class="fc-sub">Keys + config</div></div>
-      </div>
-
-    </div><!-- /fgrid -->
-  </div><!-- /sbody -->
-</div><!-- /s-home -->
+    </div>
+  </div>
+</div>
 
 <!-- ====================================================
      TALK + MITRA
      ==================================================== -->
 <div id="s-talk" class="scr">
-  <div class="hdr">
+  <div class="hdr inner">
     <button class="ib" onclick="go('home')">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </button>
     <span class="hdr-title">Ariana</span>
-    <div style="display:flex;align-items:center;gap:4px">
-      <button class="ib" id="btn-call" onclick="startCall()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.22 2.18 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.06 6.06l1.27-.52a2 2 0 012.11.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
-        </svg>
-      </button>
-      <button class="ib" onclick="clearTalk()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/>
-        </svg>
-      </button>
-    </div>
+    <button class="ib" id="btn-call" onclick="startCall()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.22 2.18 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.06 6.06l1.27-.52a2 2 0 012.11.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+      </svg>
+    </button>
+    <button class="ib" onclick="clearTalk()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/>
+      </svg>
+    </button>
   </div>
   <div class="chat-body" id="talk-msgs"></div>
   <div class="ibar">
@@ -387,7 +350,7 @@ textarea.inp{resize:vertical;min-height:180px}
      PLATFORMS
      ==================================================== -->
 <div id="s-platforms" class="scr">
-  <div class="hdr">
+  <div class="hdr inner">
     <button class="ib" onclick="go('home')">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </button>
@@ -395,24 +358,25 @@ textarea.inp{resize:vertical;min-height:180px}
   </div>
   <div class="ptabs">
     <button class="ptab on" id="ptab-wa" onclick="setPlatform('wa')">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-      WA
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      WhatsApp
     </button>
     <button class="ptab" id="ptab-tg" onclick="setPlatform('tg')">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="#229ED9"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0a12 12 0 00-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
-      TG
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="#229ED9"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0a12 12 0 00-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+      Telegram
     </button>
     <button class="ptab" id="ptab-sig" onclick="setPlatform('sig')">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="#3A76F0"><path d="M12 0C5.374 0 0 5.373 0 12c0 2.13.561 4.128 1.54 5.86L.06 23.109l5.362-1.406A11.934 11.934 0 0012 24c6.626 0 12-5.373 12-12S18.626 0 12 0zm.97 18.678c-.5.126-1.016.193-1.54.193-3.8 0-6.887-3.087-6.887-6.887 0-3.8 3.087-6.887 6.887-6.887 3.8 0 6.887 3.087 6.887 6.887 0 .82-.144 1.609-.408 2.34l.002.003-1.457-.494a5.17 5.17 0 00.323-1.849c0-2.846-2.306-5.152-5.152-5.152-2.847 0-5.153 2.306-5.153 5.152s2.306 5.152 5.153 5.152c.55 0 1.08-.086 1.578-.245l.497 1.457-.73.33z"/></svg>
+      <!-- correct Signal logo, blue/white -->
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="#3A76F0"><path d="M12 0q-.934 0-1.83.139l.17 1.111a11 11 0 0 1 3.32 0l.172-1.111A12 12 0 0 0 12 0M9.152.34A12 12 0 0 0 5.77 1.742l.584.961a10.8 10.8 0 0 1 3.066-1.27zm5.696 0-.268 1.094a10.8 10.8 0 0 1 3.066 1.27l.584-.962A12 12 0 0 0 14.848.34M12 2.25a9.75 9.75 0 0 0-8.539 14.459c.074.134.1.292.064.441l-1.013 4.338 4.338-1.013a.62.62 0 0 1 .441.064A9.7 9.7 0 0 0 12 21.75c5.385 0 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25m-7.092.068a12 12 0 0 0-2.59 2.59l.909.664a11 11 0 0 1 2.345-2.345zm14.184 0-.664.909a11 11 0 0 1 2.345 2.345l.909-.664a12 12 0 0 0-2.59-2.59M1.742 5.77A12 12 0 0 0 .34 9.152l1.094.268a10.8 10.8 0 0 1 1.269-3.066zm20.516 0-.961.584a10.8 10.8 0 0 1 1.27 3.066l1.093-.268a12 12 0 0 0-1.402-3.383M.138 10.168A12 12 0 0 0 0 12q0 .934.139 1.83l1.111-.17A11 11 0 0 1 1.125 12q0-.848.125-1.66zm23.723.002-1.111.17q.125.812.125 1.66c0 .848-.042 1.12-.125 1.66l1.111.172a12.1 12.1 0 0 0 0-3.662M1.434 14.58l-1.094.268a12 12 0 0 0 .96 2.591l-.265 1.14 1.096.255.36-1.539-.188-.365a10.8 10.8 0 0 1-.87-2.35m21.133 0a10.8 10.8 0 0 1-1.27 3.067l.962.584a12 12 0 0 0 1.402-3.383zm-1.793 3.848a11 11 0 0 1-2.345 2.345l.664.909a12 12 0 0 0 2.59-2.59zm-19.959 1.1L.357 21.48a1.8 1.8 0 0 0 2.162 2.161l1.954-.455-.256-1.095-1.953.455a.675.675 0 0 1-.81-.81l.454-1.954zm16.832 1.769a10.8 10.8 0 0 1-3.066 1.27l.268 1.093a12 12 0 0 0 3.382-1.402zm-10.94.213-1.54.36.256 1.095 1.139-.266c.814.415 1.683.74 2.591.961l.268-1.094a10.8 10.8 0 0 1-2.35-.869zm3.634 1.24-.172 1.111a12.1 12.1 0 0 0 3.662 0l-.17-1.111q-.812.125-1.66.125a11 11 0 0 1-1.66-.125"/></svg>
       Signal
     </button>
     <button class="ptab" id="ptab-sms" onclick="setPlatform('sms')">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
       SMS
     </button>
   </div>
-  <div class="sbody" style="padding-top:0">
-    <div style="padding:12px 16px 0">
+  <div class="sbody no-nav" style="padding-top:0">
+    <div style="padding:0 16px">
       <div id="platform-convos" class="card"></div>
     </div>
   </div>
@@ -420,17 +384,15 @@ textarea.inp{resize:vertical;min-height:180px}
 
 <!-- Conversation detail -->
 <div id="s-convo" class="scr" style="z-index:50">
-  <div class="hdr">
+  <div class="hdr inner">
     <button class="ib" onclick="closeConvo()">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </button>
     <span class="hdr-title" id="convo-name">Chat</span>
-    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-      <span style="font-size:11px;color:var(--txt2)">Takeover</span>
-      <button id="takeover-btn" class="tog" onclick="toggleTakeover()" style="background:var(--s3)">
-        <span id="takeover-knob" class="tog-k" style="left:3px"></span>
-      </button>
-    </div>
+    <span style="font-size:11px;color:var(--txt2)">Takeover</span>
+    <button id="takeover-btn" class="tog" onclick="toggleTakeover()">
+      <span id="takeover-knob" class="tog-k"></span>
+    </button>
   </div>
   <div class="chat-body" id="convo-msgs"></div>
   <div class="ibar" id="convo-ibar" style="display:none">
@@ -447,7 +409,7 @@ textarea.inp{resize:vertical;min-height:180px}
      MEDIA
      ==================================================== -->
 <div id="s-media" class="scr">
-  <div class="hdr">
+  <div class="hdr inner">
     <button class="ib" onclick="go('home')">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </button>
@@ -457,7 +419,7 @@ textarea.inp{resize:vertical;min-height:180px}
     </button>
   </div>
   <input type="file" id="media-file" accept="image/*,video/*" hidden onchange="uploadMedia(this)">
-  <div class="sbody">
+  <div class="sbody no-nav">
     <div class="mgrid" id="media-grid"></div>
     <div id="media-empty" style="padding:48px 24px;text-align:center;color:var(--txt3);font-size:13px;display:none">No media yet</div>
   </div>
@@ -467,19 +429,19 @@ textarea.inp{resize:vertical;min-height:180px}
      BRAIN
      ==================================================== -->
 <div id="s-brain" class="scr">
-  <div class="hdr">
+  <div class="hdr inner">
     <button class="ib" onclick="go('home')">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </button>
     <span class="hdr-title">Brain</span>
   </div>
-  <div class="sbody" style="padding:16px">
+  <div class="sbody no-nav" style="padding:16px">
     <div id="brain-keys"></div>
   </div>
 </div>
 
 <div id="s-brain-edit" class="scr" style="z-index:50">
-  <div class="hdr">
+  <div class="hdr inner">
     <button class="ib" onclick="closeBrainEdit()">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </button>
@@ -497,7 +459,7 @@ textarea.inp{resize:vertical;min-height:180px}
      WARDROBE
      ==================================================== -->
 <div id="s-wardrobe" class="scr">
-  <div class="hdr">
+  <div class="hdr inner">
     <button class="ib" onclick="go('home')">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </button>
@@ -507,31 +469,31 @@ textarea.inp{resize:vertical;min-height:180px}
     </button>
   </div>
   <input type="file" id="wardrobe-file" accept="image/*" hidden onchange="uploadWardrobe(this)">
-  <div class="sbody">
+  <div class="sbody no-nav">
     <div class="wgrid" id="wardrobe-grid"></div>
     <div id="wardrobe-empty" style="padding:48px 24px;text-align:center;color:var(--txt3);font-size:13px;display:none">No items yet</div>
   </div>
 </div>
 
 <!-- ====================================================
-     SETTINGS
+     SETTINGS — one place only, via profile sheet
      ==================================================== -->
 <div id="s-settings" class="scr">
-  <div class="hdr">
-    <button class="ib" onclick="go('home')">
+  <div class="hdr inner">
+    <button class="ib" onclick="closeProfileSheet();go('home')">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </button>
     <span class="hdr-title">Settings</span>
   </div>
-  <div class="sbody" style="padding:16px">
+  <div class="sbody no-nav" style="padding:16px">
 
-    <div class="slbl" style="padding:0 0 8px">Access</div>
+    <div style="font-size:11px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">Access</div>
     <div class="sec">
       <label class="lbl">Dashboard Key</label>
-      <input type="password" id="cfg-dash-key" class="inp" placeholder="Your DASHBOARD_SECRET value">
+      <input type="password" id="cfg-dash-key" class="inp" placeholder="DASHBOARD_SECRET value">
     </div>
     <div class="sec">
-      <label class="lbl">Your Phone (for Mitra calls)</label>
+      <label class="lbl">Your Phone (Mitra calls)</label>
       <input type="tel" id="cfg-phone" class="inp" placeholder="+1234567890">
     </div>
     <div class="sec">
@@ -539,7 +501,7 @@ textarea.inp{resize:vertical;min-height:180px}
       <input type="text" id="cfg-name" class="inp" placeholder="Name Ariana calls you">
     </div>
 
-    <div class="slbl" style="padding:16px 0 8px">AI</div>
+    <div style="font-size:11px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.1em;margin:20px 0 10px">AI</div>
     <div class="sec">
       <label class="lbl">Groq API Key</label>
       <input type="password" id="cfg-groq" class="inp" placeholder="gsk_...">
@@ -549,7 +511,7 @@ textarea.inp{resize:vertical;min-height:180px}
       <input type="password" id="cfg-gemini" class="inp" placeholder="AIza...">
     </div>
 
-    <div class="slbl" style="padding:16px 0 8px">Voice</div>
+    <div style="font-size:11px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.1em;margin:20px 0 10px">Voice</div>
     <div class="sec">
       <label class="lbl">ElevenLabs API Key</label>
       <input type="password" id="cfg-eleven" class="inp" placeholder="sk_...">
@@ -559,9 +521,9 @@ textarea.inp{resize:vertical;min-height:180px}
       <input type="password" id="cfg-cartesia" class="inp" placeholder="...">
     </div>
 
-    <div class="slbl" style="padding:16px 0 8px">Messaging</div>
+    <div style="font-size:11px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.1em;margin:20px 0 10px">Messaging</div>
     <div class="sec">
-      <label class="lbl">Kapso API Key (WhatsApp)</label>
+      <label class="lbl">Kapso API Key</label>
       <input type="password" id="cfg-kapso" class="inp" placeholder="...">
     </div>
     <div class="sec">
@@ -574,7 +536,7 @@ textarea.inp{resize:vertical;min-height:180px}
     </div>
 
     <button class="btn" onclick="saveSettings()" style="margin-top:8px">Save</button>
-    <button class="btn-ghost" onclick="clearSettings()" style="margin-top:10px;border-color:rgba(255,68,85,.25);color:var(--red)">Clear all settings</button>
+    <button class="btn-ghost" onclick="clearSettings()" style="margin-top:10px;border-color:rgba(255,68,85,.25);color:var(--red)">Clear all</button>
   </div>
 </div>
 
@@ -589,8 +551,8 @@ textarea.inp{resize:vertical;min-height:180px}
   </div>
   <div id="call-status-txt" class="call-status-txt">Preparing call...</div>
   <div id="call-transcript"></div>
-  <div class="call-instruct-row">
-    <input type="text" id="call-instruct" class="inp" placeholder="Instruct mid-call...">
+  <div style="display:flex;gap:10px;width:100%;max-width:340px">
+    <input type="text" id="call-instruct" class="inp" placeholder="Instruct mid-call..." style="flex:1">
     <button class="ib" onclick="sendInstruction()" style="background:var(--s2);color:var(--txt);flex-shrink:0">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
     </button>
@@ -604,7 +566,7 @@ textarea.inp{resize:vertical;min-height:180px}
 </div>
 
 <!-- ====================================================
-     PROFILE BOTTOM SHEET
+     PROFILE SHEET — only place to reach Settings
      ==================================================== -->
 <div class="bsheet-ovl" id="profile-ovl" onclick="closeProfileSheet()"></div>
 <div class="bsheet" id="profile-sheet" style="padding:0 20px 20px">
@@ -619,32 +581,21 @@ textarea.inp{resize:vertical;min-height:180px}
     </div>
   </div>
   <div class="card">
-    <div class="row" onclick="go('settings');closeProfileSheet()">
+    <div class="row" onclick="closeProfileSheet();go('settings')">
       <div class="row-ic">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--txt2)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--txt2)" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+        </svg>
       </div>
       <span class="row-title">Settings</span>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--txt3)" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>
-    <div class="row" onclick="openGenerate();closeProfileSheet()">
-      <div class="row-ic">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--txt2)" stroke-width="2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-      </div>
-      <span class="row-title">Generate</span>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--txt3)" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>
-    <div class="row" onclick="go('brain');closeProfileSheet()">
-      <div class="row-ic">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--txt2)" stroke-width="2" stroke-linecap="round"><path d="M9.5 2A2.5 2.5 0 007 4.5v15A2.5 2.5 0 009.5 22h5a2.5 2.5 0 002.5-2.5v-15A2.5 2.5 0 0014.5 2h-5z"/><path d="M7 8H4a2 2 0 00-2 2v4a2 2 0 002 2h3"/><path d="M17 8h3a2 2 0 012 2v4a2 2 0 01-2 2h-3"/></svg>
-      </div>
-      <span class="row-title">Brain</span>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--txt3)" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
     </div>
   </div>
 </div>
 
 <!-- ====================================================
-     BOTTOM NAV
+     BOTTOM NAV — home only
      ==================================================== -->
 <nav id="bnav">
   <div class="bnav-shine"></div>
@@ -683,7 +634,6 @@ textarea.inp{resize:vertical;min-height:180px}
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-// ── CONFIG STORAGE ─────────────────────────────────────────
 const cfg={
   get(k){try{return localStorage.getItem('ari_'+k)||''}catch{return''}},
   set(k,v){try{localStorage.setItem('ari_'+k,v)}catch{}},
@@ -694,26 +644,24 @@ function authH(){
   return k?{'Content-Type':'application/json','X-Dashboard-Key':k}:{'Content-Type':'application/json'};
 }
 
-// ── STATE ──────────────────────────────────────────────────
 let conversations={},takeoverState={},talkHistory=[],activeBrainKey=null,currentPhone=null,currentCallId=null;
 let currentPlatform='wa';
 const socket=io();
 
-// ── NAVIGATION ────────────────────────────────────────────
+// home-only screens (show bottom nav), inner screens (hide bottom nav)
+const HOME_SCREENS=['home'];
 const screenMap={home:'s-home',talk:'s-talk',platforms:'s-platforms',
   media:'s-media',brain:'s-brain',wardrobe:'s-wardrobe',settings:'s-settings'};
 const navMap={home:'nb-home',platforms:'nb-platforms',talk:'nb-talk',media:'nb-media'};
 
 function go(name){
-  // Hide all base screens (not overlays)
   Object.values(screenMap).forEach(id=>document.getElementById(id)?.classList.remove('on'));
   const id=screenMap[name];
   if(id) document.getElementById(id).classList.add('on');
-  // Nav highlight
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
   if(navMap[name]) document.getElementById(navMap[name]).classList.add('on');
-  // Load
-  if(name==='home') loadHome();
+  // show nav only on home
+  document.getElementById('bnav').classList.toggle('hidden', name!=='home');
   if(name==='platforms') loadPlatforms();
   if(name==='media') loadMedia();
   if(name==='brain') loadBrain();
@@ -721,55 +669,42 @@ function go(name){
   if(name==='settings') loadSettingsUI();
 }
 
-function openGenerate(){ window.location.href='/generate.html'; }
-function toggleNavPanel(){ go('settings'); }
+function toggleNavPanel(){ openProfileSheet(); }
 
-// ── TOAST ─────────────────────────────────────────────────
 let _tt;
 function toast(msg,dur=2600){
   const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  clearTimeout(_tt); _tt=setTimeout(()=>t.classList.remove('show'),dur);
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),dur);
 }
-
-// ── TEXTAREA AUTO-HEIGHT ───────────────────────────────────
 function autoH(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';}
 
-// ── SETTINGS ──────────────────────────────────────────────
 function loadSettingsUI(){
-  const map={
-    'cfg-dash-key':'dash_key','cfg-phone':'phone','cfg-name':'name',
+  const map={'cfg-dash-key':'dash_key','cfg-phone':'phone','cfg-name':'name',
     'cfg-groq':'groq','cfg-gemini':'gemini','cfg-eleven':'eleven',
-    'cfg-cartesia':'cartesia','cfg-kapso':'kapso',
-    'cfg-supa-url':'supa_url','cfg-supa-key':'supa_key'
-  };
-  Object.entries(map).forEach(([id,k])=>{
-    const el=document.getElementById(id); if(el) el.value=cfg.get(k);
-  });
+    'cfg-cartesia':'cartesia','cfg-kapso':'kapso','cfg-supa-url':'supa_url','cfg-supa-key':'supa_key'};
+  Object.entries(map).forEach(([id,k])=>{const el=document.getElementById(id);if(el)el.value=cfg.get(k);});
 }
 function saveSettings(){
-  cfg.set('dash_key', document.getElementById('cfg-dash-key').value.trim());
-  cfg.set('phone',    document.getElementById('cfg-phone').value.trim());
-  cfg.set('name',     document.getElementById('cfg-name').value.trim());
-  cfg.set('groq',     document.getElementById('cfg-groq').value.trim());
-  cfg.set('gemini',   document.getElementById('cfg-gemini').value.trim());
-  cfg.set('eleven',   document.getElementById('cfg-eleven').value.trim());
-  cfg.set('cartesia', document.getElementById('cfg-cartesia').value.trim());
-  cfg.set('kapso',    document.getElementById('cfg-kapso').value.trim());
-  cfg.set('supa_url', document.getElementById('cfg-supa-url').value.trim());
-  cfg.set('supa_key', document.getElementById('cfg-supa-key').value.trim());
-  updateProfileName();
-  toast('Saved');
+  cfg.set('dash_key',document.getElementById('cfg-dash-key').value.trim());
+  cfg.set('phone',document.getElementById('cfg-phone').value.trim());
+  cfg.set('name',document.getElementById('cfg-name').value.trim());
+  cfg.set('groq',document.getElementById('cfg-groq').value.trim());
+  cfg.set('gemini',document.getElementById('cfg-gemini').value.trim());
+  cfg.set('eleven',document.getElementById('cfg-eleven').value.trim());
+  cfg.set('cartesia',document.getElementById('cfg-cartesia').value.trim());
+  cfg.set('kapso',document.getElementById('cfg-kapso').value.trim());
+  cfg.set('supa_url',document.getElementById('cfg-supa-url').value.trim());
+  cfg.set('supa_key',document.getElementById('cfg-supa-key').value.trim());
+  updateProfileName();toast('Saved');
 }
 function clearSettings(){if(confirm('Clear all saved settings?')){cfg.clear();loadSettingsUI();toast('Cleared');}}
 
-// ── PROFILE ───────────────────────────────────────────────
 function updateProfileName(){
-  const name=cfg.get('name');
-  if(!name) return;
-  document.getElementById('home-av-txt').textContent=name[0].toUpperCase();
-  document.getElementById('prof-av-txt').textContent=name[0].toUpperCase();
-  document.getElementById('prof-name').textContent=name;
+  const n=cfg.get('name');if(!n)return;
+  document.getElementById('home-av-txt').textContent=n[0].toUpperCase();
+  document.getElementById('prof-av-txt').textContent=n[0].toUpperCase();
+  document.getElementById('prof-name').textContent=n;
 }
 function openProfileSheet(){
   document.getElementById('profile-sheet').classList.add('on');
@@ -781,32 +716,7 @@ function closeProfileSheet(){
   document.getElementById('profile-ovl').classList.remove('on');
 }
 
-// ── HOME ──────────────────────────────────────────────────
-function loadHome(){
-  const el=document.getElementById('home-recent');
-  const list=Object.values(conversations).sort((a,b)=>{
-    const ta=a.messages?.[a.messages.length-1]?.ts||0;
-    const tb=b.messages?.[b.messages.length-1]?.ts||0;
-    return tb-ta;
-  }).slice(0,5);
-  if(!list.length){el.innerHTML='<div style="color:var(--txt3);font-size:13px;padding:4px 0">No recent activity</div>';return;}
-  el.innerHTML=list.map(c=>{
-    const last=c.messages?.[c.messages.length-1];
-    const ts=last?.ts?new Date(last.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
-    return `<div class="card row" onclick="openConvoById('${escAttr(c.id||c.phone)}')">
-      <div class="row-ic">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--txt2)" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      </div>
-      <div class="row-body">
-        <div class="row-title">${escHTML(c.name||c.id||c.phone||'Unknown')}</div>
-        <div class="row-sub">${escHTML((last?.text||last?.content||'').slice(0,60)||'...')}</div>
-      </div>
-      <div class="row-right">${ts}</div>
-    </div>`;
-  }).join('');
-}
-
-// ── PLATFORMS ─────────────────────────────────────────────
+// PLATFORMS
 function setPlatform(p){
   currentPlatform=p;
   ['wa','tg','sig','sms'].forEach(x=>document.getElementById('ptab-'+x).classList.toggle('on',x===p));
@@ -815,8 +725,17 @@ function setPlatform(p){
 function loadPlatforms(){renderPlatformList();}
 function renderPlatformList(){
   const el=document.getElementById('platform-convos');
-  const list=Object.values(conversations);
-  if(!list.length){el.innerHTML='<div style="padding:20px;text-align:center;color:var(--txt3);font-size:13px">No conversations yet</div>';return;}
+  // filter by platform field, fallback to wa
+  const all=Object.values(conversations);
+  const platformKey={'wa':'whatsapp','tg':'telegram','sig':'signal','sms':'sms'};
+  const list=all.filter(c=>{
+    if(!c.platform) return currentPlatform==='wa';
+    return c.platform===platformKey[currentPlatform]||c.platform===currentPlatform;
+  });
+  if(!list.length){
+    el.innerHTML='<div style="padding:20px;text-align:center;color:var(--txt3);font-size:13px">No conversations on this platform</div>';
+    return;
+  }
   el.innerHTML=list.map(c=>{
     const last=c.messages?.[c.messages.length-1];
     const ts=last?.ts?new Date(last.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
@@ -825,7 +744,7 @@ function renderPlatformList(){
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--txt2)" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       </div>
       <div class="row-body">
-        <div class="row-title">${escHTML(c.name||c.id||c.phone)}</div>
+        <div class="row-title">${escHTML(c.name||c.phone||c.id)}</div>
         <div class="row-sub">${escHTML((last?.text||last?.content||'').slice(0,55)||'...')}</div>
       </div>
       <div class="row-right">${ts}</div>
@@ -845,8 +764,7 @@ function openConvoById(id){
 function closeConvo(){document.getElementById('s-convo').classList.remove('on');}
 function renderConvoMsgs(c){
   const el=document.getElementById('convo-msgs');
-  const msgs=(c.messages||[]).slice(-60);
-  el.innerHTML=msgs.map(m=>{
+  el.innerHTML=(c.messages||[]).slice(-60).map(m=>{
     const isAri=m.role==='assistant'||m.fromMe;
     return `<div class="mg ${isAri?'a':'u'}"><div class="bbl">${escHTML(m.text||m.content||'')}</div></div>`;
   }).join('');
@@ -861,8 +779,7 @@ async function toggleTakeover(){
   const next=!(takeoverState[currentPhone]||false);
   try{
     await fetch(`/api/takeover/${currentPhone}`,{method:'POST',headers:authH(),body:JSON.stringify({active:next})});
-    takeoverState[currentPhone]=next;
-    setTakeoverUI(next);
+    takeoverState[currentPhone]=next;setTakeoverUI(next);
     document.getElementById('convo-ibar').style.display=next?'block':'none';
     toast(next?'Takeover on':'Takeover off');
   }catch{toast('Error');}
@@ -875,10 +792,10 @@ async function sendConvo(){
   try{
     await fetch(`/api/send/${currentPhone}`,{method:'POST',headers:authH(),body:JSON.stringify({message:msg})});
     toast('Sent');
-  }catch{toast('Failed to send');}
+  }catch{toast('Failed');}
 }
 
-// ── TALK ──────────────────────────────────────────────────
+// TALK
 function talkKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendTalk();}}
 async function sendTalk(){
   const inp=document.getElementById('talk-inp');
@@ -897,11 +814,11 @@ async function sendTalk(){
     if(data.reply){
       addTalkMsg('a',data.reply);
       talkHistory.push({role:'assistant',content:data.reply});
-      if(data.audio) playAudio(data.audio,data.audioFormat||'mp3');
+      if(data.audio)playAudio(data.audio,data.audioFormat||'mp3');
     }
   }catch(e){
     document.getElementById(tid)?.remove();
-    addTalkMsg('a','Could not reach Ariana. Check your dashboard key in settings.');
+    addTalkMsg('a','Could not reach Ariana. Check dashboard key in settings.');
   }
 }
 function addTalkMsg(role,text){
@@ -910,20 +827,15 @@ function addTalkMsg(role,text){
   el.scrollTop=el.scrollHeight;
 }
 function clearTalk(){talkHistory=[];document.getElementById('talk-msgs').innerHTML='';}
-function playAudio(b64,fmt){
-  try{new Audio(`data:audio/${fmt};base64,${b64}`).play().catch(()=>{});}catch(e){}
-}
+function playAudio(b64,fmt){try{new Audio(`data:audio/${fmt};base64,${b64}`).play().catch(()=>{});}catch(e){}}
 
-// ── MITRA CALL ────────────────────────────────────────────
+// CALL
 async function startCall(){
-  const phone=cfg.get('phone');
-  const name=cfg.get('name')||'Owner';
-  if(!phone){toast('Add your phone number in Settings');go('settings');return;}
+  const phone=cfg.get('phone');const name=cfg.get('name')||'Owner';
+  if(!phone){toast('Add phone in Settings');closeProfileSheet();go('settings');return;}
   const brief=talkHistory.slice(-4).map(m=>`${m.role}: ${m.content}`).join('\n')||'Check in with owner';
-  const ov=document.getElementById('call-overlay');
-  ov.classList.add('on');
+  document.getElementById('call-overlay').classList.add('on');
   document.getElementById('call-status-txt').textContent='Preparing call...';
-  document.getElementById('call-transcript').style.display='none';
   document.getElementById('call-transcript').textContent='';
   try{
     await fetch('/api/call/brief',{method:'POST',headers:authH(),body:JSON.stringify({brief})});
@@ -931,27 +843,20 @@ async function startCall(){
     const data=await res.json();
     if(data.callId){currentCallId=data.callId;document.getElementById('call-status-txt').textContent='Calling...';}
     else{document.getElementById('call-status-txt').textContent=data.error||'Call failed';setTimeout(endCall,3000);}
-  }catch(e){
-    document.getElementById('call-status-txt').textContent='Call failed. Check settings.';
-    setTimeout(endCall,3000);
-  }
+  }catch{document.getElementById('call-status-txt').textContent='Failed. Check settings.';setTimeout(endCall,3000);}
 }
 async function endCall(){
-  if(currentCallId){
-    try{await fetch('/api/call/end',{method:'POST',headers:authH(),body:JSON.stringify({callId:currentCallId})});}catch(e){}
-    currentCallId=null;
-  }
+  if(currentCallId){try{await fetch('/api/call/end',{method:'POST',headers:authH(),body:JSON.stringify({callId:currentCallId})});}catch(e){}currentCallId=null;}
   document.getElementById('call-overlay').classList.remove('on');
 }
 async function sendInstruction(){
-  const inp=document.getElementById('call-instruct');
-  const instruction=inp.value.trim();if(!instruction||!currentCallId)return;
-  inp.value='';
-  try{await fetch('/api/call/instruct',{method:'POST',headers:authH(),body:JSON.stringify({callId:currentCallId,instruction})});}
+  const inp=document.getElementById('call-instruct');const inst=inp.value.trim();
+  if(!inst||!currentCallId)return;inp.value='';
+  try{await fetch('/api/call/instruct',{method:'POST',headers:authH(),body:JSON.stringify({callId:currentCallId,instruction:inst})});}
   catch{toast('Error');}
 }
 
-// ── MEDIA ─────────────────────────────────────────────────
+// MEDIA
 async function loadMedia(){
   try{
     const data=await fetch('/api/media').then(r=>r.json());
@@ -962,31 +867,22 @@ async function loadMedia(){
     grid.innerHTML=data.map(it=>{
       const src=it.url||it.cloudinary_url||'';
       const isVid=/\.(mp4|mov|webm)/i.test(src)||it.mediaType?.startsWith('video');
-      return `<div class="mi">
-        ${isVid?`<video src="${src}" controls playsinline></video>`:`<img src="${src}" alt="" loading="lazy">`}
-        <button class="mi-del" onclick="deleteMedia('${escAttr(it.id)}')">
+      return `<div class="mi">${isVid?`<video src="${src}" controls playsinline></video>`:`<img src="${src}" alt="" loading="lazy">`}
+        <button class="del-btn" onclick="deleteMedia('${escAttr(it.id)}')">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>`;
+        </button></div>`;
     }).join('');
   }catch{toast('Could not load media');}
 }
 async function uploadMedia(input){
   const file=input.files[0];if(!file)return;
   const b64=await toB64(file);toast('Uploading...');
-  try{
-    await fetch('/api/media/upload',{method:'POST',headers:authH(),body:JSON.stringify({filename:file.name,mediaType:file.type,data:b64})});
-    loadMedia();toast('Uploaded');
-  }catch{toast('Upload failed');}
-  input.value='';
+  try{await fetch('/api/media/upload',{method:'POST',headers:authH(),body:JSON.stringify({filename:file.name,mediaType:file.type,data:b64})});loadMedia();toast('Uploaded');}
+  catch{toast('Upload failed');}input.value='';
 }
-async function deleteMedia(id){
-  if(!confirm('Delete?'))return;
-  await fetch(`/api/media/${id}`,{method:'DELETE',headers:authH()});
-  loadMedia();
-}
+async function deleteMedia(id){if(!confirm('Delete?'))return;await fetch(`/api/media/${id}`,{method:'DELETE',headers:authH()});loadMedia();}
 
-// ── BRAIN ─────────────────────────────────────────────────
+// BRAIN
 async function loadBrain(){
   try{
     const brain=await fetch('/api/brain').then(r=>r.json());
@@ -998,8 +894,7 @@ async function loadBrain(){
           <div style="font-size:11px;color:var(--txt2);margin-top:2px">${escHTML(JSON.stringify(brain[k]).slice(0,55))}...</div>
         </div>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--txt3)" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-      </div>
-    `).join('');
+      </div>`).join('');
   }catch{toast('Could not load brain');}
 }
 function openBrainKey(k){
@@ -1014,13 +909,11 @@ async function saveBrainKey(){
   if(!activeBrainKey)return;
   let v=document.getElementById('brain-edit-val').value;
   try{v=JSON.parse(v);}catch(e){}
-  try{
-    await fetch(`/api/brain/${activeBrainKey}`,{method:'POST',headers:authH(),body:JSON.stringify({data:v})});
-    toast('Saved');closeBrainEdit();loadBrain();
-  }catch{toast('Save failed');}
+  try{await fetch(`/api/brain/${activeBrainKey}`,{method:'POST',headers:authH(),body:JSON.stringify({data:v})});toast('Saved');closeBrainEdit();loadBrain();}
+  catch{toast('Save failed');}
 }
 
-// ── WARDROBE ──────────────────────────────────────────────
+// WARDROBE
 async function loadWardrobe(){
   try{
     const items=await fetch('/api/wardrobe').then(r=>r.json());
@@ -1028,46 +921,33 @@ async function loadWardrobe(){
     const empty=document.getElementById('wardrobe-empty');
     if(!items.length){grid.innerHTML='';empty.style.display='block';return;}
     empty.style.display='none';
-    grid.innerHTML=items.map(it=>`
-      <div class="wi">
-        <img src="${it.url||''}" alt="" loading="lazy">
-        <button class="wi-del" onclick="deleteWardrobe('${escAttr(it.id)}')">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-    `).join('');
+    grid.innerHTML=items.map(it=>`<div class="wi"><img src="${it.url||''}" alt="" loading="lazy">
+      <button class="del-btn" onclick="deleteWardrobe('${escAttr(it.id)}')" style="top:6px;right:6px;width:26px;height:26px;border-radius:6px">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button></div>`).join('');
   }catch{toast('Could not load wardrobe');}
 }
 async function uploadWardrobe(input){
   const file=input.files[0];if(!file)return;
   const b64=await toB64(file);toast('Uploading...');
-  try{
-    await fetch('/api/wardrobe/upload',{method:'POST',headers:authH(),body:JSON.stringify({filename:file.name,data:b64,mediaType:file.type})});
-    loadWardrobe();toast('Uploaded');
-  }catch{toast('Upload failed');}
-  input.value='';
+  try{await fetch('/api/wardrobe/upload',{method:'POST',headers:authH(),body:JSON.stringify({filename:file.name,data:b64,mediaType:file.type})});loadWardrobe();toast('Uploaded');}
+  catch{toast('Upload failed');}input.value='';
 }
-async function deleteWardrobe(id){
-  if(!confirm('Delete?'))return;
-  await fetch(`/api/wardrobe/${id}`,{method:'DELETE',headers:authH()});
-  loadWardrobe();
-}
+async function deleteWardrobe(id){if(!confirm('Delete?'))return;await fetch(`/api/wardrobe/${id}`,{method:'DELETE',headers:authH()});loadWardrobe();}
 
-// ── SOCKET ────────────────────────────────────────────────
+// SOCKET
 socket.on('init',d=>{
   (d.conversations||[]).forEach(c=>{conversations[c.id||c.phone]=c;});
   (d.takenOver||[]).forEach(p=>{takeoverState[p]=true;});
-  loadHome();
   document.getElementById('preloader').classList.add('hide');
   setTimeout(()=>document.getElementById('preloader').remove(),400);
 });
 socket.on('new_message',d=>{
   const id=d.phone;
-  if(!conversations[id]) conversations[id]={id,phone:id,messages:[]};
-  if(d.convo){conversations[id]={...conversations[id],...d.convo};}
-  if(document.getElementById('s-home').classList.contains('on')) loadHome();
-  if(document.getElementById('s-platforms').classList.contains('on')) renderPlatformList();
-  if(currentPhone===id) renderConvoMsgs(conversations[id]);
+  if(!conversations[id])conversations[id]={id,phone:id,messages:[]};
+  if(d.convo)conversations[id]={...conversations[id],...d.convo};
+  if(currentPhone===id)renderConvoMsgs(conversations[id]);
+  if(document.getElementById('s-platforms').classList.contains('on'))renderPlatformList();
 });
 socket.on('rename',d=>{if(conversations[d.phone])conversations[d.phone].name=d.name;});
 socket.on('takeover_update',d=>{
@@ -1077,26 +957,22 @@ socket.on('takeover_update',d=>{
 socket.on('call_started',d=>{
   currentCallId=d.callId;
   document.getElementById('call-status-txt').textContent=`Calling ${d.name||d.to}...`;
-  document.getElementById('call-transcript').style.display='block';
 });
 socket.on('call_transcript',d=>{
   if(d.callId!==currentCallId)return;
   const el=document.getElementById('call-transcript');
-  const prefix=d.entry?.role==='assistant'?'Ariana: ':'You: ';
-  el.textContent+=prefix+(d.entry?.content||'')+'\n';
+  el.style.display='block';
+  el.textContent+=(d.entry?.role==='assistant'?'Ariana: ':'You: ')+(d.entry?.content||'')+'\n';
   el.scrollTop=el.scrollHeight;
 });
 socket.on('call_status',d=>{if(d.callId===currentCallId)document.getElementById('call-status-txt').textContent=d.status;});
 socket.on('call_ended',d=>{if(d.callId===currentCallId){document.getElementById('call-status-txt').textContent='Call ended';setTimeout(endCall,2000);}});
 
-// ── UTILS ─────────────────────────────────────────────────
 function escHTML(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
-function escAttr(s){return String(s).replace(/'/g,'&#39;').replace(/"/g,'&quot;');}
+function escAttr(s){return String(s).replace(/'/g,'&#39;');}
 function toB64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);});}
 
-// ── INIT ──────────────────────────────────────────────────
-loadSettingsUI();
-updateProfileName();
+loadSettingsUI();updateProfileName();
 setTimeout(()=>{const p=document.getElementById('preloader');if(p){p.classList.add('hide');setTimeout(()=>p.remove(),400);}},4000);
 </script>
 </body>
