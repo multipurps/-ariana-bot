@@ -34,9 +34,9 @@ body::before{content:'';position:fixed;inset:0;background:var(--bg);z-index:-10;
 .ib{width:36px;height:36px;border-radius:10px;background:none;border:none;color:var(--txt2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;flex-shrink:0}
 .ib:active{background:var(--s2);color:var(--txt)}
 .sbody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
-.sbody.with-nav{padding-bottom:calc(80px + env(safe-area-inset-bottom))}
+.sbody.with-nav{padding-bottom:90px}
 .sbody.no-nav{padding-bottom:calc(20px + env(safe-area-inset-bottom))}
-#bnav{position:fixed;bottom:env(safe-area-inset-bottom);left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:0;padding:6px 6px;z-index:90;border-radius:50px;background:rgba(8,8,8,.88);backdrop-filter:blur(40px) saturate(200%);-webkit-backdrop-filter:blur(40px) saturate(200%);box-shadow:0 8px 32px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.06)}
+#bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:0;padding:6px 6px;z-index:90;border-radius:50px;background:rgba(8,8,8,.88);backdrop-filter:blur(40px) saturate(200%);-webkit-backdrop-filter:blur(40px) saturate(200%);box-shadow:0 8px 32px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.06)}
 #bnav.hidden{display:none}
 .bnav-shine{position:absolute;inset:-1px;border-radius:52px;overflow:hidden;pointer-events:none;z-index:0}
 .bnav-shine::before{content:'';position:absolute;inset:0;border-radius:52px;padding:1.5px;background:linear-gradient(105deg,transparent 20%,rgba(139,92,246,.3) 38%,rgba(167,139,250,.6) 46%,rgba(196,181,253,.9) 50%,rgba(167,139,250,.6) 54%,rgba(139,92,246,.3) 62%,transparent 80%) border-box;-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;background-size:250% 100%;background-position:-100% 0;animation:bnav-sweep 2.4s linear infinite}
@@ -45,7 +45,7 @@ body::before{content:'';position:fixed;inset:0;background:var(--bg);z-index:-10;
 .nb.on{background:rgba(139,92,246,.18);color:var(--acc2)}
 .nb-center{width:54px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:36px;border:none;background:linear-gradient(135deg,var(--acc),#6D28D9);color:#fff;cursor:pointer;position:relative;z-index:1;flex-shrink:0;box-shadow:0 0 20px var(--acc-glow);transition:all .2s}
 .nb-center:active{opacity:.8;transform:scale(.95)}
-#hero{position:relative;width:100%;height:340px;overflow:hidden;flex-shrink:0}
+#hero{position:relative;width:100%;height:420px;overflow:hidden;flex-shrink:0}
 #hero-slides{display:flex;width:100%;height:100%;transition:transform .6s ease-in-out}
 .hero-slide{min-width:100%;height:100%;position:relative;overflow:hidden}
 .hero-slide img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block}
@@ -109,7 +109,7 @@ body::before{content:'';position:fixed;inset:0;background:var(--bg);z-index:-10;
 .brain-pulse span:nth-child(2){animation-delay:.2s;background:var(--acc)}
 .brain-pulse span:nth-child(3){animation-delay:.4s;background:var(--acc2)}
 @keyframes bp{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
-.ibar{padding:8px 12px;padding-bottom:calc(8px + env(safe-area-inset-bottom));border-top:1px solid var(--bdr);background:var(--bg);flex-shrink:0}
+.ibar{padding:8px 12px 8px;border-top:1px solid var(--bdr);background:var(--bg);flex-shrink:0}
 .irow{display:flex;align-items:flex-end;gap:8px;background:var(--s2);border:1px solid var(--bdr);border-radius:24px;padding:7px 7px 7px 14px}
 .itxt{flex:1;background:transparent;border:none;outline:none;color:var(--txt);font-size:15px;line-height:1.5;max-height:100px;resize:none}
 .itxt::placeholder{color:var(--txt2)}
@@ -181,6 +181,7 @@ textarea.inp{resize:vertical;min-height:120px}
 .bkey-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--s1);border:1px solid var(--bdr);border-radius:14px;cursor:pointer;margin-bottom:8px;transition:background .15s}
 .bkey-row:active{background:var(--s2)}
 .tog{width:42px;height:24px;border-radius:12px;border:none;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;background:var(--s3)}
+.fn-great-vibes{font-family:'Great Vibes',cursive!important}.fn-dancing{font-family:'Dancing Script',cursive!important}.fn-pacifico{font-family:'Pacifico',cursive!important}.fn-satisfy{font-family:'Satisfy',cursive!important}
 .tog-k{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
 #preloader{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;transition:opacity .35s}
 #preloader.hide{opacity:0;pointer-events:none}
@@ -220,7 +221,7 @@ textarea.inp{resize:vertical;min-height:120px}
     </div>
   </div>
   <div class="sbody with-nav">
-    <div class="mitra-card" onclick="go('talk');setTimeout(startCall,400)">
+    <div class="mitra-card" style="margin-top:-2px" onclick="go('talk');setTimeout(startCall,400)">
       <div class="mitra-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.22 2.18 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.06 6.06l1.27-.52a2 2 0 012.11.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div>
       <div class="mitra-info"><div class="mitra-title">Mitra</div><div class="mitra-sub">Call Ariana — AI voice assistant</div></div>
       <button class="mitra-btn">Call now</button>
@@ -417,39 +418,47 @@ textarea.inp{resize:vertical;min-height:120px}
 
 <!-- PROFILE -->
 <div id="s-profile" class="scr">
-  <div class="prof-cover" style="padding-top:env(safe-area-inset-top)">
-    <img id="prof-cover-img" alt="" style="display:none">
-    <button onclick="document.getElementById('cover-file').click()" style="position:absolute;bottom:10px;right:12px;background:rgba(0,0,0,.6);border:none;border-radius:8px;padding:6px 10px;color:#fff;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;backdrop-filter:blur(8px)">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-      Edit cover
-    </button>
-    <button class="ib" onclick="go('home')" style="position:absolute;top:calc(env(safe-area-inset-top)+8px);left:12px;background:rgba(0,0,0,.5);backdrop-filter:blur(10px)">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-    </button>
-  </div>
   <input type="file" id="cover-file" accept="image/*" hidden onchange="uploadCover(this)">
   <input type="file" id="avatar-file" accept="image/*" hidden onchange="uploadAvatar(this)">
   <input type="file" id="hero-file" accept="image/*" hidden multiple onchange="uploadHeroPhoto(this)">
+  <!-- Full bleed cover hero — overlays all the way to stats -->
+  <div style="position:relative;flex-shrink:0">
+    <div style="height:calc(env(safe-area-inset-top) + 280px);overflow:hidden;background:linear-gradient(135deg,rgba(109,40,217,.7),rgba(139,92,246,.3));position:relative">
+      <img id="prof-cover-img" alt="" style="display:none;width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0">
+      <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(8,8,8,.1) 0%,rgba(8,8,8,.6) 100%)"></div>
+    </div>
+    <!-- Back button -->
+    <button class="ib" onclick="go('home')" style="position:absolute;top:calc(env(safe-area-inset-top)+8px);left:12px;background:rgba(0,0,0,.4);backdrop-filter:blur(10px)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <!-- Edit cover -->
+    <button onclick="document.getElementById('cover-file').click()" style="position:absolute;top:calc(env(safe-area-inset-top)+8px);right:12px;background:rgba(0,0,0,.4);backdrop-filter:blur(8px);border:none;border-radius:8px;padding:6px 10px;color:#fff;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      Edit cover
+    </button>
+    <!-- Avatar + name overlaid on cover bottom -->
+    <div style="position:absolute;bottom:0;left:0;right:0;padding:0 20px 16px;display:flex;align-items:flex-end;justify-content:space-between">
+      <div>
+        <div class="prof-av" onclick="document.getElementById('avatar-file').click()" style="margin-bottom:10px">
+          <img id="prof-av-img" alt="" style="display:none"><span id="prof-av-txt">A</span>
+          <div class="prof-av-edit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+        </div>
+        <div class="prof-name-row">
+          <div class="prof-name" id="prof-name-display" style="color:#fff;font-size:22px">Ariana</div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.5283 1.5999C11.7686 1.29437 12.2314 1.29437 12.4717 1.5999L14.2805 3.90051C14.4309 4.09173 14.6818 4.17325 14.9158 4.10693L17.7314 3.3089C18.1054 3.20292 18.4799 3.475 18.4946 3.86338L18.6057 6.78783C18.615 7.03089 18.77 7.24433 18.9984 7.32823L21.7453 8.33761C22.1101 8.47166 22.2532 8.91189 22.0368 9.23478L20.4078 11.666C20.2724 11.8681 20.2724 12.1319 20.4078 12.334L22.0368 14.7652C22.2532 15.0881 22.1101 15.5283 21.7453 15.6624L18.9984 16.6718C18.77 16.7557 18.615 16.9691 18.6057 17.2122L18.4946 20.1366C18.4799 20.525 18.1054 20.7971 17.7314 20.6911L14.9158 19.8931C14.6818 19.8267 14.4309 19.9083 14.2805 20.0995L12.4717 22.4001C12.2314 22.7056 11.7686 22.7056 11.5283 22.4001L9.71949 20.0995C9.56915 19.9083 9.31823 19.8267 9.08421 19.8931L6.26856 20.6911C5.89463 20.7971 5.52014 20.525 5.50539 20.1366L5.39427 17.2122C5.38503 16.9691 5.22996 16.7557 5.00164 16.6718L2.25467 15.6624C1.88986 15.5283 1.74682 15.0881 1.96317 14.7652L3.59221 12.334C3.72761 12.1319 3.72761 11.8681 3.59221 11.666L1.96317 9.23478C1.74682 8.91189 1.88986 8.47166 2.25467 8.33761L5.00165 7.32823C5.22996 7.24433 5.38503 7.03089 5.39427 6.78783L5.50539 3.86338C5.52014 3.475 5.89463 3.20292 6.26857 3.3089L9.08421 4.10693C9.31823 4.17325 9.56915 4.09173 9.71949 3.90051L11.5283 1.5999Z" stroke="var(--acc2)" stroke-width="1.5"/><path d="M9 12L11 14L15 10" stroke="var(--acc2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="prof-title" style="color:rgba(255,255,255,.7)">AI Influencer & Assistant</div>
+      </div>
+      <button class="mitra-btn" onclick="document.getElementById('hero-file').click()" style="height:32px;font-size:11px;margin-bottom:4px">Update hero</button>
+    </div>
+  </div>
   <div class="sbody no-nav">
-    <div class="prof-av-wrap">
-      <div class="prof-av" onclick="document.getElementById('avatar-file').click()">
-        <img id="prof-av-img" alt="" style="display:none"><span id="prof-av-txt">A</span>
-        <div class="prof-av-edit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
-      </div>
-      <button class="mitra-btn" onclick="document.getElementById('hero-file').click()" style="height:34px;font-size:11px">Update hero photos</button>
+    <!-- Online status -->
+    <div style="display:flex;align-items:center;gap:6px;padding:12px 20px 0">
+      <span style="width:7px;height:7px;border-radius:50%;background:var(--grn);display:inline-block;flex-shrink:0"></span>
+      <span style="font-size:12px;color:var(--txt2)">Always here to chat, help and vibe with you.</span>
     </div>
-    <div class="prof-info">
-      <div class="prof-name-row">
-        <div class="prof-name" id="prof-name-display">Ariana</div>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--acc)" stroke="none"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-      </div>
-      <div class="prof-title">AI Influencer & Assistant</div>
-      <div style="display:flex;align-items:center;gap:6px;margin-top:8px">
-        <span style="width:7px;height:7px;border-radius:50%;background:var(--grn);display:inline-block"></span>
-        <span style="font-size:12px;color:var(--txt2)">Always here to chat, help and vibe with you.</span>
-      </div>
-    </div>
-    <div class="prof-stats">
+    <div class="prof-stats" style="padding:12px 16px 16px">
       <div class="pstat"><div class="pstat-val" id="stat-convos">—</div><div class="pstat-lbl">Conversations</div></div>
       <div class="pstat"><div class="pstat-val" id="stat-calls">—</div><div class="pstat-lbl">Calls today</div></div>
       <div class="pstat"><div class="pstat-val" id="stat-media">—</div><div class="pstat-lbl">Media files</div></div>
@@ -554,7 +563,7 @@ textarea.inp{resize:vertical;min-height:120px}
   <div class="bnav-shine"></div>
   <button class="nb on" id="nb-home" onclick="go('home')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></button>
   <button class="nb" id="nb-platforms" onclick="go('platforms')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></button>
-  <button class="nb-center" onclick="go('talk')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg></button>
+  <button class="nb-center" onclick="go('talk')"><svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M22.125 0H1.875C.8394 0 0 .8394 0 1.875v20.25C0 23.1606.8394 24 1.875 24h20.25C23.1606 24 24 23.1606 24 22.125V1.875C24 .8394 23.1606 0 22.125 0zM12 18.75c-.591 0-1.1697-.0413-1.7317-.1209-.5626.3965-3.813 2.6797-4.1198 2.7225 0 0-.1258.0489-.2328-.0141s-.0876-.2282-.0876-.2282c.0322-.2198.8426-3.0183.992-3.5333-2.7452-1.36-4.5701-3.7686-4.5701-6.5135C2.25 6.8168 6.6152 3.375 12 3.375s9.75 3.4418 9.75 7.6875c0 4.2457-4.3652 7.6875-9.75 7.6875z"/></svg></button>
   <button class="nb" id="nb-media" onclick="go('media')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
   <button class="nb" id="nb-profile" onclick="go('profile')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
 </nav>
@@ -577,7 +586,7 @@ function go(name){
   document.getElementById(screenMap[name])?.classList.add('on');
   document.querySelectorAll('.nb,.nb-center').forEach(b=>b.classList.remove('on'));
   if(navMap[name])document.getElementById(navMap[name])?.classList.add('on');
-  document.getElementById('bnav').classList.toggle('hidden',!HOME_SCREENS.includes(name));
+  document.getElementById('bnav').classList.toggle('hidden',name!=='home');
   if(name==='platforms')loadPlatforms();
   if(name==='media')loadMedia();
   if(name==='brain')loadBrain();
@@ -696,7 +705,7 @@ function renderMediaGrid(items){
 }
 async function uploadMedia(input){const file=input.files[0];if(!file)return;const b64=await toB64(file);toast('Uploading...');try{await fetch('/api/media/upload',{method:'POST',headers:authH(),body:JSON.stringify({filename:file.name,mediaType:file.type,data:b64})});loadMedia();toast('Uploaded');}catch{toast('Upload failed');}input.value='';}
 async function deleteMedia(id){if(!confirm('Delete?'))return;await fetch(`/api/media/${id}`,{method:'DELETE',headers:authH()});loadMedia();}
-async function loadWardrobe(){try{wardrobeItems=await fetch('/api/wardrobe').then(r=>r.json());renderWardrobeGrid();loadWardrobePreview();}catch{toast('Could not load wardrobe');}}
+async function loadWardrobe(){try{const _wr=await fetch('/api/wardrobe').then(r=>r.json());wardrobeItems=(_wr.items||_wr)||[];renderWardrobeGrid();loadWardrobePreview();}catch{toast('Could not load wardrobe');}}
 function renderWardrobeGrid(sel=false){
   const grid=document.getElementById('wardrobe-grid');const empty=document.getElementById('wardrobe-empty');
   if(!wardrobeItems.length){grid.innerHTML='';empty.style.display='block';return;}empty.style.display='none';
@@ -704,7 +713,7 @@ function renderWardrobeGrid(sel=false){
 }
 function selectOutfit(id,url,el){selectedOutfit=id;genOutfitUrl=url;document.querySelectorAll('#gen-wd-grid .wi').forEach(w=>w.classList.remove('selected'));el.classList.add('selected');}
 function loadWardrobePreview(){const el=document.getElementById('home-wd-preview');if(!el)return;el.innerHTML=wardrobeItems.slice(0,3).map(it=>`<img src="${it.url||''}" alt="" class="wd-thumb" loading="lazy">`).join('');}
-async function uploadWardrobe(input){const file=input.files[0];if(!file)return;const b64=await toB64(file);toast('Uploading...');try{await fetch('/api/wardrobe/upload',{method:'POST',headers:authH(),body:JSON.stringify({filename:file.name,data:b64,mediaType:file.type})});loadWardrobe();toast('Uploaded');}catch{toast('Upload failed');}input.value='';}
+async function uploadWardrobe(input){const file=input.files[0];if(!file)return;const b64=await toB64(file);toast('Uploading...');try{const r=await fetch('/api/wardrobe/upload',{method:'POST',headers:authH(),body:JSON.stringify({name:file.name,data:b64,mimeType:file.type})});const d=await r.json();if(!d.ok)throw new Error(d.error||'Upload failed');loadWardrobe();toast('Uploaded');}catch(e){toast('Failed: '+e.message);}input.value='';}
 async function deleteWardrobe(id){if(!confirm('Delete?'))return;await fetch(`/api/wardrobe/${id}`,{method:'DELETE',headers:authH()});loadWardrobe();}
 async function loadBrain(){try{const brain=await fetch('/api/brain').then(r=>r.json());window._brain=brain;document.getElementById('brain-keys').innerHTML=Object.keys(brain).map(k=>`<div class="bkey-row" onclick="openBrainKey('${escAttr(k)}')"><div><div style="font-size:14px;font-weight:600;color:var(--txt)">${escHTML(k)}</div><div style="font-size:11px;color:var(--txt2);margin-top:2px">${escHTML(JSON.stringify(brain[k]).slice(0,60))}...</div></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--txt3)" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div>`).join('');}catch{toast('Could not load brain');}}
 function openBrainKey(k){activeBrainKey=k;document.getElementById('brain-edit-title').textContent=k;const v=window._brain?.[k];document.getElementById('brain-edit-val').value=typeof v==='object'?JSON.stringify(v,null,2):String(v||'');document.getElementById('s-brain-edit').classList.add('on');}
@@ -716,7 +725,7 @@ function setGenMode(mode){
   document.getElementById('gen-title').textContent=titles[mode]||'Generate';
   const body=document.getElementById('gen-body');
   if(mode==='img2img'){
-    body.innerHTML=`<div style="padding:16px"><div style="font-size:13px;color:var(--txt2);margin-bottom:14px">Pick an outfit from wardrobe — Ariana will wear it in the generated image.</div><div style="font-size:12px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Select outfit</div><div class="wgrid" id="gen-wd-grid" style="padding:0;margin-bottom:14px"></div><div class="sec"><label class="lbl">Style prompt (optional)</label><input type="text" id="gen-prompt" class="inp" placeholder="studio lighting, editorial, natural sunlight..."></div><div class="sec"><label class="lbl">Fal.ai Key</label><input type="password" id="gen-fal-key" class="inp" placeholder="..." value="${cfg.get('fal')}"></div><button class="btn" onclick="runImg2Img()">Generate</button><div id="gen-result" class="gen-result"></div></div>`;
+    body.innerHTML=`<div style="padding:16px"><div style="font-size:13px;color:var(--txt2);margin-bottom:14px">Select outfit from wardrobe OR upload a source image. Ariana's face is locked in.</div><div style="font-size:12px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Select outfit</div><div class="wgrid" id="gen-wd-grid" style="padding:0;margin-bottom:10px"></div><div class="sec"><label class="lbl">Or upload source image</label><input type="file" id="gen-src-file" accept="image/*" class="inp" style="padding:8px"></div><div class="sec"><label class="lbl">Style prompt (optional)</label><input type="text" id="gen-prompt" class="inp" placeholder="studio lighting, editorial fashion, natural sunlight..."></div><div class="sec"><label class="lbl">Fal.ai Key</label><input type="password" id="gen-fal-key" class="inp" placeholder="..." value="${cfg.get('fal')}"></div><button class="btn" onclick="runImg2Img()">Generate</button><div id="gen-result" class="gen-result"></div></div>`;
     const grid=document.getElementById('gen-wd-grid');
     if(!wardrobeItems.length){grid.innerHTML='<div style="color:var(--txt3);font-size:13px;padding:8px 0">No outfits yet — add some in Wardrobe</div>';return;}
     grid.innerHTML=wardrobeItems.map(it=>`<div class="wi${selectedOutfit===it.id?' selected':''}" onclick="selectOutfit('${escAttr(it.id)}','${escAttr(it.url||'')}',this)"><img src="${it.url||''}" alt="" loading="lazy"></div>`).join('');
@@ -725,7 +734,7 @@ function setGenMode(mode){
     body.innerHTML=`<div style="padding:16px"><div class="sec"><label class="lbl">Text</label><textarea id="tts-text" class="inp" rows="4" placeholder="Enter text for Ariana to speak..."></textarea></div><div class="sec"><label class="lbl">Provider</label><select id="tts-provider" class="inp"><option value="elevenlabs">ElevenLabs</option><option value="cartesia">Cartesia</option></select></div><div class="sec"><label class="lbl">ElevenLabs Key</label><input type="password" id="tts-eleven" class="inp" value="${cfg.get('eleven')}" placeholder="sk_..."></div><div class="sec"><label class="lbl">ElevenLabs Voice ID</label><input type="text" id="tts-eleven-voice" class="inp" value="${cfg.get('eleven_voice')}" placeholder="voice ID"></div><div class="sec"><label class="lbl">Cartesia Key</label><input type="password" id="tts-cartesia" class="inp" value="${cfg.get('cartesia')}" placeholder="..."></div><div class="sec"><label class="lbl">Cartesia Voice ID</label><input type="text" id="tts-cartesia-voice" class="inp" value="${cfg.get('cartesia_voice')}" placeholder="voice ID"></div><button class="btn" onclick="runTTS()">Generate voice</button><div id="tts-result" style="margin-top:12px"></div></div>`;
   }
   if(mode==='avatar'){
-    body.innerHTML=`<div style="padding:16px"><div class="sec"><label class="lbl">Script</label><textarea id="av-text" class="inp" rows="4" placeholder="What should Ariana say..."></textarea></div><div class="sec"><label class="lbl">HeyGen API Key</label><input type="password" id="av-heygen-key" class="inp" value="${cfg.get('heygen')}" placeholder="..."></div><div class="sec"><label class="lbl">HeyGen Avatar ID</label><input type="text" id="av-heygen-avatar" class="inp" value="${cfg.get('heygen_avatar')}" placeholder="avatar ID"></div><button class="btn" onclick="runAvatar()">Generate video</button><div id="av-result" style="margin-top:12px"></div></div>`;
+    body.innerHTML=`<div style="padding:16px"><div style="font-size:13px;color:var(--txt2);margin-bottom:14px">Upload Ariana's photo — HeyGen will animate it speaking your script.</div><div class="sec"><label class="lbl">Upload photo</label><input type="file" id="av-photo" accept="image/*" class="inp" style="padding:8px"></div><div class="sec"><label class="lbl">Or enter photo URL</label><input type="url" id="av-photo-url" class="inp" placeholder="https://..."></div><div class="sec"><label class="lbl">Script</label><textarea id="av-text" class="inp" rows="3" placeholder="What should Ariana say..."></textarea></div><div class="sec"><label class="lbl">Voice ID (ElevenLabs)</label><input type="text" id="av-voice-id" class="inp" value="${cfg.get('eleven_voice')}" placeholder="voice ID"></div><div class="sec"><label class="lbl">HeyGen API Key</label><input type="password" id="av-heygen-key" class="inp" value="${cfg.get('heygen')}" placeholder="..."></div><button class="btn" onclick="runAvatar()">Generate talking video</button><div id="av-result" style="margin-top:12px"></div></div>`;
   }
   if(mode==='talkphoto'){
     body.innerHTML=`<div style="padding:16px"><div class="sec"><label class="lbl">Source image URL</label><input type="url" id="tp-img" class="inp" placeholder="https://..."></div><div class="sec"><label class="lbl">Motion prompt</label><input type="text" id="tp-prompt" class="inp" placeholder="speaking naturally, subtle smile"></div><div class="sec"><label class="lbl">Fal.ai Key</label><input type="password" id="tp-fal" class="inp" value="${cfg.get('fal')}" placeholder="..."></div><button class="btn" onclick="runTalkPhoto()">Animate</button><div id="tp-result" style="margin-top:12px"></div></div>`;
@@ -734,9 +743,14 @@ function setGenMode(mode){
 async function runImg2Img(){
   const apiKey=document.getElementById('gen-fal-key').value.trim()||cfg.get('fal');
   const prompt=document.getElementById('gen-prompt').value.trim()||'Ariana wearing the outfit, editorial fashion photo, studio lighting';
-  if(!apiKey){toast('Fal.ai key required');return;}if(!genOutfitUrl){toast('Select an outfit first');return;}
+  if(!apiKey){toast('Fal.ai key required');return;}
+  // use uploaded file or selected outfit
+  let imageUrl=genOutfitUrl;
+  const fileInput=document.getElementById('gen-src-file');
+  if(fileInput&&fileInput.files[0]){const b64=await toB64(fileInput.files[0]);const r=await fetch('/api/media/upload',{method:'POST',headers:authH(),body:JSON.stringify({filename:fileInput.files[0].name,mediaType:fileInput.files[0].type,data:b64})});const d=await r.json();if(d.ok&&d.item?.url)imageUrl=d.item.url;}
+  if(!imageUrl){toast('Select an outfit or upload an image');return;}
   cfg.set('fal',apiKey);const result=document.getElementById('gen-result');result.innerHTML='<div class="gen-progress">Generating...</div>';
-  try{const res=await fetch('/api/generate/image',{method:'POST',headers:authH(),body:JSON.stringify({provider:'fal',apiKey,prompt,imageUrl:genOutfitUrl,strength:0.72})});const data=await res.json();if(data.ok&&data.url)result.innerHTML=`<img src="${data.url}" alt="">`;else result.innerHTML=`<div class="gen-progress" style="color:var(--red)">${data.error||'Failed'}</div>`;}
+  try{const res=await fetch('/api/generate/image',{method:'POST',headers:authH(),body:JSON.stringify({provider:'fal',apiKey,prompt,imageUrl:genOutfitUrl,strength:0.72})});const data=await res.json();if(data.ok&&data.url){result.innerHTML=`<img src="${data.url}" alt="">`;saveToGallery(data.url,'image/jpeg','ariana-generated.jpg');}else result.innerHTML=`<div class="gen-progress" style="color:var(--red)">${data.error||'Failed'}</div>`;}
   catch(e){result.innerHTML=`<div class="gen-progress" style="color:var(--red)">${e.message}</div>`;}
 }
 async function runTTS(){
@@ -747,18 +761,23 @@ async function runTTS(){
   if(!text||!apiKey||!voiceId){toast('Fill in text, key and voice ID');return;}
   cfg.set('tts_provider',provider);cfg.set('eleven',document.getElementById('tts-eleven').value.trim());cfg.set('eleven_voice',document.getElementById('tts-eleven-voice').value.trim());cfg.set('cartesia',document.getElementById('tts-cartesia').value.trim());cfg.set('cartesia_voice',document.getElementById('tts-cartesia-voice').value.trim());
   const result=document.getElementById('tts-result');result.innerHTML='<div class="gen-progress">Generating voice...</div>';
-  try{const res=await fetch('/api/generate/tts',{method:'POST',headers:authH(),body:JSON.stringify({provider,text,voiceId,apiKey})});const data=await res.json();if(data.ok&&data.audioUrl)result.innerHTML=`<audio controls src="${data.audioUrl}" style="width:100%;margin-top:8px"></audio>`;else result.innerHTML=`<div class="gen-progress" style="color:var(--red)">${data.error||'Failed'}</div>`;}
+  try{const res=await fetch('/api/generate/tts',{method:'POST',headers:authH(),body:JSON.stringify({provider,text,voiceId,apiKey})});const data=await res.json();if(data.ok&&data.audioUrl){result.innerHTML=`<audio controls src="${data.audioUrl}" style="width:100%;margin-top:8px"></audio>`;saveToGallery(data.audioUrl,'audio/mpeg','ariana-voice.mp3');}else result.innerHTML=`<div class="gen-progress" style="color:var(--red)">${data.error||'Failed'}</div>`;}
   catch(e){result.innerHTML=`<div class="gen-progress" style="color:var(--red)">${e.message}</div>`;}
 }
 async function runAvatar(){
   const apiKey=document.getElementById('av-heygen-key').value.trim()||cfg.get('heygen');
-  const avatarId=document.getElementById('av-heygen-avatar').value.trim()||cfg.get('heygen_avatar');
   const text=document.getElementById('av-text').value.trim();
+  const voiceId=document.getElementById('av-voice-id').value.trim()||cfg.get('eleven_voice');
   if(!apiKey||!text){toast('HeyGen key and script required');return;}
-  cfg.set('heygen',apiKey);cfg.set('heygen_avatar',avatarId);
+  cfg.set('heygen',apiKey);
+  // resolve photo URL
+  let photoUrl=document.getElementById('av-photo-url').value.trim();
+  const photoFile=document.getElementById('av-photo').files[0];
+  if(photoFile){const b64=await toB64(photoFile);const r=await fetch('/api/media/upload',{method:'POST',headers:authH(),body:JSON.stringify({filename:photoFile.name,mediaType:photoFile.type,data:b64})});const d=await r.json();if(d.ok&&d.item?.url)photoUrl=d.item.url;}
+  if(!photoUrl){toast('Upload a photo or enter photo URL');return;}
   const result=document.getElementById('av-result');result.innerHTML='<div class="gen-progress">Starting HeyGen render...</div>';
   try{
-    const res=await fetch('/api/generate/avatar',{method:'POST',headers:authH(),body:JSON.stringify({apiKey,avatarId,text})});
+    const res=await fetch('/api/generate/avatar',{method:'POST',headers:authH(),body:JSON.stringify({apiKey,photoUrl,text,voiceId})});
     const data=await res.json();if(!data.ok){result.innerHTML=`<div class="gen-progress" style="color:var(--red)">${data.error||'Failed'}</div>`;return;}
     result.innerHTML='<div class="gen-progress">Rendering... (1-2 min)</div>';
     const poll=setInterval(async()=>{try{const p=await fetch(`/api/generate/avatar/poll/${data.videoId}?apiKey=${encodeURIComponent(apiKey)}`).then(r=>r.json());if(p.status==='done'){clearInterval(poll);result.innerHTML=`<video src="${p.url}" controls playsinline style="width:100%;border-radius:16px"></video>`;}if(p.status==='failed'){clearInterval(poll);result.innerHTML=`<div class="gen-progress" style="color:var(--red)">${p.error||'Render failed'}</div>`;}}catch{clearInterval(poll);}},8000);
@@ -797,6 +816,10 @@ socket.on('call_started',d=>{currentCallId=d.callId;document.getElementById('cal
 socket.on('call_transcript',d=>{if(d.callId!==currentCallId)return;const el=document.getElementById('call-transcript');el.style.display='block';el.textContent+=(d.entry?.role==='assistant'?'Ariana: ':'You: ')+(d.entry?.content||'')+'\n';el.scrollTop=el.scrollHeight;});
 socket.on('call_status',d=>{if(d.callId===currentCallId)document.getElementById('call-status-txt').textContent=d.status;});
 socket.on('call_ended',d=>{if(d.callId===currentCallId){document.getElementById('call-status-txt').textContent='Call ended';setTimeout(endCall,2000);}});
+async function saveToGallery(url,mediaType,filename){
+  try{await fetch('/api/media/upload',{method:'POST',headers:authH(),body:JSON.stringify({filename,mediaType,data:url})});}
+  catch(e){console.warn('Gallery save failed',e);}
+}
 function escHTML(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 function escAttr(s){return String(s).replace(/'/g,'&#39;');}
 function toB64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);});}

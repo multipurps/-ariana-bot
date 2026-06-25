@@ -2607,25 +2607,31 @@ app.get('/api/generate/poll/:provider/:id', async (req, res) => {
 
 // ── HEYGEN TALKING AVATAR ──────────────────────────────────────
 app.post('/api/generate/avatar', async (req, res) => {
-  const { apiKey, avatarId, voiceId, text, voiceProvider='elevenlabs' } = req.body;
-  if (!apiKey || !text) return res.status(400).json({ ok:false, error:'apiKey and text required' });
+  const { apiKey, photoUrl, text, voiceId } = req.body;
+  if (!apiKey || !text || !photoUrl) return res.status(400).json({ ok:false, error:'apiKey, photoUrl and text required' });
   try {
+    // Use HeyGen talking photo — animates any uploaded face image
     const body = {
       video_inputs: [{
-        character: { type:'avatar', avatar_id: avatarId||'default', avatar_style:'normal' },
-        voice: voiceId
-          ? { type:'audio', audio_url: voiceId }
-          : { type:'text', input_text: text, voice_id:'2d5b0e6cf36f460aa7fc47e3eee4ba54' },
-        background: { type:'color', value:'#080808' }
+        character: {
+          type: 'talking_photo',
+          talking_photo_url: photoUrl
+        },
+        voice: {
+          type: 'text',
+          input_text: text,
+          voice_id: voiceId || '2d5b0e6cf36f460aa7fc47e3eee4ba54'
+        },
+        background: { type: 'color', value: '#080808' }
       }],
-      dimension: { width:720, height:1280 },
-      aspect_ratio:'9:16'
+      dimension: { width: 720, height: 1280 },
+      aspect_ratio: '9:16'
     };
     const r = await axios.post('https://api.heygen.com/v2/video/generate', body,
-      { headers:{ 'X-Api-Key': apiKey, 'Content-Type':'application/json' }, timeout:30000 });
+      { headers: { 'X-Api-Key': apiKey, 'Content-Type': 'application/json' }, timeout: 30000 });
     const videoId = r.data?.data?.video_id;
-    if (!videoId) throw new Error('No video_id from HeyGen');
-    return res.json({ ok:true, videoId });
+    if (!videoId) throw new Error(r.data?.message || 'No video_id from HeyGen');
+    return res.json({ ok: true, videoId });
   } catch(e) {
     res.status(500).json({ ok:false, error: e.response?.data?.message || e.message });
   }
