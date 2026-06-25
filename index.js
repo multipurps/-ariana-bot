@@ -948,7 +948,7 @@ Make them feel like they have a real girlfriend they can text anytime.`
   }));
 
   // ── Inject brain memories so she actually remembers things ──
-  const memoryKeys = ['core_identity','personality','lifestyle','miami_environment','learned_memories','people','facts'];
+  const memoryKeys = ['core_identity','appearance','personality','lifestyle','miami_environment','learned_memories','people','facts'];
   const memLines = [];
   for (const k of memoryKeys) {
     const val = brainCache[k];
