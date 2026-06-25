@@ -2605,6 +2605,48 @@ app.get('/api/generate/poll/:provider/:id', async (req, res) => {
   }
 });
 
+// ── HEYGEN TALKING AVATAR ──────────────────────────────────────
+app.post('/api/generate/avatar', async (req, res) => {
+  const { apiKey, avatarId, voiceId, text, voiceProvider='elevenlabs' } = req.body;
+  if (!apiKey || !text) return res.status(400).json({ ok:false, error:'apiKey and text required' });
+  try {
+    const body = {
+      video_inputs: [{
+        character: { type:'avatar', avatar_id: avatarId||'default', avatar_style:'normal' },
+        voice: voiceId
+          ? { type:'audio', audio_url: voiceId }
+          : { type:'text', input_text: text, voice_id:'2d5b0e6cf36f460aa7fc47e3eee4ba54' },
+        background: { type:'color', value:'#080808' }
+      }],
+      dimension: { width:720, height:1280 },
+      aspect_ratio:'9:16'
+    };
+    const r = await axios.post('https://api.heygen.com/v2/video/generate', body,
+      { headers:{ 'X-Api-Key': apiKey, 'Content-Type':'application/json' }, timeout:30000 });
+    const videoId = r.data?.data?.video_id;
+    if (!videoId) throw new Error('No video_id from HeyGen');
+    return res.json({ ok:true, videoId });
+  } catch(e) {
+    res.status(500).json({ ok:false, error: e.response?.data?.message || e.message });
+  }
+});
+
+app.get('/api/generate/avatar/poll/:videoId', async (req, res) => {
+  const { videoId } = req.params;
+  const apiKey = req.query.apiKey;
+  if (!apiKey) return res.status(400).json({ ok:false, error:'apiKey required' });
+  try {
+    const r = await axios.get(`https://api.heygen.com/v1/video_status.get?video_id=${videoId}`,
+      { headers:{ 'X-Api-Key': apiKey }, timeout:15000 });
+    const { status, video_url, thumbnail_url, error } = r.data?.data || {};
+    if (status === 'completed') return res.json({ ok:true, status:'done', url:video_url, thumb:thumbnail_url });
+    if (status === 'failed') return res.json({ ok:false, status:'failed', error: error||'HeyGen failed' });
+    return res.json({ ok:true, status:'pending' });
+  } catch(e) {
+    res.status(500).json({ ok:false, error: e.response?.data?.message || e.message });
+  }
+});
+
 // ── PUSH SUBS PERSISTENCE ─────────────────────────────────────
 async function savePushSub(sub) {
   if (!supabase) return;
