@@ -960,7 +960,7 @@ function toB64(file){return new Promise((res,rej)=>{const r=new FileReader();r.o
   </div>
 </div>
 
-<div id="__dbg" style="position:fixed;top:0;left:0;right:0;z-index:99999;background:rgba(0,0,0,.92);color:#0f0;font:10px/1.4 monospace;padding:6px;overflow-y:auto;max-height:60vh;pointer-events:none"></div>
+<div id="__dbg" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:rgba(0,0,0,.95);color:#0f0;font:10px/1.4 monospace;padding:6px;overflow-y:auto;pointer-events:auto"></div>
 <script>
 (function(){
   function sel(el){
@@ -985,6 +985,11 @@ function toB64(file){return new Promise((res,rej)=>{const r=new FileReader();r.o
     var pr=probe.getBoundingClientRect();
     var saiTop=Math.round(pr.top);
     var saiBottom=H-Math.round(pr.bottom);
+    out.push('=== SAFE AREA INSETS ===');
+    out.push('inset-top: '+saiTop+'px  <-- if 0, viewport-fit=cover NOT working');
+    out.push('inset-bottom: '+saiBottom+'px  <-- if 0, no safe area coverage');
+    out.push('physical bottom of safe content: '+(H-saiBottom)+'px');
+    out.push('');
     out.push('=== VIEWPORT ===');
     out.push('window.innerHeight: '+H);
     out.push('visualViewport.height: '+(vv?vv.height:'N/A'));
@@ -992,10 +997,6 @@ function toB64(file){return new Promise((res,rej)=>{const r=new FileReader();r.o
     out.push('documentElement.clientHeight: '+dc.clientHeight);
     out.push('body.offsetHeight: '+body.offsetHeight);
     out.push('app.offsetHeight: '+(app?app.offsetHeight:'NO #app'));
-    out.push('--- SAFE AREA INSETS (probe) ---');
-    out.push('inset-top: '+saiTop+'px');
-    out.push('inset-bottom: '+saiBottom+'px');
-    out.push('innerHeight - inset-bottom (safe content bottom): '+(H-saiBottom));
     out.push('');
     out.push('=== POINT SCAN ===');
     const offsets=[5,20,40,60,100];
