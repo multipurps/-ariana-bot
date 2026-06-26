@@ -34,7 +34,7 @@ body::before{content:'';position:fixed;inset:0;background:var(--bg);z-index:-10;
 .ib{width:36px;height:36px;border-radius:10px;background:none;border:none;color:var(--txt2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;flex-shrink:0}
 .ib:active{background:var(--s2);color:var(--txt)}
 .sbody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
-.sbody.with-nav{padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+.sbody.with-nav{padding-bottom:90px}
 .sbody.no-nav{padding-bottom:0}
 #bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:0;padding:6px 6px;z-index:90;border-radius:50px;background:rgba(8,8,8,.88);backdrop-filter:blur(40px) saturate(200%);-webkit-backdrop-filter:blur(40px) saturate(200%);box-shadow:0 8px 32px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.06)}
 #bnav.hidden{display:none}
@@ -960,85 +960,5 @@ function toB64(file){return new Promise((res,rej)=>{const r=new FileReader();r.o
   </div>
 </div>
 
-<div id="__dbg" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:rgba(0,0,0,.95);color:#0f0;font:10px/1.4 monospace;padding:6px;overflow-y:auto;pointer-events:auto"></div>
-<script>
-(function(){
-  function sel(el){
-    if(!el)return'null';
-    let s=el.tagName.toLowerCase();
-    if(el.id)s+='#'+el.id;
-    if(el.className&&typeof el.className==='string')s+='.'+el.className.trim().split(/\s+/).join('.');
-    return s;
-  }
-  function run(){
-    const out=[];
-    const W=window.innerWidth,H=window.innerHeight;
-    const vv=window.visualViewport;
-    const dc=document.documentElement;
-    const body=document.body;
-    const app=document.getElementById('app');
-    // probe safe area insets
-    var probe=document.getElementById('__sai')||document.createElement('div');
-    probe.id='__sai';
-    probe.style.cssText='position:fixed;top:env(safe-area-inset-top);left:env(safe-area-inset-left);bottom:env(safe-area-inset-bottom);right:env(safe-area-inset-right);pointer-events:none;visibility:hidden;z-index:99998';
-    if(!probe.parentNode)document.body.appendChild(probe);
-    var pr=probe.getBoundingClientRect();
-    var saiTop=Math.round(pr.top);
-    var saiBottom=H-Math.round(pr.bottom);
-    out.push('=== SAFE AREA INSETS ===');
-    out.push('inset-top: '+saiTop+'px  <-- if 0, viewport-fit=cover NOT working');
-    out.push('inset-bottom: '+saiBottom+'px  <-- if 0, no safe area coverage');
-    out.push('physical bottom of safe content: '+(H-saiBottom)+'px');
-    out.push('');
-    out.push('=== VIEWPORT ===');
-    out.push('window.innerHeight: '+H);
-    out.push('visualViewport.height: '+(vv?vv.height:'N/A'));
-    out.push('visualViewport.offsetTop: '+(vv?vv.offsetTop:'N/A'));
-    out.push('documentElement.clientHeight: '+dc.clientHeight);
-    out.push('body.offsetHeight: '+body.offsetHeight);
-    out.push('app.offsetHeight: '+(app?app.offsetHeight:'NO #app'));
-    out.push('');
-    out.push('=== POINT SCAN ===');
-    const offsets=[5,20,40,60,100];
-    const flagged=[];
-    offsets.forEach(function(o){
-      const y=H-o;
-      const el=document.elementFromPoint(W/2,y);
-      if(!el){out.push('bottom-'+o+'px → null');return;}
-      const cs=getComputedStyle(el);
-      const r=el.getBoundingClientRect();
-      const gap=H-Math.round(r.bottom);
-      const bg=cs.backgroundColor;
-      const isBlack=bg==='rgb(0, 0, 0)'||bg==='rgba(0, 0, 0, 1)'||bg==='rgba(0,0,0,1)';
-      if(isBlack)flagged.push(sel(el));
-      out.push((isBlack?'🔴 ':'    ')+'bottom-'+o+'px:');
-      out.push('  el: '+sel(el));
-      out.push('  tag: '+el.tagName);
-      out.push('  bg: '+bg);
-      out.push('  bgImage: '+cs.backgroundImage.slice(0,40));
-      out.push('  rect.top: '+Math.round(r.top)+' rect.bottom: '+Math.round(r.bottom));
-      out.push('  offsetHeight: '+el.offsetHeight);
-      out.push('  innerHeight - rect.bottom: '+gap);
-    });
-    out.push('');
-    out.push('=== DOM CHAIN (first-child walk) ===');
-    let node=dc;
-    while(node){
-      const r=node.getBoundingClientRect();
-      const cs=getComputedStyle(node);
-      const gap=H-Math.round(r.bottom);
-      out.push(sel(node)+' | bottom:'+Math.round(r.bottom)+' | gap:'+gap+' | bg:'+cs.backgroundColor);
-      node=node.firstElementChild||null;
-    }
-    if(flagged.length){
-      out.push('');
-      out.push('🔴 BLACK OWNER(S): '+flagged.join(', '));
-    }
-    document.getElementById('__dbg').innerText=out.join('\n');
-  }
-  run();
-  setInterval(run,1000);
-})();
-</script>
 </body>
 </html>
