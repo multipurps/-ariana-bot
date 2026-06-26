@@ -977,6 +977,14 @@ function toB64(file){return new Promise((res,rej)=>{const r=new FileReader();r.o
     const dc=document.documentElement;
     const body=document.body;
     const app=document.getElementById('app');
+    // probe safe area insets
+    var probe=document.getElementById('__sai')||document.createElement('div');
+    probe.id='__sai';
+    probe.style.cssText='position:fixed;top:env(safe-area-inset-top);left:env(safe-area-inset-left);bottom:env(safe-area-inset-bottom);right:env(safe-area-inset-right);pointer-events:none;visibility:hidden;z-index:99998';
+    if(!probe.parentNode)document.body.appendChild(probe);
+    var pr=probe.getBoundingClientRect();
+    var saiTop=Math.round(pr.top);
+    var saiBottom=H-Math.round(pr.bottom);
     out.push('=== VIEWPORT ===');
     out.push('window.innerHeight: '+H);
     out.push('visualViewport.height: '+(vv?vv.height:'N/A'));
@@ -984,6 +992,10 @@ function toB64(file){return new Promise((res,rej)=>{const r=new FileReader();r.o
     out.push('documentElement.clientHeight: '+dc.clientHeight);
     out.push('body.offsetHeight: '+body.offsetHeight);
     out.push('app.offsetHeight: '+(app?app.offsetHeight:'NO #app'));
+    out.push('--- SAFE AREA INSETS (probe) ---');
+    out.push('inset-top: '+saiTop+'px');
+    out.push('inset-bottom: '+saiBottom+'px');
+    out.push('innerHeight - inset-bottom (safe content bottom): '+(H-saiBottom));
     out.push('');
     out.push('=== POINT SCAN ===');
     const offsets=[5,20,40,60,100];
