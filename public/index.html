@@ -254,7 +254,7 @@ textarea.inp{resize:vertical;min-height:120px}
       </div>
     </div>
   </div>
-  <div class="sbody with-nav">
+  <div class="sbody with-nav" style="display:flex;flex-direction:column">
     <div class="mitra-card" style="margin-top:-2px" onclick="go('talk');setTimeout(startCall,400)">
       <div class="mitra-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.22 2.18 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.06 6.06l1.27-.52a2 2 0 012.11.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div>
       <div class="mitra-info"><div class="mitra-title">Mitra</div><div class="mitra-sub">Call Ariana — AI voice assistant</div></div>
@@ -365,8 +365,8 @@ textarea.inp{resize:vertical;min-height:120px}
   <div style="padding:0 16px;margin-bottom:8px;font-size:12px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.08em;display:flex;justify-content:space-between;flex-shrink:0">
     <span>Active conversations</span><span style="color:var(--acc3)">View all</span>
   </div>
-  <div class="sbody no-nav" style="padding-top:0">
-    <div style="padding:0 16px"><div id="platform-convos" class="card"></div></div>
+  <div class="sbody no-nav" style="padding-top:0;display:flex;flex-direction:column">
+    <div id="platform-convos" style="flex:1;border-top:1px solid var(--bdr)"></div>
   </div>
 </div>
 
@@ -714,13 +714,13 @@ function renderPlatformList(){
   const el=document.getElementById('platform-convos');
   const pk=platKey(currentPlatform);
   const list=Object.values(conversations).filter(c=>!c.platform||c.platform===pk||c.platform===currentPlatform).sort((a,b)=>{const ta=a.messages?.[a.messages.length-1]?.ts||0,tb=b.messages?.[b.messages.length-1]?.ts||0;return tb-ta;});
-  if(!list.length){el.innerHTML='<div style="padding:20px;text-align:center;color:var(--txt3);font-size:13px">No conversations</div>';return;}
+  if(!list.length){el.innerHTML='<div style="padding:32px 20px;text-align:center;color:var(--txt3);font-size:13px">No conversations</div>';return;}
   el.innerHTML=list.map(c=>{
     const last=c.messages?.[c.messages.length-1];
     const ts=last?.ts?new Date(last.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
     const unread=c.unread||0;
     const av=c.avatar?`<img src="${c.avatar}" alt="">`:`<span>${(c.name||c.phone||'?')[0]}</span>`;
-    return`<div class="row" onclick="openConvoById('${escAttr(c.id||c.phone)}')">
+    return`<div class="row" style="background:var(--s1)" onclick="openConvoById('${escAttr(c.id||c.phone)}')">
       <div class="row-av">${av}</div>
       <div class="row-body"><div class="row-title">${escHTML(c.name||c.phone||c.id)}</div><div class="row-sub">${escHTML((last?.text||last?.content||'').slice(0,60)||'...')}</div></div>
       <div class="row-meta">
