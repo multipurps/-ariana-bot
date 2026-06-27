@@ -3348,6 +3348,26 @@ Ariana replied: "${reply}"`;
       } catch (e) { /* silent — never block the response */ }
     });
 
+    // ── Save live talk exchange to Supabase ─────────────────────
+    if (supabase) {
+      try {
+        const OWNER_KEY = 'owner_live_talk';
+        if (!conversations[OWNER_KEY]) {
+          conversations[OWNER_KEY] = { id: OWNER_KEY, phone: OWNER_KEY, name: 'Live Talk', platform: 'dashboard', messages: [] };
+        }
+        const ts = new Date().toISOString();
+        conversations[OWNER_KEY].messages.push(
+          { role: 'user',      content: message,  ts },
+          { role: 'assistant', content: reply,    ts }
+        );
+        // Keep last 200 messages
+        if (conversations[OWNER_KEY].messages.length > 200) {
+          conversations[OWNER_KEY].messages = conversations[OWNER_KEY].messages.slice(-200);
+        }
+        saveConvo(OWNER_KEY);
+      } catch(e) { /* never block response */ }
+    }
+
     res.json({ ok: true, reply });
 
   } catch(e) {
