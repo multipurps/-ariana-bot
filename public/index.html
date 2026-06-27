@@ -479,8 +479,8 @@ textarea.inp{resize:vertical;min-height:120px}
       <button class="ib" onclick="go('home')" style="position:absolute;top:calc(env(safe-area-inset-top)+8px);left:14px;background:rgba(0,0,0,.45);backdrop-filter:blur(12px);z-index:10">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
       </button>
-      <!-- Edit cover at bottom-right of cover — away from status bar -->
-      <label for="cover-file" style="position:absolute;bottom:90px;right:14px;background:rgba(0,0,0,.55);backdrop-filter:blur(12px);border:none;border-radius:8px;padding:7px 12px;color:#fff;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:inherit;z-index:10">
+      <!-- Edit cover at bottom-LEFT of cover — away from Hero button -->
+      <label for="cover-file" style="position:absolute;bottom:90px;left:14px;background:rgba(0,0,0,.55);backdrop-filter:blur(12px);border:none;border-radius:8px;padding:7px 12px;color:#fff;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:inherit;z-index:10">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
         Edit cover
       </label>
@@ -583,6 +583,7 @@ textarea.inp{resize:vertical;min-height:120px}
       <div class="sec"><label class="lbl">Groq API Key</label><input type="password" id="cfg-groq" class="inp" placeholder="gsk_..."></div>
       <div class="sec"><label class="lbl">Gemini API Key</label><input type="password" id="cfg-gemini" class="inp" placeholder="AIza..."></div>
       <div class="sec"><label class="lbl">Fal.ai Key</label><input type="password" id="cfg-fal" class="inp" placeholder="..."></div>
+      <div class="sec"><label class="lbl">Tensor Art Key</label><input type="password" id="cfg-tensor" class="inp" placeholder="..."></div>
       <div class="sec"><label class="lbl">Replicate Token</label><input type="password" id="cfg-replicate" class="inp" placeholder="r8_..."></div>
       <div class="sec"><label class="lbl">Runway ML Key</label><input type="password" id="cfg-runway" class="inp" placeholder="..."></div>
     </div>
@@ -636,11 +637,49 @@ textarea.inp{resize:vertical;min-height:120px}
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-const cfg={
-  get(k){try{return localStorage.getItem('ari_'+k)||''}catch{return''}},
-  set(k,v){try{localStorage.setItem('ari_'+k,v)}catch{}},
-  clear(){try{Object.keys(localStorage).filter(k=>k.startsWith('ari_')).forEach(k=>localStorage.removeItem(k))}catch{}}
-};
+// ── CONFIG: keys stored in Supabase user_settings, local cache for instant reads ──
+const cfg=(()=>{
+  const PREF='ari_';
+  // local cache so reads are instant
+  const cache={};
+  try{Object.keys(localStorage).filter(k=>k.startsWith(PREF)).forEach(k=>{cache[k.slice(PREF.length)]=localStorage.getItem(k)||''});}catch{}
+
+  async function syncToSupabase(k,v){
+    const supaUrl=cache['supa_url']||'';const supaKey=cache['supa_key']||'';
+    if(!supaUrl||!supaKey)return;
+    try{await fetch(supaUrl+'/rest/v1/user_settings',{method:'POST',headers:{'Content-Type':'application/json','apikey':supaKey,'Authorization':'Bearer '+supaKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({key:k,value:v})});}catch{}
+  }
+
+  async function loadFromSupabase(){
+    const supaUrl=cache['supa_url']||'';const supaKey=cache['supa_key']||'';
+    if(!supaUrl||!supaKey)return;
+    try{
+      const r=await fetch(supaUrl+'/rest/v1/user_settings?select=key,value',{headers:{'apikey':supaKey,'Authorization':'Bearer '+supaKey}});
+      if(!r.ok)return;
+      const rows=await r.json();
+      (rows||[]).forEach(row=>{
+        if(row.key&&row.value!=null){
+          cache[row.key]=row.value;
+          try{localStorage.setItem(PREF+row.key,row.value);}catch{}
+        }
+      });
+    }catch{}
+  }
+
+  return{
+    get(k){return cache[k]||''},
+    set(k,v){
+      cache[k]=v;
+      try{localStorage.setItem(PREF+k,v);}catch{}
+      syncToSupabase(k,v);
+    },
+    clear(){
+      Object.keys(cache).forEach(k=>delete cache[k]);
+      try{Object.keys(localStorage).filter(k=>k.startsWith(PREF)).forEach(k=>localStorage.removeItem(k));}catch{}
+    },
+    load:loadFromSupabase
+  };
+})();
 function authH(){const k=cfg.get('dash_key');return k?{'Content-Type':'application/json','X-Dashboard-Key':k}:{'Content-Type':'application/json'};}
 let conversations={},takeoverState={},talkHistory=[],activeBrainKey=null,currentPhone=null,currentCallId=null,currentPlatform='wa',heroPhotos=[],heroIndex=0,heroTimer=null,allMedia=[],wardrobeItems=[],selectedOutfit=null,genOutfitUrl=null;
 const socket=io();
@@ -664,7 +703,10 @@ function go(name){
 let _tt;
 function toast(msg,dur=2600){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),dur);}
 function autoH(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';}
-function loadHeroPhotos(){try{heroPhotos=JSON.parse(localStorage.getItem('ari_hero_photos')||'[]');}catch{heroPhotos=[];}renderHeroSlides();}
+function loadHeroPhotos(){
+  try{heroPhotos=JSON.parse(cfg.get('hero_photos')||localStorage.getItem('ari_hero_photos')||'[]');}catch{heroPhotos=[];}
+  renderHeroSlides();
+}
 function renderHeroSlides(){
   const c=document.getElementById('hero-slides'),d=document.getElementById('hero-dots');
   if(!heroPhotos.length){c.innerHTML='<div class="hero-slide" style="background:linear-gradient(135deg,#0f0414 0%,#1a0533 50%,#080808 100%)"></div>';d.innerHTML='';return;}
@@ -674,27 +716,58 @@ function renderHeroSlides(){
   if(heroPhotos.length>1)heroTimer=setInterval(()=>setHeroSlide((heroIndex+1)%heroPhotos.length),4000);
 }
 function setHeroSlide(i){heroIndex=i;document.getElementById('hero-slides').style.transform=`translateX(-${i*100}%)`;document.querySelectorAll('.hero-dot').forEach((d,j)=>d.classList.toggle('on',j===i));}
+
+async function _uploadToSupabase(file,folder){
+  // Upload file to Supabase storage and return public URL
+  const supaUrl=cfg.get('supa_url');const supaKey=cfg.get('supa_key');
+  if(!supaUrl||!supaKey)return null;
+  const ext=file.name.split('.').pop()||'jpg';
+  const path=`${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+  const res=await fetch(`${supaUrl}/storage/v1/object/ariana-media/${path}`,{
+    method:'POST',
+    headers:{'apikey':supaKey,'Authorization':'Bearer '+supaKey,'Content-Type':file.type,'x-upsert':'true'},
+    body:file
+  });
+  if(!res.ok)return null;
+  return `${supaUrl}/storage/v1/object/public/ariana-media/${path}`;
+}
+
 async function uploadHeroPhoto(input){
   const files=Array.from(input.files);if(!files.length)return;toast('Uploading...');
   for(const file of files){
-    const b64=await toB64(file);
-    try{const r=await fetch('/api/media/upload',{method:'POST',headers:authH(),body:JSON.stringify({filename:file.name,mediaType:file.type,data:b64})});const d=await r.json();if(d.url)heroPhotos.push(d.url);else heroPhotos.push(b64);}
-    catch{heroPhotos.push(b64);}
+    let url=await _uploadToSupabase(file,'hero');
+    if(!url){const b64=await toB64(file);const r=await fetch('/api/media/upload',{method:'POST',headers:authH(),body:JSON.stringify({filename:file.name,mediaType:file.type,data:b64})}).catch(()=>null);const d=await r?.json();url=d?.url||null;}
+    if(url)heroPhotos.push(url);
   }
-  localStorage.setItem('ari_hero_photos',JSON.stringify(heroPhotos));renderHeroSlides();toast('Hero photos updated');input.value='';
+  cfg.set('hero_photos',JSON.stringify(heroPhotos));
+  localStorage.setItem('ari_hero_photos',JSON.stringify(heroPhotos));
+  renderHeroSlides();toast('Hero photos updated');input.value='';
 }
 function setHeroFont(cls){
   const el=document.getElementById('hero-sig');if(!el)return;
   el.className='hero-name '+cls;cfg.set('hero_font',cls);
-  // highlight active button in settings
   document.querySelectorAll('[data-font-btn]').forEach(b=>b.style.borderColor='var(--bdr2)');
   const btn=document.querySelector('[data-font-btn="'+cls+'"]');
   if(btn)btn.style.borderColor='var(--acc)';
   toast('Font applied — go to home to see it');
 }
-async function uploadAvatar(input){const file=input.files[0];if(!file)return;const b64=await toB64(file);cfg.set('avatar',b64);applyAvatar(b64);input.value='';toast('Avatar updated');}
+async function uploadAvatar(input){
+  const file=input.files[0];if(!file)return;
+  toast('Uploading...');
+  let url=await _uploadToSupabase(file,'avatar');
+  if(!url){const b64=await toB64(file);url=b64;}
+  cfg.set('avatar',url);applyAvatar(url);input.value='';toast('Avatar updated');
+}
 function applyAvatar(src){['prof-av-img','home-av-img','talk-av-img'].forEach(id=>{const el=document.getElementById(id);if(!el)return;el.src=src;el.style.display='block';const t=el.nextElementSibling;if(t)t.style.display='none';});}
-async function uploadCover(input){const file=input.files[0];if(!file)return;const b64=await toB64(file);cfg.set('cover',b64);const el=document.getElementById('prof-cover-img');el.src=b64;el.style.display='block';input.value='';toast('Cover updated');}
+async function uploadCover(input){
+  const file=input.files[0];if(!file)return;
+  toast('Uploading...');
+  let url=await _uploadToSupabase(file,'cover');
+  if(!url){const b64=await toB64(file);url=b64;}
+  cfg.set('cover',url);
+  const el=document.getElementById('prof-cover-img');el.src=url;el.style.display='block';
+  input.value='';toast('Cover updated');
+}
 function loadProfileStats(){document.getElementById('stat-convos').textContent=Object.keys(conversations).length||'—';document.getElementById('stat-media').textContent=allMedia.length||'—';document.getElementById('stat-calls').textContent='—';const n=cfg.get('name');if(n)document.getElementById('prof-name-display').textContent=n;}
 function computeBadges(){
   const cnt={wa:0,tg:0,sig:0,sms:0};
@@ -917,12 +990,12 @@ async function _pollGen(pollId,prov,apiKey,type,attempts=0){
   catch(e){result.innerHTML='<div class="gen-progress" style="color:var(--red)">'+e.message+'</div>';}
 }
 function loadSettingsUI(){
-  const map={'cfg-dash-key':'dash_key','cfg-phone':'phone','cfg-name':'name','cfg-groq':'groq','cfg-gemini':'gemini','cfg-fal':'fal','cfg-replicate':'replicate','cfg-runway':'runway','cfg-eleven':'eleven','cfg-eleven-voice':'eleven_voice','cfg-cartesia':'cartesia','cfg-cartesia-voice':'cartesia_voice','cfg-tts-provider':'tts_provider','cfg-heygen':'heygen','cfg-heygen-avatar':'heygen_avatar','cfg-kapso':'kapso','cfg-supa-url':'supa_url','cfg-supa-key':'supa_key'};
+  const map={'cfg-dash-key':'dash_key','cfg-phone':'phone','cfg-name':'name','cfg-groq':'groq','cfg-gemini':'gemini','cfg-fal':'fal','cfg-tensor':'tensor','cfg-replicate':'replicate','cfg-runway':'runway','cfg-eleven':'eleven','cfg-eleven-voice':'eleven_voice','cfg-cartesia':'cartesia','cfg-cartesia-voice':'cartesia_voice','cfg-tts-provider':'tts_provider','cfg-heygen':'heygen','cfg-heygen-avatar':'heygen_avatar','cfg-kapso':'kapso','cfg-supa-url':'supa_url','cfg-supa-key':'supa_key'};
   Object.entries(map).forEach(([id,k])=>{const el=document.getElementById(id);if(el)el.value=cfg.get(k);});
   const fn=cfg.get('hero_font');if(fn){const el=document.getElementById('hero-sig');if(el)el.className='hero-name '+fn;}
 }
 function saveSettings(){
-  const map={'cfg-dash-key':'dash_key','cfg-phone':'phone','cfg-name':'name','cfg-groq':'groq','cfg-gemini':'gemini','cfg-fal':'fal','cfg-replicate':'replicate','cfg-runway':'runway','cfg-eleven':'eleven','cfg-eleven-voice':'eleven_voice','cfg-cartesia':'cartesia','cfg-cartesia-voice':'cartesia_voice','cfg-tts-provider':'tts_provider','cfg-heygen':'heygen','cfg-heygen-avatar':'heygen_avatar','cfg-kapso':'kapso','cfg-supa-url':'supa_url','cfg-supa-key':'supa_key'};
+  const map={'cfg-dash-key':'dash_key','cfg-phone':'phone','cfg-name':'name','cfg-groq':'groq','cfg-gemini':'gemini','cfg-fal':'fal','cfg-tensor':'tensor','cfg-replicate':'replicate','cfg-runway':'runway','cfg-eleven':'eleven','cfg-eleven-voice':'eleven_voice','cfg-cartesia':'cartesia','cfg-cartesia-voice':'cartesia_voice','cfg-tts-provider':'tts_provider','cfg-heygen':'heygen','cfg-heygen-avatar':'heygen_avatar','cfg-kapso':'kapso','cfg-supa-url':'supa_url','cfg-supa-key':'supa_key'};
   Object.entries(map).forEach(([id,k])=>{const el=document.getElementById(id);if(el)cfg.set(k,el.value.trim());});
   const n=cfg.get('name');if(n)document.getElementById('prof-name-display').textContent=n;toast('Saved');
 }
@@ -946,6 +1019,11 @@ function toB64(file){return new Promise((res,rej)=>{const r=new FileReader();r.o
   loadSettingsUI();loadHeroPhotos();
   const av=cfg.get('avatar');if(av)applyAvatar(av);
   const cover=cfg.get('cover');if(cover){const el=document.getElementById('prof-cover-img');el.src=cover;el.style.display='block';}
+  cfg.load().then(()=>{
+    loadSettingsUI();loadHeroPhotos();
+    const av2=cfg.get('avatar');if(av2)applyAvatar(av2);
+    const cover2=cfg.get('cover');if(cover2){const el=document.getElementById('prof-cover-img');el.src=cover2;el.style.display='block';}
+  });
   setTimeout(()=>{const p=document.getElementById('preloader');if(p){p.classList.add('hide');setTimeout(()=>p.remove(),400);}},5000);
 })();
 </script>
