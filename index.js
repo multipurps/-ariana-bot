@@ -55,8 +55,8 @@ function requireDashboardAuth(req, res, next) {
   next();
 }
 
-const groq  = new Groq({ apiKey: GROQ_API_KEY  || "missing" });
-const groq2 = GROQ_API_KEY_2 ? new Groq({ apiKey: GROQ_API_KEY_2 }) : null;
+let groq  = new Groq({ apiKey: GROQ_API_KEY  || "missing" });
+let groq2 = GROQ_API_KEY_2 ? new Groq({ apiKey: GROQ_API_KEY_2 }) : null;
 
 // ElevenLabs voice ID — resolved from env or auto-discovered at startup
 let cachedVoiceId = process.env.ELEVENLABS_VOICE_ID
@@ -86,8 +86,40 @@ try {
   }
 } catch (e) { console.log("⚠️  Supabase init failed:", e.message); }
 
+// ── LOAD API KEYS FROM SUPABASE user_settings ──────────────────
+// Maps Supabase setting keys → process.env names the server uses
+const KEY_MAP = {
+  groq:            'GROQ_API_KEY',
+  gemini:          'GEMINI_API_KEY',
+  eleven:          'ELEVENLABS_API_KEY',
+  eleven_voice:    'ELEVENLABS_VOICE_ID',
+  cartesia:        'CARTESIA_API_KEY',
+  cartesia_voice:  'CARTESIA_VOICE_ID',
+  kapso:           'KAPSO_API_KEY',
+  dash_key:        'DASHBOARD_SECRET',
+};
+
+async function loadKeysFromSupabase() {
+  if (!supabase) return;
+  try {
+    const { data } = await supabase.from('user_settings').select('key,value');
+    if (!data || !data.length) return;
+    let loaded = 0;
+    data.forEach(({ key, value }) => {
+      if (!value) return;
+      const envKey = KEY_MAP[key];
+      if (envKey && !process.env[envKey]) {
+        process.env[envKey] = value;
+        loaded++;
+      }
+    });
+    if (loaded) console.log(`🔑 Loaded ${loaded} API key(s) from Supabase user_settings`);
+  } catch (e) {
+    console.warn('[keys] Failed to load from Supabase:', e.message);
+  }
+}
+
 async function saveConvo(id) {
-  if (!supabase || !conversations[id]) return;
   try {
     await supabase.from("ariana_conversations").upsert(
       { phone: id, data: conversations[id], updated_at: new Date().toISOString() },
@@ -4204,6 +4236,19 @@ app.post("/api/talk/vision", requireDashboardAuth, async (req, res) => {
 // ── KEEP-ALIVE ────────────────────────────────────────────────
 app.get("/ping", (_req, res) => res.send("pong"));
 
+// Reload API keys from Supabase without restarting
+app.post("/api/reload-keys", requireDashboardAuth, async (req, res) => {
+  await loadKeysFromSupabase();
+  if (process.env.GROQ_API_KEY) {
+    const GroqSDK = require('groq-sdk');
+    groq = new GroqSDK({ apiKey: process.env.GROQ_API_KEY });
+  }
+  if (process.env.ELEVENLABS_VOICE_ID && !cachedVoiceId) {
+    cachedVoiceId = process.env.ELEVENLABS_VOICE_ID;
+  }
+  res.json({ ok: true, keys: Object.keys(KEY_MAP).filter(k => process.env[KEY_MAP[k]]) });
+});
+
 // ── SIGNAL DIAGNOSTIC ─────────────────────────────────────────
 app.get("/signal-status", async (req, res) => {
   try {
@@ -4249,6 +4294,17 @@ function startKeepAlive() {
 
 // ── START ─────────────────────────────────────────────────────
 server.listen(PORT, async () => {
+  // Load API keys from Supabase FIRST — before any AI calls happen
+  await loadKeysFromSupabase();
+  // Re-init Groq with loaded key if it wasn't set from env
+  if (process.env.GROQ_API_KEY && (!groq || groq.apiKey === 'missing')) {
+    const GroqSDK = require('groq-sdk');
+    groq = new GroqSDK({ apiKey: process.env.GROQ_API_KEY });
+  }
+  // Re-apply ElevenLabs voice ID if loaded from Supabase
+  if (process.env.ELEVENLABS_VOICE_ID && !cachedVoiceId) {
+    cachedVoiceId = process.env.ELEVENLABS_VOICE_ID;
+  }
   await loadConversations();
   await loadBrain();
   await loadPushSubs();
