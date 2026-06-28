@@ -55,7 +55,7 @@ body::before{content:'';position:fixed;inset:0;background:var(--bg);z-index:-10;
 @keyframes bnav-sweep{to{background-position:220% 0}}
 .nb{width:54px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:36px;border:none;background:transparent;color:rgba(255,255,255,.28);cursor:pointer;transition:all .2s;position:relative;z-index:1;flex-shrink:0}
 .nb.on{background:var(--nb-btn,rgba(255,255,255,.1));color:var(--acc)}
-.nb-center{width:54px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:36px;border:none;background:var(--acc);color:#fff;cursor:pointer;position:relative;z-index:1;flex-shrink:0;box-shadow:0 0 20px var(--acc-glow);transition:all .2s}
+.nb-center{width:54px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:36px;border:none;background:var(--acc);color:var(--bg);cursor:pointer;position:relative;z-index:1;flex-shrink:0;box-shadow:0 0 20px var(--acc-glow);transition:all .2s}
 .nb-center:active{opacity:.8;transform:scale(.95)}
 #hero{position:relative;width:100%;height:420px;overflow:hidden;flex-shrink:0}
 #hero-slides{display:flex;width:100%;height:100%;transition:transform .6s ease-in-out}
@@ -64,7 +64,7 @@ body::before{content:'';position:fixed;inset:0;background:var(--bg);z-index:-10;
 .hero-slide::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(8,8,8,.2) 0%,rgba(8,8,8,.0) 40%,rgba(8,8,8,.88) 100%)}
 .hero-text{position:absolute;bottom:0;left:0;right:0;padding:20px 20px 24px;z-index:2}
 .hero-hey{font-size:18px;font-weight:400;color:rgba(255,255,255,.9);line-height:1.2}
-.hero-name{font-size:52px;line-height:1.05;color:#fff;font-family:'Great Vibes',cursive;text-shadow:0 0 30px rgba(255,255,255,.6),0 0 60px rgba(255,255,255,.2),0 2px 4px rgba(0,0,0,.5)}
+.hero-name{font-size:52px;line-height:1.05;color:#fff;font-family:'Great Vibes',cursive;text-shadow:0 0 30px #8B5CF6,0 0 60px rgba(139,92,246,.4),0 2px 4px rgba(0,0,0,.5)}
 .hero-sub{font-size:13px;color:rgba(255,255,255,.65);margin-top:4px;line-height:1.5;font-weight:400}
 .hero-dots{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:3}
 .hero-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}
@@ -257,11 +257,14 @@ textarea.inp{resize:vertical;min-height:120px}
       </div>
       <div class="hero-dots" id="hero-dots"></div>
     </div>
-    <div style="position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top)+10px) 16px 0;z-index:10">
+    <div style="position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top)+14px) 16px 0;z-index:10">
       <button class="ib" onclick="go('profile')" style="background:rgba(0,0,0,.4);backdrop-filter:blur(10px)">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
       </button>
-      <div class="prof-av" id="home-av" onclick="go('profile')" style="width:36px;height:36px;font-size:13px;background:rgba(0,0,0,.5);backdrop-filter:blur(10px);border:1.5px solid rgba(255,255,255,.2);margin-right:48px">
+      <button class="ib" onclick="toggleTheme()" style="background:rgba(0,0,0,.4);backdrop-filter:blur(10px);margin-right:4px" title="Toggle theme">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+    </button>
+    <div class="prof-av" id="home-av" onclick="go('profile')" style="width:36px;height:36px;font-size:13px;background:rgba(0,0,0,.5);backdrop-filter:blur(10px);border:1.5px solid rgba(255,255,255,.2)">
         <img id="home-av-img" alt="" style="display:none"><span id="home-av-txt">A</span>
       </div>
     </div>
@@ -274,28 +277,16 @@ textarea.inp{resize:vertical;min-height:120px}
     </div>
     <div class="slbl">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-      What can I do for you?
+      Features
     </div>
     <div class="fgrid">
-      <div class="fc" onclick="go('talk')">
-        <div class="fc-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--acc2)" stroke-width="1.8" stroke-linecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
-        <div><div class="fc-label">Talk</div><div class="fc-sub">Chat on WA, Telegram, Signal & SMS</div></div>
-      </div>
-      <div class="fc" onclick="go('platforms')">
-        <div class="fc-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--acc2)" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></div>
-        <div><div class="fc-label">Platforms</div><div class="fc-sub">Connect your apps and accounts</div></div>
-      </div>
-      <div class="fc" onclick="go('media')">
-        <div class="fc-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--acc2)" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
-        <div><div class="fc-label">Media</div><div class="fc-sub">Generate & edit images and videos</div></div>
-      </div>
       <div class="fc" onclick="go('brain')">
-        <div class="fc-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--acc2)" stroke-width="1.8" stroke-linecap="round"><path d="M9.5 2A2.5 2.5 0 007 4.5v15A2.5 2.5 0 009.5 22h5a2.5 2.5 0 002.5-2.5v-15A2.5 2.5 0 0014.5 2h-5z"/><path d="M7 8H4a2 2 0 00-2 2v4a2 2 0 002 2h3"/><path d="M17 8h3a2 2 0 012 2v4a2 2 0 01-2 2h-3"/></svg></div>
-        <div><div class="fc-label">Brain</div><div class="fc-sub">Personality, memory & insights</div></div>
+        <div class="fc-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="1.8" stroke-linecap="round"><path d="M9.5 2A2.5 2.5 0 007 4.5v15A2.5 2.5 0 009.5 22h5a2.5 2.5 0 002.5-2.5v-15A2.5 2.5 0 0014.5 2h-5z"/><path d="M7 8H4a2 2 0 00-2 2v4a2 2 0 002 2h3"/><path d="M17 8h3a2 2 0 012 2v4a2 2 0 01-2 2h-3"/></svg></div>
+        <div><div class="fc-label">Brain</div><div class="fc-sub">Personality & memory</div></div>
       </div>
       <div class="fc fc-wide" onclick="go('wardrobe')">
-        <div class="fc-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--acc2)" stroke-width="1.8" stroke-linecap="round"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg></div>
-        <div style="flex:1"><div class="fc-label">Wardrobe</div><div class="fc-sub">Explore Ariana's looks and styles</div></div>
+        <div class="fc-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="1.8" stroke-linecap="round"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/></svg></div>
+        <div style="flex:1"><div class="fc-label">Wardrobe</div><div class="fc-sub">Ariana's looks and styles</div></div>
         <div class="wd-preview" id="home-wd-preview"></div>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--txt3)" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
@@ -492,7 +483,7 @@ textarea.inp{resize:vertical;min-height:120px}
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
       </button>
       <!-- Edit cover — bottom-left, clear of avatar -->
-      <label for="cover-file" style="position:absolute;bottom:90px;left:14px;background:rgba(0,0,0,.55);backdrop-filter:blur(12px);border:none;border-radius:8px;padding:7px 12px;color:#fff;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:inherit;z-index:10">
+      <label for="cover-file" style="position:absolute;top:50%;transform:translateY(-50%);right:14px;background:rgba(0,0,0,.55);backdrop-filter:blur(12px);border:none;border-radius:8px;padding:7px 12px;color:#fff;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:inherit;z-index:10">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
         Edit cover
       </label>
@@ -649,7 +640,7 @@ textarea.inp{resize:vertical;min-height:120px}
   <div class="bnav-shine"></div>
   <button class="nb on" id="nb-home" onclick="go('home')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></button>
   <button class="nb" id="nb-platforms" onclick="go('platforms')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></button>
-  <button class="nb-center" onclick="go('talk')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="14" y2="13"/></svg></button>
+  <button class="nb-center" onclick="go('talk')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><polyline points="16 3 20 7 16 11"/><line x1="20" y1="7" x2="13" y2="7"/></svg></button>
   <button class="nb" id="nb-media" onclick="go('media')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
   <button class="nb" id="nb-profile" onclick="go('profile')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
 </nav>
