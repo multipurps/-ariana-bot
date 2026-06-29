@@ -976,10 +976,12 @@ Make them feel like they have a real girlfriend they can text anytime.`
     if (inst) sys += `\n\n${inst}`;
   }
 
-  const history = convo.messages.slice(-20).map(m => ({
-    role: m.role === "user" ? "user" : "assistant",
-    content: m.text
-  }));
+  const history = convo.messages.slice(-20)
+    .filter(m => m.text && String(m.text).trim())
+    .map(m => ({
+      role: m.role === "user" ? "user" : "assistant",
+      content: String(m.text).trim()
+    }));
 
   // ── Inject brain memories so she actually remembers things ──
   const memoryKeys = ['core_identity','appearance','personality','lifestyle','miami_environment','learned_memories','people','facts'];
