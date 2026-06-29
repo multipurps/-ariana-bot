@@ -23,8 +23,8 @@ const KAPSO_PHONE_ID  = process.env.KAPSO_PHONE_NUMBER_ID;
 const GROQ_API_KEY    = process.env.GROQ_API_KEY;
 const GROQ_API_KEY_2  = process.env.GROQ_API_KEY_2;
 // These are read dynamically so Supabase-loaded keys take effect immediately
-const getKapsoKey  = () => process.env.getKapsoKey()  || '';
-const getGeminiKey = () => getGeminiKey() || '';
+const getKapsoKey  = () => process.env.KAPSO_KEY        || '';
+const getGeminiKey = () => process.env.GEMINI_API_KEY   || '';
 const PORT            = process.env.PORT || 3000;
 const OWNER_PHONE     = process.env.OWNER_PHONE || "";
 const SIGNAL_CLI_URL  = process.env.SIGNAL_CLI_URL || "https://signal-cli-rest-api-y65f.onrender.com";
@@ -97,7 +97,7 @@ const KEY_MAP = {
   eleven_voice:    'ELEVENLABS_VOICE_ID',
   cartesia:        'CARTESIA_API_KEY',
   cartesia_voice:  'CARTESIA_VOICE_ID',
-  kapso:           'getKapsoKey()',
+  kapso:           'KAPSO_KEY',
   dash_key:        'DASHBOARD_SECRET',
 };
 
