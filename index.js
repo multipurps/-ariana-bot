@@ -1916,6 +1916,100 @@ app.get("/signal-verify", async (req, res) => {
   }
 });
 
+// ── TELEGRAM SESSION GENERATOR (mobile-friendly, one-time use) ──
+let _tgSetupClient = null;
+let _tgSetupResolvers = {};
+
+app.get("/telegram-setup", (req, res) => {
+  const secret = process.env.DASHBOARD_SECRET;
+  if (secret && req.query.key !== secret) return res.status(401).send(html("❌ Unauthorized", "Pass ?key=YOUR_DASHBOARD_SECRET"));
+  res.send(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Telegram Setup</title>
+<style>*{box-sizing:border-box}body{background:#0d0d0d;color:#fff;font-family:sans-serif;padding:24px;max-width:480px;margin:0 auto}h2{color:#a78bfa;margin-bottom:8px}p{color:#aaa;font-size:14px;margin-bottom:20px}input{width:100%;padding:12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-size:16px;margin-bottom:12px}button{width:100%;padding:14px;background:#7c3aed;border:none;border-radius:8px;color:#fff;font-size:16px;font-weight:600;cursor:pointer}button:active{opacity:.8}.box{background:#1a1a1a;border-radius:10px;padding:16px;margin-top:16px;display:none}.note{font-size:12px;color:#666;margin-top:8px}</style></head>
+<body>
+<h2>Telegram Setup</h2>
+<p>Generate your TELEGRAM_SESSION string without a PC.</p>
+<div id="step1">
+  <input id="phone" type="tel" placeholder="Phone number e.g. +2348012345678">
+  <button onclick="sendPhone()">Send Code</button>
+</div>
+<div id="step2" class="box">
+  <input id="code" type="number" placeholder="Code Telegram sent you">
+  <input id="pass" type="password" placeholder="2FA password (leave blank if none)">
+  <button onclick="sendCode()">Get Session</button>
+</div>
+<div id="step3" class="box">
+  <p style="color:#4ade80;font-weight:600">✅ Session generated! Copy it below and add to Railway as TELEGRAM_SESSION</p>
+  <textarea id="session" rows="6" style="width:100%;background:#111;color:#4ade80;border:1px solid #333;border-radius:8px;padding:12px;font-size:12px;font-family:monospace"></textarea>
+  <button onclick="copySession()" style="background:#16a34a;margin-top:8px">Copy to Clipboard</button>
+  <p class="note">After adding to Railway, redeploy. You can ignore this page.</p>
+</div>
+<div id="err" style="color:#f87171;margin-top:12px"></div>
+<script>
+const qs='${req.query.key ? "?key="+req.query.key : ""}';
+async function sendPhone(){
+  const phone=document.getElementById('phone').value.trim();
+  if(!phone)return;
+  document.querySelector('#step1 button').textContent='Sending...';
+  const r=await fetch('/telegram-setup/phone'+qs,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone})});
+  const d=await r.json();
+  if(d.ok){document.getElementById('step2').style.display='block';document.querySelector('#step1 button').textContent='Code Sent ✅';}
+  else{document.getElementById('err').textContent=d.error;}
+}
+async function sendCode(){
+  const code=document.getElementById('code').value.trim();
+  const pass=document.getElementById('pass').value.trim();
+  document.querySelector('#step2 button').textContent='Verifying...';
+  const r=await fetch('/telegram-setup/code'+qs,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,password:pass})});
+  const d=await r.json();
+  if(d.session){document.getElementById('step3').style.display='block';document.getElementById('session').value=d.session;document.querySelector('#step2 button').textContent='Done ✅';}
+  else{document.getElementById('err').textContent=d.error;document.querySelector('#step2 button').textContent='Get Session';}
+}
+function copySession(){navigator.clipboard.writeText(document.getElementById('session').value).then(()=>alert('Copied!'));}
+</script></body></html>`);
+});
+
+app.post("/telegram-setup/phone", async (req, res) => {
+  const secret = process.env.DASHBOARD_SECRET;
+  if (secret && req.query.key !== secret) return res.status(401).json({ error: "Unauthorized" });
+  try {
+    const { TelegramClient } = require("telegram");
+    const { StringSession }  = require("telegram/sessions");
+    if (_tgSetupClient) { try { await _tgSetupClient.disconnect(); } catch {} }
+    _tgSetupClient = new TelegramClient(new StringSession(""), TG_API_ID, TG_API_HASH, { connectionRetries: 5 });
+    await _tgSetupClient.connect();
+    const { phone } = req.body;
+    await _tgSetupClient.sendCode({ apiId: TG_API_ID, apiHash: TG_API_HASH }, phone);
+    _tgSetupResolvers.phone = phone;
+    res.json({ ok: true });
+  } catch (e) {
+    res.json({ error: e.message });
+  }
+});
+
+app.post("/telegram-setup/code", async (req, res) => {
+  const secret = process.env.DASHBOARD_SECRET;
+  if (secret && req.query.key !== secret) return res.status(401).json({ error: "Unauthorized" });
+  try {
+    const { phone } = _tgSetupResolvers;
+    const { code, password } = req.body;
+    await _tgSetupClient.signIn(
+      { apiId: TG_API_ID, apiHash: TG_API_HASH },
+      { phoneNumber: phone, phoneCode: code, password: password || undefined }
+    );
+    const session = _tgSetupClient.session.save();
+    await _tgSetupClient.disconnect();
+    _tgSetupClient = null;
+    res.json({ session });
+  } catch (e) {
+    res.json({ error: e.message });
+  }
+});
+
+function html(title, msg) {
+  return `<html><body style="background:#111;color:white;padding:30px"><h2>${title}</h2><p>${msg}</p></body></html>`;
+}
+
 app.get("/signal-setup-webhook", async (req, res) => {
   try {
     await axios.post(`${SIGNAL_CLI_URL}/v1/configuration/${SIGNAL_NUMBER}/webhook`, { url: `${RENDER_URL}/signal` });
