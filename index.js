@@ -18,11 +18,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
 
 // ── CONFIG ────────────────────────────────────────────────────
-const KAPSO_API_KEY   = process.env.KAPSO_API_KEY;
+const RENDER_URL      = (process.env.RENDER_URL || "").replace(/\/$/, "");
 const KAPSO_PHONE_ID  = process.env.KAPSO_PHONE_NUMBER_ID;
 const GROQ_API_KEY    = process.env.GROQ_API_KEY;
 const GROQ_API_KEY_2  = process.env.GROQ_API_KEY_2;
-const RENDER_URL      = (process.env.RENDER_URL || "").replace(/\/$/, "");
+// These are read dynamically so Supabase-loaded keys take effect immediately
+const getKapsoKey  = () => process.env.getKapsoKey()  || '';
+const getGeminiKey = () => getGeminiKey() || '';
 const PORT            = process.env.PORT || 3000;
 const OWNER_PHONE     = process.env.OWNER_PHONE || "";
 const SIGNAL_CLI_URL  = process.env.SIGNAL_CLI_URL || "https://signal-cli-rest-api-y65f.onrender.com";
@@ -95,7 +97,7 @@ const KEY_MAP = {
   eleven_voice:    'ELEVENLABS_VOICE_ID',
   cartesia:        'CARTESIA_API_KEY',
   cartesia_voice:  'CARTESIA_VOICE_ID',
-  kapso:           'KAPSO_API_KEY',
+  kapso:           'getKapsoKey()',
   dash_key:        'DASHBOARD_SECRET',
 };
 
@@ -508,12 +510,12 @@ function isTruncated(text) {
 
 // ── IMAGE VISION ──────────────────────────────────────────────
 async function describeImage(imageUrl) {
-  if (!imageUrl || !process.env.GEMINI_API_KEY) return null;
+  if (!imageUrl || !getGeminiKey()) return null;
   try {
     // Try to download — with Kapso auth first, then without
     let imageBuffer = null;
     let mimeType = 'image/jpeg';
-    for (const headers of [{ 'X-API-Key': KAPSO_API_KEY }, {}]) {
+    for (const headers of [{ 'X-API-Key': getKapsoKey() }, {}]) {
       try {
         const r = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 12000, headers });
         imageBuffer = Buffer.from(r.data);
@@ -524,7 +526,7 @@ async function describeImage(imageUrl) {
     if (!imageBuffer || imageBuffer.length < 100) return null;
     const base64 = imageBuffer.toString('base64');
     const r = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${getGeminiKey()}`,
       {
         contents: [{ parts: [
           { text: "Describe what is in this image in 1-2 casual sentences, like telling a friend what you see." },
@@ -795,10 +797,10 @@ function filterLanguage(reply, userMessage) {
 }
 // ── MODEL CALLERS ─────────────────────────────────────────────
 async function callGemini(history, sys, webContext) {
-  if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not set");
+  if (!getGeminiKey()) throw new Error("GEMINI_API_KEY not set");
   const systemText = webContext ? `${sys}\n\nCURRENT WEB INFO:\n${webContext}` : sys;
   const res = await axios.post(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${getGeminiKey()}`,
     {
       system_instruction: { parts: [{ text: systemText }] },
       contents: history.map(m => ({
@@ -1109,7 +1111,7 @@ async function sendWhatsApp(to, message, phoneNumberId) {
   await axios.post(
     `https://api.kapso.ai/meta/whatsapp/v24.0/${id}/messages`,
     { messaging_product: "whatsapp", recipient_type: "individual", to, type: "text", text: { body: message } },
-    { headers: { "X-API-Key": KAPSO_API_KEY, "Content-Type": "application/json" } }
+    { headers: { "X-API-Key": getKapsoKey(), "Content-Type": "application/json" } }
   );
 }
 
@@ -1119,7 +1121,7 @@ async function sendWhatsAppTyping(to, phoneNumberId) {
     await axios.post(
       `https://api.kapso.ai/meta/whatsapp/v24.0/${id}/messages`,
       { messaging_product: "whatsapp", recipient_type: "individual", to, type: "typing_indicator", typing_indicator: { type: "text" } },
-      { headers: { "X-API-Key": KAPSO_API_KEY, "Content-Type": "application/json" } }
+      { headers: { "X-API-Key": getKapsoKey(), "Content-Type": "application/json" } }
     );
   } catch { /* silent */ }
 }
@@ -1130,7 +1132,7 @@ async function markWhatsAppRead(messageId, phoneNumberId) {
     await axios.post(
       `https://api.kapso.ai/meta/whatsapp/v24.0/${id}/messages`,
       { messaging_product: "whatsapp", status: "read", message_id: messageId },
-      { headers: { "X-API-Key": KAPSO_API_KEY, "Content-Type": "application/json" } }
+      { headers: { "X-API-Key": getKapsoKey(), "Content-Type": "application/json" } }
     );
   } catch { /* silent */ }
 }
@@ -1159,7 +1161,7 @@ async function sendWhatsAppImage(to, imageUrl, caption, phoneNumberId) {
       const uploadRes = await axios.post(
         `https://api.kapso.ai/meta/whatsapp/v24.0/${pid}/media`,
         form,
-        { headers: { 'X-API-Key': KAPSO_API_KEY, ...form.getHeaders() }, timeout: 30000 }
+        { headers: { 'X-API-Key': getKapsoKey(), ...form.getHeaders() }, timeout: 30000 }
       );
       const mediaId = uploadRes.data?.id;
       if (mediaId) {
@@ -1167,7 +1169,7 @@ async function sendWhatsAppImage(to, imageUrl, caption, phoneNumberId) {
         await axios.post(
           `https://api.kapso.ai/meta/whatsapp/v24.0/${pid}/messages`,
           { messaging_product: "whatsapp", recipient_type: "individual", to, type: "image", image: { id: mediaId, caption: caption || "" } },
-          { headers: { "X-API-Key": KAPSO_API_KEY, "Content-Type": "application/json" } }
+          { headers: { "X-API-Key": getKapsoKey(), "Content-Type": "application/json" } }
         );
         return;
       }
@@ -1184,7 +1186,7 @@ async function sendWhatsAppVoiceNote(to, audioUrl, phoneNumberId) {
   await axios.post(
     `https://api.kapso.ai/meta/whatsapp/v24.0/${id}/messages`,
     { messaging_product: "whatsapp", recipient_type: "individual", to, type: "audio", audio: { link: audioUrl, voice: true } },
-    { headers: { "X-API-Key": KAPSO_API_KEY, "Content-Type": "application/json" } }
+    { headers: { "X-API-Key": getKapsoKey(), "Content-Type": "application/json" } }
   );
 }
 
@@ -1466,7 +1468,7 @@ async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, 
     console.log(`[vision] Fetching image for direct vision: ${mediaUrl.slice(0,70)}...`);
     try {
       let imgRes = null;
-      for (const headers of [{ 'X-API-Key': KAPSO_API_KEY }, {}]) {
+      for (const headers of [{ 'X-API-Key': getKapsoKey() }, {}]) {
         try {
           imgRes = await axios.get(mediaUrl, { responseType: 'arraybuffer', timeout: 15000, headers });
           if (imgRes?.data?.byteLength > 100) break;
@@ -1698,7 +1700,7 @@ async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, 
     // ── SELF-LEARNING: extract facts from every social conversation ──
     // Runs in background — never blocks the reply or the sender
     setImmediate(async () => {
-      if (!process.env.GEMINI_API_KEY || !supabase) return;
+      if (!getGeminiKey() || !supabase) return;
       // Only learn from real user messages — skip media stubs, voice notes, and very short texts
       if (!finalText || finalText.startsWith('[') || finalText.trim().length < 8) return;
       // Only learn occasionally (30% of messages) to avoid API overuse
@@ -1717,7 +1719,7 @@ They said: "${finalText.slice(0, 300)}"
 Ariana replied: "${reply.slice(0, 200)}"`;
 
         const r = await axios.post(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${getGeminiKey()}`,
           { contents: [{ parts: [{ text: learnPrompt }] }], generationConfig: { temperature: 0.1, maxOutputTokens: 200 } },
           { timeout: 8000 }
         );
@@ -2741,7 +2743,7 @@ async function callGeminiWithVision(history, sys, imageBase64) {
   }
 
   const res = await axios.post(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${getGeminiKey()}`,
     {
       system_instruction: { parts: [{ text: sys }] },
       contents,
@@ -3360,7 +3362,7 @@ User said: "${message}"
 Ariana replied: "${reply}"`;
 
         const extractRes = await axios.post(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${getGeminiKey()}`,
           { contents: [{ parts: [{ text: extractPrompt }] }], generationConfig: { temperature: 0.1, maxOutputTokens: 300 } },
           { timeout: 10000 }
         );
@@ -3623,7 +3625,7 @@ app.post('/api/call/brief', requireDashboardAuth, async (req, res) => {
   let summary = `Got it. Calling ${name || to}. I'll ${briefing.slice(0, 120)}${briefing.length > 120 ? '...' : ''}`;
   try {
     const r = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${getGeminiKey()}`,
       { contents: [{ parts: [{ text: `You are Ariana. Confirm this call briefing in 1 casual sentence like you're confirming before dialling:\nBriefing: "${briefing}"\nContact: ${name || to}` }] }], generationConfig: { temperature: 0.4, maxOutputTokens: 80 } },
       { timeout: 8000 }
     );
@@ -4142,7 +4144,7 @@ User said: "${userMessage.slice(0, 300)}"
 Ariana replied: "${arianaReply.slice(0, 300)}"`;
 
       const res2 = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${getGeminiKey()}`,
         { contents: [{ parts: [{ text: extractPrompt }] }], generationConfig: { temperature: 0.1, maxOutputTokens: 200 } },
         { timeout: 10000 }
       );
@@ -4315,10 +4317,10 @@ server.listen(PORT, async () => {
   await loadBlocked();
   await autoFetchVoiceId();
   console.log(`\n🌸 Ariana LIVE on port ${PORT}`);
-  console.log(`📱 WhatsApp:    ${KAPSO_API_KEY                   ? "✅" : "❌"}`);
+  console.log(`📱 WhatsApp:    ${getKapsoKey()                   ? "✅" : "❌"}`);
   console.log(`🤖 Groq:        ${GROQ_API_KEY                    ? "✅" : "❌"}`);
   console.log(`🔁 Groq #2:     ${GROQ_API_KEY_2                  ? "✅" : "—"}`);
-  console.log(`✨ Gemini:      ${process.env.GEMINI_API_KEY       ? "✅" : "❌"}`);
+  console.log(`✨ Gemini:      ${getGeminiKey()       ? "✅" : "❌"}`);
   console.log(`🔮 DeepSeek:    ${process.env.DEEPSEEK_API_KEY    ? "✅" : "—"}`);
   console.log(`🌬️  Mistral:     ${process.env.MISTRAL_API_KEY     ? "✅" : "—"}`);
   console.log(`🤝 Together:    ${process.env.TOGETHER_API_KEY    ? "✅" : "—"}`);
