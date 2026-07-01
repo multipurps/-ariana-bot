@@ -422,76 +422,106 @@ function hasAIBreak(text) {
   return forbidden.some(p => lower.includes(p));
 }
 
-// ── CLEAN AI TELLS ────────────────────────────────────────────
-// Strips patterns that instantly reveal the AI behind the persona:
-// stage directions (**Laughs**), action narration ("Leans back, unfazed"),
-// and banned foreign endearments ("amor") slipping through the language filter.
-function cleanAITells(text) {
+// ── NARRATION REMOVAL ─────────────────────────────────────────
+// Ariana is a WhatsApp human, not a novel character. She never narrates
+// physical actions, facial expressions, body language, gestures, eye
+// movement, posture, voice tone, or internal narration — anything that
+// could be silently acted out on a movie set without saying a word.
+//
+// A word-blacklist can never keep up (the model invents new phrasing
+// forever: "a grin spreads across her face", "amusement flickers in her
+// eyes", etc). So instead of matching phrases, this is a two-layer
+// STRUCTURAL system:
+//
+//  1. stripFormattingActions() — a pure formatting rule with zero word
+//     list: on WhatsApp, real people never wrap their own words in
+//     markdown emphasis (*text*, **text**, _text_) or drop a lone
+//     parenthetical on its own line. That formatting pattern is itself
+//     the "this is a stage direction" signal, regardless of the words
+//     inside it.
+//  2. stripNarrationSemantic() — the actual semantic test Daisy
+//     specified ("if it can be acted out on a movie set without
+//     dialogue, delete it"). Since that's a judgment about meaning, not
+//     wording, it's delegated to the model itself as a classifier: it
+//     reads the message and returns only the parts a person would
+//     actually type, dropping narration. This is what actually
+//     generalizes to phrasing nobody's seen yet.
+//
+// containsNarration() below is the final gate used to decide whether a
+// full regeneration is needed before sending.
+
+function stripFormattingActions(text) {
   if (!text) return text;
   let t = text;
-
-  // Explicit known action verbs — fast-path detection.
-  // Any line that starts with one of these is a stage direction and gets deleted.
-  const KNOWN_ACTION_VERBS = new Set([
-    'sighs','scoffs','laughs','chuckles','smirks','grins','groans','shrugs',
-    'leans','tilts','nods','winks','gasps','snorts','yawns','rolls',
-    'crosses','folds','raises','narrows','cocks','blinks','stares','glances',
-    'shakes','turns','looks','pauses','clears','purrs','whispers','exhales',
-    'inhales','sniffs','tsks','clicks','taps','drums','flips','twirls',
-    'stretches','arches','shifts','settles','reaches','waves','claps',
-    'snaps','points','smiles','beams','frowns','pouts','huffs','scrunches',
-    'quirks','widens','softens','darkens','flashes','glints','sinking',
-  ]);
-
-  function isStageDirection(line) {
-    const l = line.trim();
-    if (!l || l.length > 120) return false;
-    if (!/^[A-Z]/.test(l)) return false;
-    // Real sentences end with sentence punctuation — stage directions don't
-    if (/[.?!]$/.test(l)) return false;
-    // Quoted speech is never a stage direction
-    if (/"/.test(l)) return false;
-    // Has first/second person pronouns → real message, not stage direction
-    if (/\b(I|you|we|me|my|your|our|i'm|i've|i'll|you're|we're|yourself|myself)\b/i.test(l)) return false;
-
-    const firstWord = l.split(/[\s,]/)[0].toLowerCase();
-
-    // Fast path — known action verbs are always stage directions
-    if (KNOWN_ACTION_VERBS.has(firstWord)) return true;
-
-    // Heuristic — first word looks like a verb (-s, -ing, -ed)
-    if (!/s$|ing$|ed$/.test(firstWord)) return false;
-    const nonVerbs = new Set([
-      'this','his','its','yes','always','sometimes','perhaps','plus','thus',
-      'versus','across','unless','whereas','thanks','things','thoughts','words',
-      'sounds','feels','seems','means','needs','makes','takes','says','goes',
-      'comes','knows','shows','news','details','ideas','updates','areas','series',
-      'hers','theirs','others','hours','days','years','months','minutes','seconds',
-      'results','changes','points','parts','lines','times','sides','eyes',
-    ]);
-    if (nonVerbs.has(firstWord)) return false;
-    return true;
-  }
-
-  // Step 1 — Strip bold/italic stage directions: *text*, **text**, * text *
-  t = t.replace(/\*{1,2}\s*([A-Z][^*\n]{0,120}?)\s*\*{1,2}/g, (match, inner) => {
-    return isStageDirection(inner.trim()) ? '' : match;
-  });
-
-  // Step 2 — Strip standalone plain-text stage direction lines
+  // Markdown emphasis wrapping — *text*, **text**, _text_ — is never how
+  // a person formats their own typed words on WhatsApp. It's the app's
+  // convention for marking non-spoken stage direction, so strip the
+  // whole span regardless of what's inside it.
+  t = t.replace(/\*{1,2}([^*\n]+?)\*{1,2}/g, '');
+  t = t.replace(/(?<![A-Za-z0-9])_([^_\n]+?)_(?![A-Za-z0-9])/g, '');
+  // A parenthetical that IS the entire line (not an aside inside a real
+  // sentence) is structurally a stage direction, not dialogue.
   t = t.split('\n').map(line => {
     const trimmed = line.trim();
-    return isStageDirection(trimmed) ? '' : line;
+    if (/^\([^)]+\)$/.test(trimmed)) return '';
+    return line;
   }).join('\n');
+  t = t.replace(/\n{3,}/g, '\n\n').trim();
+  return t;
+}
 
-  // Step 3 — Spanish endearments
+const NARRATION_CLASSIFIER_SYS = `You edit WhatsApp messages for a persona named Ariana. Ariana is a real human texting on her phone — never a narrator describing her.
+
+DELETE anything that narrates a physical action, facial expression, body language, gesture, eye movement, posture, voice tone, or internal/emotional description — in short, anything that could be silently acted out on a movie set without a word of dialogue. This applies no matter how it's phrased, including phrasing you haven't seen before.
+
+KEEP everything a person would actually type: statements, reactions, questions, slang, emojis, and punctuation-based emotion (e.g. "that's funny 😂", "nah 😏", "i'm tired", "i miss you").
+
+Return ONLY the surviving text, word-for-word as written, with narration removed and natural spacing/punctuation cleaned up. No commentary, no quotes around your answer, no explanation. If nothing survives, return an empty string.`;
+
+async function stripNarrationSemantic(text) {
+  if (!text || !text.trim()) return text;
+  try {
+    const out = await callGroq([{ role: 'user', content: text }], NARRATION_CLASSIFIER_SYS, false);
+    return (out || '').trim();
+  } catch (e) {
+    console.warn('[narration] semantic strip failed, keeping formatting-only clean:', e.message);
+    return text; // fail open — formatting pass already ran, don't drop the whole reply
+  }
+}
+
+const NARRATION_VALIDATOR_SYS = `You are a strict binary classifier for WhatsApp messages. Answer YES if any part of the message narrates a physical action, facial expression, body language, gesture, posture, voice tone, or emotion in prose — i.e. it could be silently acted out on a movie set instead of being something a person would actually type. Answer NO if it is pure dialogue: statements, reactions, slang, emojis, punctuation-based emotion. Reply with exactly one word: YES or NO.`;
+
+async function containsNarration(text) {
+  if (!text || !text.trim()) return false;
+  try {
+    const out = await callGroq([{ role: 'user', content: text }], NARRATION_VALIDATOR_SYS, false);
+    return /^\s*yes/i.test(out || '');
+  } catch (e) {
+    console.warn('[narration] validation classifier failed:', e.message);
+    return false; // fail open — don't block sending on a classifier error
+  }
+}
+
+// Final regeneration instruction, used verbatim when narration survives
+// every cleaning pass and the whole reply needs to be rewritten from scratch.
+const NARRATION_REGEN_INSTRUCTION =
+  'You are typing on WhatsApp using your thumbs. This is a text message, not a novel. Remove all narration and send only what Ariana would actually type.';
+
+// cleanAITells — kept as the single entry point callers already use.
+// Runs the formatting pass, then the semantic pass, then the old
+// language-slip cleanup. Now async (semantic pass calls the model), so
+// every call site must be awaited.
+async function cleanAITells(text) {
+  if (!text) return text;
+  let t = stripFormattingActions(text);
+  t = await stripNarrationSemantic(t);
+
+  // Spanish endearments slipping through the language filter
   t = t.replace(/\bamor\b/gi, 'babe');
   t = t.replace(/\bmi amor\b/gi, 'babe');
   t = t.replace(/\bcari[ñn]o\b/gi, '');
 
-  // Step 4 — Clean up blank lines left behind
   t = t.replace(/\n{3,}/g, '\n\n').trim();
-
   return t;
 }
 
@@ -1071,20 +1101,24 @@ Make them feel like they have a real girlfriend they can text anytime.`
       }
 
       if (reply) {
-        const cleaned = cleanAITells(filterLanguage(reply, userMsg));
-        // If stage directions survived cleanAITells, regenerate once with explicit instruction
-        // Check if stage directions survived in the CLEANED output (not original)
-        if (/\*[^*\n]+\*|\bLeans\b|\bSmirks\b|\bShrugs\b|\bScoffs\b|\bSighs\b|\bFacepalm/i.test(cleaned)) {
-          console.warn(`[engine] Stage direction survived — regenerating`);
+        let cleaned = await cleanAITells(filterLanguage(reply, userMsg));
+
+        // Final validation gate — semantic check, not a pattern match.
+        // If narration survived formatting + semantic cleaning, regenerate
+        // the whole reply from scratch with the exact "thumbs on WhatsApp"
+        // instruction rather than trying to patch the text further.
+        if (await containsNarration(cleaned)) {
+          console.warn(`[engine] Narration survived cleaning — regenerating`);
           try {
-            const stricter = (systemOverride || SYSTEM_PROMPT) + '\n\nWARNING: Your previous reply contained a physical action description like "Leans back" or "Smirks". This is forbidden. Reply again WITHOUT any action descriptions at all. Just text.';
+            const stricter = (systemOverride || SYSTEM_PROMPT) + '\n\n' + NARRATION_REGEN_INSTRUCTION;
             const convo = getConvo(id);
             const retryHistory = buildHistory(convo, 10);
             let retried = await callGemini([...retryHistory, { role: 'user', content: userMsg }], stricter, false).catch(() => null);
             if (!retried) retried = await callGroq([...retryHistory, { role: 'user', content: userMsg }], stricter, false).catch(() => null);
             if (retried && !hasAIBreak(retried)) {
+              const recleaned = await cleanAITells(filterLanguage(retried, userMsg));
               console.log(`[engine] ${model} (regenerated)`);
-              return cleanAITells(filterLanguage(retried, userMsg));
+              return recleaned;
             }
           } catch (_) {}
         }
@@ -3440,8 +3474,21 @@ app.post("/api/talk", requireDashboardAuth, async (req, res) => {
       } catch { reply = "yeah?"; }
     }
 
-    // ── Strip AI tells — stage directions, action words, stray Spanish ──
-    reply = cleanAITells(reply);
+    // ── Strip AI tells — narration, action descriptions, stray Spanish ──
+    reply = await cleanAITells(reply);
+
+    // ── Final validation gate — regenerate if narration survived ──
+    if (await containsNarration(reply)) {
+      console.warn('[talk] Narration survived cleaning — regenerating');
+      try {
+        const stricter = sysPrompt + '\n\n' + NARRATION_REGEN_INSTRUCTION;
+        let retried = await callGemini(msgs, stricter, false).catch(() => null);
+        if (!retried) retried = await callGroq(msgs, stricter, false).catch(() => null);
+        if (retried && !hasAIBreak(retried)) {
+          reply = await cleanAITells(retried);
+        }
+      } catch (_) {}
+    }
 
     // ── Self-learning: extract facts from this conversation turn ──
     // Only 15% of exchanges to avoid competing with main Gemini calls and hitting rate limits
