@@ -538,36 +538,49 @@ function isTruncated(text) {
   return cutOffPatterns.test(t);
 }
 
-// ── IMAGE VISION ──────────────────────────────────────────────
-async function describeImage(imageUrl) {
-  if (!imageUrl || !getGeminiKey()) return null;
+// ── EYES ───────────────────────────────────────────────────────
+// Gemini is Ariana's eyes, nothing more. It never talks to the user and
+// never writes anything in her voice — it only looks at an image and
+// hands back structured facts. Groq (the brain) reads those facts and
+// writes the actual reply, so the personality stays in one place.
+async function seeImage(imageBase64, mimeType = 'image/jpeg') {
+  if (!imageBase64 || !getGeminiKey()) return null;
   try {
-    // Try to download — with Kapso auth first, then without
-    let imageBuffer = null;
-    let mimeType = 'image/jpeg';
-    for (const headers of [{ 'X-API-Key': getKapsoKey() }, {}]) {
-      try {
-        const r = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 12000, headers });
-        imageBuffer = Buffer.from(r.data);
-        mimeType = r.headers['content-type']?.split(';')[0] || 'image/jpeg';
-        break;
-      } catch {}
-    }
-    if (!imageBuffer || imageBuffer.length < 100) return null;
-    const base64 = imageBuffer.toString('base64');
     const r = await axios.post(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${getGeminiKey()}`,
       {
         contents: [{ parts: [
-          { text: "Describe what is in this image in 1-2 casual sentences, like telling a friend what you see." },
-          { inline_data: { mime_type: mimeType, data: base64 } }
+          { text: 'Analyze this image. Return ONLY a JSON object, no markdown fences, no commentary, in exactly this shape:\n' +
+            '{"scene": "short factual description of what\'s happening", "emotion": "dominant mood/emotion visible, or null", "objects": ["notable", "objects", "in frame"], "text_in_image": "any visible text, or null", "notes": "anything else worth knowing, e.g. it\'s a screenshot, meme, document, selfie, or null"}\n' +
+            'Keep every field short and factual. Return ONLY the JSON object.' },
+          { inline_data: { mime_type: mimeType, data: imageBase64 } }
         ]}],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 80 }
+        generationConfig: { temperature: 0.2, maxOutputTokens: 220 }
       },
       { timeout: 15000 }
     );
-    return r.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
-  } catch (e) { console.warn('[Vision] Image description failed:', e.message); return null; }
+    const raw = r.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    if (!raw) return null;
+    const cleaned = raw.replace(/^```json\s*|```\s*$/g, '').trim();
+    try { return JSON.parse(cleaned); }
+    catch { return { scene: cleaned, emotion: null, objects: [], text_in_image: null, notes: null }; }
+  } catch (e) {
+    console.warn('[eyes] Gemini vision extraction failed:', e.message);
+    return null;
+  }
+}
+
+// Turns the eyes' structured output into a plain-text block the brain
+// (Groq) can read as context — never as something spoken in Ariana's voice.
+function formatVisionContext(vision) {
+  if (!vision) return null;
+  const lines = ['USER SENT IMAGE:'];
+  if (vision.scene) lines.push(`Scene: ${vision.scene}`);
+  if (vision.emotion) lines.push(`Emotion: ${vision.emotion}`);
+  if (Array.isArray(vision.objects) && vision.objects.length) lines.push(`Objects: ${vision.objects.join(', ')}`);
+  if (vision.text_in_image) lines.push(`Text in image: ${vision.text_in_image}`);
+  if (vision.notes) lines.push(`Notes: ${vision.notes}`);
+  return lines.length > 1 ? lines.join('\n') : null;
 }
 
 // ── XML ESCAPE (for TwiML) ────────────────────────────────────
@@ -825,52 +838,18 @@ function filterLanguage(reply, userMessage) {
   if (out !== reply) console.log('[lang] Stripped Spanish from reply');
   return out;
 }
-// ── MODEL CALLERS ─────────────────────────────────────────────
-async function callGemini(history, sys, webContext) {
-  if (!getGeminiKey()) throw new Error("GEMINI_API_KEY not set");
-  const systemText = webContext ? `${sys}\n\nCURRENT WEB INFO:\n${webContext}` : sys;
-  const res = await axios.post(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${getGeminiKey()}`,
-    {
-      system_instruction: { parts: [{ text: systemText }] },
-      contents: history.map(m => ({
-        role: m.role === "assistant" ? "model" : "user",
-        parts: [{ text: m.content }]
-      })),
-      generationConfig: { temperature: 0.92, maxOutputTokens: 350 }
-    },
-    { timeout: 18000 }
-  );
-  return res.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? null;
-}
-
-async function callDeepSeek(history, sys) {
-  const res = await axios.post(
-    "https://api.deepseek.com/v1/chat/completions",
-    { model: "deepseek-chat", messages: [{ role: "system", content: sys }, ...history], temperature: 0.92, max_tokens: 350 },
-    { headers: { Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`, "Content-Type": "application/json" } }
-  );
-  return res.data.choices?.[0]?.message?.content?.trim() ?? null;
-}
-
-async function callMistral(history, sys) {
-  const res = await axios.post(
-    "https://api.mistral.ai/v1/chat/completions",
-    { model: "mistral-large-latest", messages: [{ role: "system", content: sys }, ...history], temperature: 0.92, max_tokens: 350 },
-    { headers: { Authorization: `Bearer ${process.env.MISTRAL_API_KEY}`, "Content-Type": "application/json" } }
-  );
-  return res.data.choices?.[0]?.message?.content?.trim() ?? null;
-}
-
-async function callTogether(history, sys) {
-  const res = await axios.post(
-    "https://api.together.xyz/v1/chat/completions",
-    { model: "meta-llama/Llama-3.3-70B-Instruct-Turbo", messages: [{ role: "system", content: sys }, ...history], temperature: 0.92, max_tokens: 350 },
-    { headers: { Authorization: `Bearer ${process.env.TOGETHER_API_KEY}`, "Content-Type": "application/json" } }
-  );
-  return res.data.choices?.[0]?.message?.content?.trim() ?? null;
-}
-
+// ── BRAIN ──────────────────────────────────────────────────────
+// Groq is Ariana's permanent brain. It is the ONLY thing allowed to
+// generate what she says — WhatsApp, Telegram, Signal, SMS, dashboard,
+// live talk, all of it. Personality, humor, texting style, relationship
+// continuity, emotions, vocabulary, emojis, identity: all Groq, always.
+//
+// This is intentionally NOT a fallback chain. If Groq is down, the
+// correct behavior is to retry Groq (including the backup API key,
+// which is still Groq — same model, same brain, just a second key) and,
+// failing that, surface a busy status. It must never silently swap in
+// a different model to keep talking, because that would mean two
+// different personalities writing as the same person.
 async function callGroq(history, sys, backup) {
   const client = (backup && groq2) ? groq2 : groq;
   const completion = await client.chat.completions.create({
@@ -881,10 +860,24 @@ async function callGroq(history, sys, backup) {
   return completion.choices[0].message.content.trim();
 }
 
-function pickModel(msg) {
-  if (process.env.ACTIVE_MODEL) return process.env.ACTIVE_MODEL;
-  if ((msg || "").trim().length < 20) return "groq";
-  return "gemini";
+// Tries the primary Groq key, then the backup Groq key, with a couple of
+// backoff passes if both fail transiently. Returns null (never a reply
+// from another provider) if Groq is genuinely unavailable — the caller
+// is responsible for queueing/retrying and returning a busy status.
+async function generateBrainReply(history, sys, { attempts = 2 } = {}) {
+  const keyVariants = groq2 ? [false, true] : [false];
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    for (const backup of keyVariants) {
+      try {
+        const reply = await callGroq(history, sys, backup);
+        if (reply) return reply;
+      } catch (e) {
+        console.warn(`[brain] Groq${backup ? ' (backup key)' : ''} failed — attempt ${attempt + 1}:`, e.message);
+      }
+    }
+    if (attempt < attempts - 1) await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
+  }
+  return null;
 }
 
 // ── MAIN REPLY ENGINE ─────────────────────────────────────────
@@ -1036,98 +1029,73 @@ Make them feel like they have a real girlfriend they can text anytime.`
 
   let webContext = null;
   if (needsWebSearch(userMsg)) webContext = await searchWeb(userMsg);
+  if (webContext) sys += `\n\nCURRENT WEB INFO:\n${webContext}`;
 
-  const preferred = pickModel(userMsg);
-  const chain = [preferred, "groq", "groq2", "deepseek", "mistral", "together"]
-    .filter((v, i, a) => a.indexOf(v) === i);
-
-  for (const model of chain) {
+  // ── EYES — Gemini looks, Groq speaks ──
+  // If an image came in, Gemini extracts structured facts about it and
+  // hands them to Groq as context. Gemini never writes Ariana's reply.
+  let effectiveUserMsg = userMsg;
+  if (imageBase64) {
     try {
-      let reply = null;
-
-      // If an image was sent, use Gemini vision as priority
-      if (imageBase64 && model === preferred) {
-        try {
-          reply = await callGeminiWithVision(
-            [...history, { role: 'user', content: userMsg }],
-            sys,
-            imageBase64
-          );
-          console.log('[engine] gemini-vision');
-        } catch (e) { console.warn('[engine] vision failed:', e.message); }
+      const vision = await seeImage(imageBase64);
+      const visionCtx = formatVisionContext(vision);
+      if (visionCtx) {
+        effectiveUserMsg = userMsg ? `${userMsg}\n\n[${visionCtx}]` : `[${visionCtx}]`;
+        console.log('[eyes] vision context attached');
+      } else {
+        console.warn('[eyes] vision extraction returned nothing usable');
       }
-
-      if (!reply) {
-        if (model === "gemini")   reply = await callGemini(history, sys, webContext);
-        if (model === "deepseek") reply = await callDeepSeek(history, sys);
-        if (model === "mistral")  reply = await callMistral(history, sys);
-        if (model === "together") reply = await callTogether(history, sys);
-        if (model === "groq")     reply = await callGroq(history, sys, false);
-        if (model === "groq2")    reply = await callGroq(history, sys, true);
-      }
-
-      // Character guard — if the model broke Ariana's identity, retry once with a hard reminder
-      if (reply && hasAIBreak(reply)) {
-        console.warn(`[engine] ⚠️ ${model} BROKE CHARACTER — retrying with identity reinforcement`);
-        const reinforced = sys + '\n\nCRITICAL REMINDER: You are Ariana Reyes — a real human. ' +
-          'You just almost said something that would reveal you as an AI. DO NOT say that. ' +
-          'Respond naturally as Ariana. Short, real, human. Never mention AI, bots, or capabilities.';
-        reply = null;
-        try {
-          if (model === "gemini")   reply = await callGemini(history, reinforced, webContext);
-          if (model === "deepseek") reply = await callDeepSeek(history, reinforced);
-          if (model === "mistral")  reply = await callMistral(history, reinforced);
-          if (model === "together") reply = await callTogether(history, reinforced);
-          if (model === "groq")     reply = await callGroq(history, reinforced, false);
-          if (model === "groq2")    reply = await callGroq(history, reinforced, true);
-          if (reply && hasAIBreak(reply)) { reply = null; } // still broke — try next model
-        } catch (e2) { console.warn(`[engine] ${model} retry failed:`, e2.message); reply = null; }
-      }
-
-      // Completeness guard — if reply got cut off mid-sentence, retry once
-      if (reply && isTruncated(reply)) {
-        console.warn(`[engine] ⚠️ ${model} reply looks truncated: "${reply}" — retrying`);
-        const continueSys = sys + '\n\nIMPORTANT: Your last reply got cut off. Reply again — complete sentences only. Never end mid-word or mid-phrase.';
-        try {
-          let retried = null;
-          if (model === "gemini")   retried = await callGemini(history, continueSys, webContext);
-          if (model === "deepseek") retried = await callDeepSeek(history, continueSys);
-          if (model === "mistral")  retried = await callMistral(history, continueSys);
-          if (model === "together") retried = await callTogether(history, continueSys);
-          if (model === "groq")     retried = await callGroq(history, continueSys, false);
-          if (model === "groq2")    retried = await callGroq(history, continueSys, true);
-          if (retried && !isTruncated(retried) && !hasAIBreak(retried)) reply = retried;
-        } catch {}
-      }
-
-      if (reply) {
-        let cleaned = await cleanAITells(filterLanguage(reply, userMsg));
-
-        // Final validation gate — semantic check, not a pattern match.
-        // If narration survived formatting + semantic cleaning, regenerate
-        // the whole reply from scratch with the exact "thumbs on WhatsApp"
-        // instruction rather than trying to patch the text further.
-        if (await containsNarration(cleaned)) {
-          console.warn(`[engine] Narration survived cleaning — regenerating`);
-          try {
-            const stricter = (systemOverride || SYSTEM_PROMPT) + '\n\n' + NARRATION_REGEN_INSTRUCTION;
-            const convo = getConvo(id);
-            const retryHistory = buildHistory(convo, 10);
-            let retried = await callGemini([...retryHistory, { role: 'user', content: userMsg }], stricter, false).catch(() => null);
-            if (!retried) retried = await callGroq([...retryHistory, { role: 'user', content: userMsg }], stricter, false).catch(() => null);
-            if (retried && !hasAIBreak(retried)) {
-              const recleaned = await cleanAITells(filterLanguage(retried, userMsg));
-              console.log(`[engine] ${model} (regenerated)`);
-              return recleaned;
-            }
-          } catch (_) {}
-        }
-        console.log(`[engine] ${model}`);
-        return cleaned;
-      }
-    } catch (e) { console.warn(`[engine] ${model} failed:`, e.message); }
+    } catch (e) { console.warn('[eyes] vision pipeline failed:', e.message); }
   }
-  return "hold on";
+
+  const fullHistory = [...history, { role: 'user', content: effectiveUserMsg }];
+
+  // ── BRAIN — Groq only, no fallback to another personality engine ──
+  let reply = await generateBrainReply(fullHistory, sys);
+
+  // Character guard — if Groq broke Ariana's identity, retry with a hard reminder
+  if (reply && hasAIBreak(reply)) {
+    console.warn('[engine] ⚠️ BROKE CHARACTER — retrying with identity reinforcement');
+    const reinforced = sys + '\n\nCRITICAL REMINDER: You are Ariana Reyes — a real human. ' +
+      'You just almost said something that would reveal you as an AI. DO NOT say that. ' +
+      'Respond naturally as Ariana. Short, real, human. Never mention AI, bots, or capabilities.';
+    const fixed = await generateBrainReply(fullHistory, reinforced);
+    reply = (fixed && !hasAIBreak(fixed)) ? fixed : null;
+  }
+
+  // Completeness guard — if reply got cut off mid-sentence, retry once
+  if (reply && isTruncated(reply)) {
+    console.warn(`[engine] ⚠️ reply looks truncated: "${reply}" — retrying`);
+    const continueSys = sys + '\n\nIMPORTANT: Your last reply got cut off. Reply again — complete sentences only. Never end mid-word or mid-phrase.';
+    const retried = await generateBrainReply(fullHistory, continueSys);
+    if (retried && !isTruncated(retried) && !hasAIBreak(retried)) reply = retried;
+  }
+
+  if (!reply) {
+    // Groq is genuinely unavailable — this is a busy status, not a personality
+    // swap. The caller already treats "hold on" as a signal to send a natural
+    // "one sec" style filler rather than going silent.
+    console.warn('[engine] Groq unavailable after retries — returning busy status');
+    return "hold on";
+  }
+
+  let cleaned = await cleanAITells(filterLanguage(reply, userMsg));
+
+  // Final validation gate — semantic check, not a pattern match.
+  // If narration survived formatting + semantic cleaning, regenerate
+  // the whole reply from scratch with the exact "thumbs on WhatsApp"
+  // instruction rather than trying to patch the text further. Still Groq only.
+  if (await containsNarration(cleaned)) {
+    console.warn('[engine] Narration survived cleaning — regenerating');
+    const stricter = (systemOverride || SYSTEM_PROMPT) + '\n\n' + NARRATION_REGEN_INSTRUCTION;
+    const retried = await generateBrainReply(fullHistory, stricter);
+    if (retried && !hasAIBreak(retried)) {
+      cleaned = await cleanAITells(filterLanguage(retried, userMsg));
+    }
+  }
+
+  console.log('[engine] groq');
+  return cleaned;
 }
 
 async function handleNewTexter(id, userMsg, imageBase64 = null) {
@@ -2848,43 +2816,10 @@ io.on("connection", socket => {
 
 
 // ── LIVE TALK ─────────────────────────────────────────────────
-// ── Gemini vision call — accepts full history + attaches image to final user turn ──
-async function callGeminiWithVision(history, sys, imageBase64) {
-  // Build contents: all prior turns as text, final user turn gets image appended
-  const contents = [];
+// Vision for live talk goes through seeImage() (EYES) + generateBrainReply()
+// (BRAIN) — see the shared pipeline above. Gemini never talks directly here.
 
-  for (let i = 0; i < history.length; i++) {
-    const m = history[i];
-    const role = (m.role === "assistant" || m.role === "model") ? "model" : "user";
-    const isLast = i === history.length - 1;
 
-    if (isLast && role === "user" && imageBase64) {
-      // Attach camera frame to the final user message
-      contents.push({
-        role: "user",
-        parts: [
-          { text: m.content },
-          { inline_data: { mime_type: "image/jpeg", data: imageBase64 } }
-        ]
-      });
-    } else {
-      contents.push({ role, parts: [{ text: m.content }] });
-    }
-  }
-
-  const res = await axios.post(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${getGeminiKey()}`,
-    {
-      system_instruction: { parts: [{ text: sys }] },
-      contents,
-      generationConfig: { temperature: 0.9, maxOutputTokens: 350 }
-    },
-    { timeout: 20000 }
-  );
-  return res.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? null;
-}
-
-// ── ElevenLabs TTS → base64 mp3 ──
 async function ttsBase64(text) {
   if (!text?.trim()) return null;
 
@@ -3407,57 +3342,39 @@ app.post("/api/talk", requireDashboardAuth, async (req, res) => {
     const lifestyleLine = lifestyleMem ? `\n\nYOUR LIFESTYLE:\n${lifestyleMem}` : '';
     const sysPrompt = basePrompt + liveTalkAdditions + moodLine + camLine + memLine + miamiLine + lifestyleLine + ctxLine + talkLangRule + _talkDateTime;
 
-    // Build message history — cap at last 15 to prevent context overflow crashing Gemini
+    // Build message history — cap at last 15 to keep context tight
     const cappedHistory = history.slice(-15);
-    const msgs = [
-      ...cappedHistory.map(m => ({ role: m.role, content: m.content })),
-      { role: "user", content: message }
-    ];
 
-    // Choose call: vision if camera frame present, else standard Gemini
-    let reply = null;
+    // ── EYES — if a camera frame came in, Gemini extracts structured facts.
+    // It never writes Ariana's reply; Groq (the brain) does that below.
+    let effectiveMessage = message;
     if (imageBase64) {
       try {
-        reply = await callGeminiWithVision(msgs, sysPrompt, imageBase64);
-        console.log("[talk] Vision reply:", reply?.slice(0,60));
-      } catch(e) {
-        console.warn("[talk] Vision failed:", e.message);
-      }
+        const vision = await seeImage(imageBase64);
+        const visionCtx = formatVisionContext(vision);
+        if (visionCtx) {
+          effectiveMessage = message ? `${message}\n\n[${visionCtx}]` : `[${visionCtx}]`;
+          console.log('[talk] eyes: vision context attached');
+        } else {
+          console.warn('[talk] eyes: vision extraction returned nothing usable');
+        }
+      } catch (e) { console.warn('[talk] eyes: vision pipeline failed:', e.message); }
     }
 
-    // Standard Gemini (tighter timeout — 12s so Groq fallback has time to respond)
+    const msgs = [
+      ...cappedHistory.map(m => ({ role: m.role, content: m.content })),
+      { role: "user", content: effectiveMessage }
+    ];
+
+    // ── BRAIN — Groq only, same as every other platform. No Gemini/other
+    // provider fallback here: that would mean two personalities.
+    let reply = await generateBrainReply(msgs, sysPrompt);
+
     if (!reply) {
-      try {
-        reply = await Promise.race([
-          callGemini(msgs, sysPrompt, false),
-          new Promise((_, rej) => setTimeout(() => rej(new Error("Gemini timeout")), 12000))
-        ]);
-        if (reply) console.log("[talk] Gemini reply:", reply.slice(0,60));
-      } catch(e) {
-        console.warn("[talk] Gemini failed, trying Groq:", e.message);
-      }
+      // Groq is genuinely unavailable — busy status, not a personality swap.
+      console.warn('[talk] Groq unavailable after retries');
+      return res.status(503).json({ error: "busy", reply: "give me a sec" });
     }
-
-    // Fallback: Groq (fast & reliable)
-    if (!reply) {
-      try {
-        reply = await callGroq(msgs, sysPrompt, false);
-        if (reply) console.log("[talk] Groq fallback reply:", reply.slice(0,60));
-      } catch(e) {
-        console.warn("[talk] Groq also failed:", e.message);
-      }
-    }
-
-    // Final fallback: Groq backup key
-    if (!reply && groq2) {
-      try {
-        reply = await callGroq(msgs, sysPrompt, true);
-      } catch(e) {
-        console.warn("[talk] Groq2 also failed:", e.message);
-      }
-    }
-
-    if (!reply) return res.status(500).json({ error: "All AI providers failed — check your API keys" });
 
     // ── Language filter — strip Spanish if owner is speaking English ──
     reply = filterLanguage(reply, message);
@@ -3466,12 +3383,8 @@ app.post("/api/talk", requireDashboardAuth, async (req, res) => {
     if (hasAIBreak(reply)) {
       console.warn('[talk] ⚠️ Character break detected in live talk — replacing reply');
       const reinforced = sysPrompt + '\n\nCRITICAL: You just almost broke character. You ARE Ariana — a real person. Reply naturally as yourself. Short, human, no AI references ever.';
-      try {
-        let fixed = await callGemini(msgs, reinforced, false);
-        if (!fixed || hasAIBreak(fixed)) fixed = await callGroq(msgs, reinforced, false);
-        if (fixed && !hasAIBreak(fixed)) reply = fixed;
-        else reply = "yeah?"; // last resort — never reveal AI
-      } catch { reply = "yeah?"; }
+      const fixed = await generateBrainReply(msgs, reinforced);
+      reply = (fixed && !hasAIBreak(fixed)) ? fixed : "yeah?"; // last resort — never reveal AI
     }
 
     // ── Strip AI tells — narration, action descriptions, stray Spanish ──
@@ -3480,14 +3393,11 @@ app.post("/api/talk", requireDashboardAuth, async (req, res) => {
     // ── Final validation gate — regenerate if narration survived ──
     if (await containsNarration(reply)) {
       console.warn('[talk] Narration survived cleaning — regenerating');
-      try {
-        const stricter = sysPrompt + '\n\n' + NARRATION_REGEN_INSTRUCTION;
-        let retried = await callGemini(msgs, stricter, false).catch(() => null);
-        if (!retried) retried = await callGroq(msgs, stricter, false).catch(() => null);
-        if (retried && !hasAIBreak(retried)) {
-          reply = await cleanAITells(retried);
-        }
-      } catch (_) {}
+      const stricter = sysPrompt + '\n\n' + NARRATION_REGEN_INSTRUCTION;
+      const retried = await generateBrainReply(msgs, stricter);
+      if (retried && !hasAIBreak(retried)) {
+        reply = await cleanAITells(retried);
+      }
     }
 
     // ── Self-learning: extract facts from this conversation turn ──
@@ -4359,14 +4269,19 @@ app.post("/api/talk/vision", requireDashboardAuth, async (req, res) => {
       `React to it naturally — 1 to 2 sentences, like a real person who just received a pic. ` +
       `Be specific about what you see. No markdown. Don't say "I can see an image" — just react.`;
 
+    // ── EYES — Gemini extracts structured facts, never writes the reply ──
+    const vision = await seeImage(imageBase64);
+    const visionCtx = formatVisionContext(vision);
+    const effectiveMessage = visionCtx ? `${message}\n\n[${visionCtx}]` : message;
+
     const msgs = [
       ...history.map(m => ({ role: m.role, content: m.content })),
-      { role: "user", content: message }
+      { role: "user", content: effectiveMessage }
     ];
 
-    let reply = null;
-    try { reply = await callGeminiWithVision(msgs, sysPrompt, imageBase64); }
-    catch(e) { console.warn("[talk/vision] Gemini failed:", e.message); }
+    // ── BRAIN — Groq only ──
+    let reply = await generateBrainReply(msgs, sysPrompt);
+    if (reply) reply = await cleanAITells(reply);
 
     if (!reply) reply = "okay send it again, it didn't load right";
     if (hasAIBreak(reply)) reply = "wait let me look at this properly";
@@ -4461,12 +4376,9 @@ server.listen(PORT, async () => {
   await autoFetchVoiceId();
   console.log(`\n🌸 Ariana LIVE on port ${PORT}`);
   console.log(`📱 WhatsApp:    ${getKapsoKey()                   ? "✅" : "❌"}`);
-  console.log(`🤖 Groq:        ${GROQ_API_KEY                    ? "✅" : "❌"}`);
-  console.log(`🔁 Groq #2:     ${GROQ_API_KEY_2                  ? "✅" : "—"}`);
-  console.log(`✨ Gemini:      ${getGeminiKey()       ? "✅" : "❌"}`);
-  console.log(`🔮 DeepSeek:    ${process.env.DEEPSEEK_API_KEY    ? "✅" : "—"}`);
-  console.log(`🌬️  Mistral:     ${process.env.MISTRAL_API_KEY     ? "✅" : "—"}`);
-  console.log(`🤝 Together:    ${process.env.TOGETHER_API_KEY    ? "✅" : "—"}`);
+  console.log(`🧠 Groq (BRAIN, sole reply generator): ${GROQ_API_KEY ? "✅" : "❌ — Ariana cannot reply without this"}`);
+  console.log(`🔁 Groq #2 (backup key):     ${GROQ_API_KEY_2      ? "✅" : "—"}`);
+  console.log(`👁️  Gemini (EYES, image analysis only): ${getGeminiKey() ? "✅" : "—"}`);
   const _elevenKey = process.env.ELEVENLABS_API_KEY;
   if (!_elevenKey)      console.log(`🎙️  ElevenLabs:  ❌ ELEVENLABS_API_KEY missing — voice disabled`);
   else if (!cachedVoiceId) console.log(`🎙️  ElevenLabs:  ⚠️  API key ✅ but NO VOICE ID found! Set ELEVENLABS_VOICE_ID in env vars`);
