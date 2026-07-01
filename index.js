@@ -427,24 +427,37 @@ function hasAIBreak(text) {
 // physical actions, facial expressions, body language, gestures, eye
 // movement, posture, voice tone, or internal narration — anything that
 // could be silently acted out on a movie set without saying a word.
+// This also covers director's/screenplay notes about HOW a line should
+// land ("tone is firm but not aggressive", "she sounds tired") — these
+// are written from an outside observer's perspective, not Ariana's own.
 //
 // A word-blacklist can never keep up (the model invents new phrasing
 // forever: "a grin spreads across her face", "amusement flickers in her
-// eyes", etc). So instead of matching phrases, this is a two-layer
-// STRUCTURAL system:
+// eyes", "her tone becomes softer", etc). So instead of matching
+// phrases, this is a two-layer STRUCTURAL system:
 //
-//  1. stripFormattingActions() — a pure formatting rule with zero word
-//     list: on WhatsApp, real people never wrap their own words in
-//     markdown emphasis (*text*, **text**, _text_) or drop a lone
-//     parenthetical on its own line. That formatting pattern is itself
-//     the "this is a stage direction" signal, regardless of the words
-//     inside it.
+//  1. stripFormattingActions() — pure formatting/grammar rules, zero
+//     word list:
+//       a. On WhatsApp, real people never wrap their own words in
+//          markdown emphasis (*text*, **text**, _text_). That
+//          formatting is itself the "this is a stage direction" signal,
+//          regardless of the words inside it.
+//       b. A parenthetical — inline or standing alone on its own line —
+//          that refers to Ariana in the THIRD PERSON ("she", "her",
+//          "Ariana's") is structurally an outside observer's note about
+//          her, never something a real person types about themselves.
+//          This is a grammatical-person test (first/second person is
+//          fine, third person about yourself is not), not a growing
+//          list of narration verbs — it doesn't matter what the note
+//          says, only whose eyes it's written from.
 //  2. stripNarrationSemantic() — the actual semantic test Daisy
-//     specified ("if it can be acted out on a movie set without
-//     dialogue, delete it"). Since that's a judgment about meaning, not
-//     wording, it's delegated to the model itself as a classifier: it
-//     reads the message and returns only the parts a person would
-//     actually type, dropping narration. This is what actually
+//     specified, framed as a perspective check: "could this sentence
+//     start with 'An observer watching Ariana would notice...'? If
+//     yes, delete it." Since that's a judgment about meaning and point
+//     of view, not wording, it's delegated to the model itself as a
+//     classifier: it reads the message and returns only the parts
+//     Ariana would actually type about herself, dropping anything
+//     written about her from outside. This is what actually
 //     generalizes to phrasing nobody's seen yet.
 //
 // containsNarration() below is the final gate used to decide whether a
@@ -459,22 +472,35 @@ function stripFormattingActions(text) {
   // whole span regardless of what's inside it.
   t = t.replace(/\*{1,2}([^*\n]+?)\*{1,2}/g, '');
   t = t.replace(/(?<![A-Za-z0-9])_([^_\n]+?)_(?![A-Za-z0-9])/g, '');
-  // A parenthetical that IS the entire line (not an aside inside a real
-  // sentence) is structurally a stage direction, not dialogue.
+  // Any parenthetical — inline or standalone — that refers to Ariana in
+  // the third person is structurally a director's/screenplay note about
+  // her, not dialogue. This is a grammatical-person test: a real person
+  // never describes themselves in the third person inside their own
+  // message. First/second-person asides like "(lol same)" or "(you
+  // know)" are left untouched.
+  t = t.replace(/\(([^)]+)\)/g, (match, inner) => {
+    return /\b(she|her|hers|herself|ariana'?s?)\b/i.test(inner) ? '' : match;
+  });
+  // A parenthetical that IS the entire line (whatever its content) is
+  // also almost always a stray stage direction rather than a real reply.
   t = t.split('\n').map(line => {
     const trimmed = line.trim();
     if (/^\([^)]+\)$/.test(trimmed)) return '';
     return line;
   }).join('\n');
+  t = t.replace(/[ \t]{2,}/g, ' ');
   t = t.replace(/\n{3,}/g, '\n\n').trim();
   return t;
 }
 
-const NARRATION_CLASSIFIER_SYS = `You edit WhatsApp messages for a persona named Ariana. Ariana is a real human texting on her phone — never a narrator describing her.
+const NARRATION_CLASSIFIER_SYS = `You edit WhatsApp messages for a persona named Ariana. Ariana is a real human texting on her phone — never a narrator or screenwriter describing her.
 
-DELETE anything that narrates a physical action, facial expression, body language, gesture, eye movement, posture, voice tone, or internal/emotional description — in short, anything that could be silently acted out on a movie set without a word of dialogue. This applies no matter how it's phrased, including phrasing you haven't seen before.
+THE TEST: for every sentence or clause, ask "could this start with 'An observer watching Ariana would notice...'?" If yes, it's written from an outside point of view and must be deleted — no matter how it's phrased, including phrasing you haven't seen before. This covers:
+- physical actions, facial expressions, body language, gestures, eye movement, posture (e.g. "her expression softens", "she rolls her eyes")
+- narrated voice/tone/delivery, including director's notes about how a line should land (e.g. "her tone is firm but not aggressive", "she sounds tired", "Ariana's voice softens")
+- third-person emotional or internal narration about her (e.g. "Ariana feels annoyed", "amusement flickers in her eyes")
 
-KEEP everything a person would actually type: statements, reactions, questions, slang, emojis, and punctuation-based emotion (e.g. "that's funny 😂", "nah 😏", "i'm tired", "i miss you").
+KEEP everything written from Ariana's own first-person point of view — what she would actually type: statements, reactions, questions, slang, emojis, and punctuation-based emotion (e.g. "I'm tired", "I'm annoyed", "that's funny 😂", "nah 😏", "ugh", "haha").
 
 Return ONLY the surviving text, word-for-word as written, with narration removed and natural spacing/punctuation cleaned up. No commentary, no quotes around your answer, no explanation. If nothing survives, return an empty string.`;
 
@@ -489,7 +515,11 @@ async function stripNarrationSemantic(text) {
   }
 }
 
-const NARRATION_VALIDATOR_SYS = `You are a strict binary classifier for WhatsApp messages. Answer YES if any part of the message narrates a physical action, facial expression, body language, gesture, posture, voice tone, or emotion in prose — i.e. it could be silently acted out on a movie set instead of being something a person would actually type. Answer NO if it is pure dialogue: statements, reactions, slang, emojis, punctuation-based emotion. Reply with exactly one word: YES or NO.`;
+const NARRATION_VALIDATOR_SYS = `You are a strict binary classifier for WhatsApp messages from a persona named Ariana.
+
+THE TEST: could any sentence or clause in this message start with "An observer watching Ariana would notice..."? That includes physical actions, facial expressions, body language, gestures, posture, and narrated voice/tone or director's notes about delivery (e.g. "her tone is firm but not aggressive", "she sounds tired", "Ariana's voice softens", "her expression changes") — anything written about her from an outside point of view rather than typed by her in the first person.
+
+Answer YES if any part of the message fails that test. Answer NO if the whole message is pure first-person dialogue: statements, reactions, slang, emojis, punctuation-based emotion (e.g. "I'm tired", "I'm annoyed", "ugh", "haha", "😂"). Reply with exactly one word: YES or NO.`;
 
 async function containsNarration(text) {
   if (!text || !text.trim()) return false;
