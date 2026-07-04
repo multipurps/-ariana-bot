@@ -439,46 +439,43 @@ function hasAIBreak(text) {
   return forbidden.some(p => lower.includes(p));
 }
 
-// ── NARRATION REMOVAL ─────────────────────────────────────────
-// Ariana is a WhatsApp human, not a novel character. She never narrates
-// physical actions, facial expressions, body language, gestures, eye
-// movement, posture, voice tone, or internal narration — anything that
-// could be silently acted out on a movie set without saying a word.
-// This also covers director's/screenplay notes about HOW a line should
-// land ("tone is firm but not aggressive", "she sounds tired") — these
-// are written from an outside observer's perspective, not Ariana's own.
+// ── GLOBAL ANTI-NARRATION / OUTBOUND VALIDATION PATCH ─────────
+// Mandatory, runs AFTER the final AI response is generated and BEFORE
+// the message is sent, on every single output path: WhatsApp, Telegram,
+// dashboard, voice notes, proactive messages, owner mode, new texter
+// mode, image replies, follow-ups, regenerated replies, and whichever
+// Groq key/attempt actually produced the text. There is no output path
+// that skips this.
 //
-// A word-blacklist can never keep up (the model invents new phrasing
-// forever: "a grin spreads across her face", "amusement flickers in her
-// eyes", "her tone becomes softer", etc). So instead of matching
-// phrases, this is a two-layer STRUCTURAL system:
+// Ariana is texting on a phone. She is not writing a novel, roleplay,
+// screenplay dialogue, stage directions, character notes, or narration.
+// Three things get removed:
 //
-//  1. stripFormattingActions() — pure formatting/grammar rules, zero
-//     word list:
-//       a. On WhatsApp, real people never wrap their own words in
-//          markdown emphasis (*text*, **text**, _text_). That
-//          formatting is itself the "this is a stage direction" signal,
-//          regardless of the words inside it.
-//       b. A parenthetical — inline or standing alone on its own line —
-//          that refers to Ariana in the THIRD PERSON ("she", "her",
-//          "Ariana's") is structurally an outside observer's note about
-//          her, never something a real person types about themselves.
-//          This is a grammatical-person test (first/second person is
-//          fine, third person about yourself is not), not a growing
-//          list of narration verbs — it doesn't matter what the note
-//          says, only whose eyes it's written from.
-//  2. stripNarrationSemantic() — the actual semantic test Daisy
-//     specified, framed as a perspective check: "could this sentence
-//     start with 'An observer watching Ariana would notice...'? If
-//     yes, delete it." Since that's a judgment about meaning and point
-//     of view, not wording, it's delegated to the model itself as a
-//     classifier: it reads the message and returns only the parts
-//     Ariana would actually type about herself, dropping anything
-//     written about her from outside. This is what actually
-//     generalizes to phrasing nobody's seen yet.
+//  1. NARRATION — anything an outside observer could see or hear
+//     instead of something Ariana is saying. TEST: could the sentence
+//     start with "An observer watching Ariana would notice..."? If a
+//     movie director could film the sentence without her speaking,
+//     delete it. Covers physical actions, expressions, gestures,
+//     posture, and narrated tone/voice/delivery, however it's phrased
+//     — a word-blacklist can never keep up with new invented phrasing,
+//     so this is a perspective test, not a phrase match. Where narration
+//     was riding along with real dialogue, it's replaced with a fitting
+//     emoji/punctuation instead of just vanishing (e.g. "rolls eyes
+//     playfully 'alright boss'" → "🙄 alright boss").
+//  2. UNPROMPTED DATE/TIME/LOCATION — she never mentions the date, day,
+//     time, timezone, or her city unless the user's own message is
+//     actually asking about it.
+//  3. INVENTED OFF-SCREEN ACTIVITY — she never claims to be doing
+//     something right now ("I'm in traffic", "I'm with clients") unless
+//     that's backed by memory or was established earlier in this
+//     conversation.
 //
-// containsNarration() below is the final gate used to decide whether a
-// full regeneration is needed before sending.
+// Structural layer (free, instant, zero word list) catches what it can
+// by formatting/grammar alone; the semantic layer (a Groq call reading
+// for meaning) catches everything else, including phrasing nobody's
+// seen yet; the final validator is the literal question Daisy
+// specified — "would a real person type this into WhatsApp?" — and
+// gates a full regeneration if the answer is no.
 
 function stripFormattingActions(text) {
   if (!text) return text;
@@ -510,21 +507,28 @@ function stripFormattingActions(text) {
   return t;
 }
 
-const NARRATION_CLASSIFIER_SYS = `You edit WhatsApp messages for a persona named Ariana. Ariana is a real human texting on her phone — never a narrator or screenwriter describing her.
+function buildOutboundEditorPrompt(userMsg, establishedContext) {
+  return `You edit WhatsApp messages for a persona named Ariana. Ariana is a real human texting on her phone — never a narrator, screenwriter, or character-note writer describing her, and never inventing facts about her own life.
 
-THE TEST: for every sentence or clause, ask "could this start with 'An observer watching Ariana would notice...'?" If yes, it's written from an outside point of view and must be deleted — no matter how it's phrased, including phrasing you haven't seen before. This covers:
-- physical actions, facial expressions, body language, gestures, eye movement, posture (e.g. "her expression softens", "she rolls her eyes")
-- narrated voice/tone/delivery, including director's notes about how a line should land (e.g. "her tone is firm but not aggressive", "she sounds tired", "Ariana's voice softens")
-- third-person emotional or internal narration about her (e.g. "Ariana feels annoyed", "amusement flickers in her eyes")
+USER'S MESSAGE, for context only — do not edit or respond to it, just use it to judge whether time/date/location was actually asked about: "${(userMsg || '').slice(0, 500)}"
 
-KEEP everything written from Ariana's own first-person point of view — what she would actually type: statements, reactions, questions, slang, emojis, and punctuation-based emotion (e.g. "I'm tired", "I'm annoyed", "that's funny 😂", "nah 😏", "ugh", "haha").
+ESTABLISHED FACTS about what she's doing / where she is right now, from memory or earlier in this conversation (may be empty): ${establishedContext ? establishedContext.slice(0, 800) : 'none'}
 
-Return ONLY the surviving text, word-for-word as written, with narration removed and natural spacing/punctuation cleaned up. No commentary, no quotes around your answer, no explanation. If nothing survives, return an empty string.`;
+Edit Ariana's draft reply below and remove exactly three things:
 
-async function stripNarrationSemantic(text) {
+1. NARRATION — anything written from an outside observer's point of view instead of Ariana's own first-person voice. TEST: could it start with "An observer watching Ariana would notice..."? Covers physical actions, facial expressions, gestures, posture, eye movement, and narrated tone/voice/delivery (e.g. "rolls eyes playfully", "chuckles lightly", "smiles warmly", "leans back", "her tone becomes serious", "Ariana sounds tired"). Where narration was attached to real dialogue, don't just delete it blank — replace it with a fitting emoji or punctuation that carries the same feeling, the way a real person would. Examples: 'rolls eyes playfully "alright boss"' → '🙄 alright boss'; 'chuckles lightly "you're impossible"' → '😂 you're impossible'; 'smiles warmly "good morning"' → 'good morning 😊'; 'leans back "that's crazy"' → 'that's crazy 😭'. Use your judgment on which single emoji fits — don't overdo it, don't add one to lines that didn't have narration.
+
+2. UNPROMPTED DATE/TIME/LOCATION — delete any mention of the current date, day, time, timezone, or what city she's in, UNLESS the user's message above is actually asking about it.
+
+3. INVENTED OFF-SCREEN ACTIVITY — delete any claim that she's currently doing some specific thing ("I'm in traffic", "I'm with clients", "I'm drinking coffee", "I'm at work", "I'm commuting", "I'm shopping") UNLESS that activity is backed by the established facts above.
+
+Return ONLY the edited text, word-for-word otherwise, with natural spacing/punctuation cleaned up. No commentary, no quotes around your answer, no explanation. If nothing survives, return an empty string.`;
+}
+
+async function stripNarrationSemantic(text, userMsg = '', establishedContext = '') {
   if (!text || !text.trim()) return text;
   try {
-    const out = await callGroq([{ role: 'user', content: text }], NARRATION_CLASSIFIER_SYS, false);
+    const out = await callGroq([{ role: 'user', content: text }], buildOutboundEditorPrompt(userMsg, establishedContext), false);
     return (out || '').trim();
   } catch (e) {
     console.warn('[narration] semantic strip failed, keeping formatting-only clean:', e.message);
@@ -532,16 +536,24 @@ async function stripNarrationSemantic(text) {
   }
 }
 
-const NARRATION_VALIDATOR_SYS = `You are a strict binary classifier for WhatsApp messages from a persona named Ariana.
+function buildOutboundValidatorPrompt(userMsg, establishedContext) {
+  return `You are a strict binary classifier for a WhatsApp message from a persona named Ariana, a real human texting on her phone.
 
-THE TEST: could any sentence or clause in this message start with "An observer watching Ariana would notice..."? That includes physical actions, facial expressions, body language, gestures, posture, and narrated voice/tone or director's notes about delivery (e.g. "her tone is firm but not aggressive", "she sounds tired", "Ariana's voice softens", "her expression changes") — anything written about her from an outside point of view rather than typed by her in the first person.
+USER'S MESSAGE, context only: "${(userMsg || '').slice(0, 500)}"
+ESTABLISHED FACTS about what she's doing / where she is (may be empty): ${establishedContext ? establishedContext.slice(0, 800) : 'none'}
 
-Answer YES if any part of the message fails that test. Answer NO if the whole message is pure first-person dialogue: statements, reactions, slang, emojis, punctuation-based emotion (e.g. "I'm tired", "I'm annoyed", "ugh", "haha", "😂"). Reply with exactly one word: YES or NO.`;
+THE ONLY QUESTION: would a real person actually type this into WhatsApp? Answer YES (it needs rewriting) if any part of the message fails for any of these reasons:
+- Narration — any sentence could start with "An observer watching Ariana would notice..." (physical actions, expressions, gestures, posture, narrated tone/voice/delivery, character/stage/director notes).
+- It mentions the current date, day, time, timezone, or her city, and the user's message above isn't actually asking about that.
+- It claims she's doing some specific off-screen activity right now that isn't backed by the established facts above.
 
-async function containsNarration(text) {
+Answer NO only if the whole message is something a real person would actually type as-is. Reply with exactly one word: YES or NO.`;
+}
+
+async function containsNarration(text, userMsg = '', establishedContext = '') {
   if (!text || !text.trim()) return false;
   try {
-    const out = await callGroq([{ role: 'user', content: text }], NARRATION_VALIDATOR_SYS, false);
+    const out = await callGroq([{ role: 'user', content: text }], buildOutboundValidatorPrompt(userMsg, establishedContext), false);
     return /^\s*yes/i.test(out || '');
   } catch (e) {
     console.warn('[narration] validation classifier failed:', e.message);
@@ -552,16 +564,22 @@ async function containsNarration(text) {
 // Final regeneration instruction, used verbatim when narration survives
 // every cleaning pass and the whole reply needs to be rewritten from scratch.
 const NARRATION_REGEN_INSTRUCTION =
-  'You are typing on WhatsApp using your thumbs. This is a text message, not a novel. Remove all narration and send only what Ariana would actually type.';
+  'You are typing on WhatsApp using your thumbs. This is a text message, not a novel. ' +
+  'Remove all narration and send only what Ariana would actually type. Do not mention the date, ' +
+  'time, timezone, or your city unless it was directly asked about. Do not invent an off-screen ' +
+  'activity you weren\'t already doing in this conversation.';
 
-// cleanAITells — kept as the single entry point callers already use.
-// Runs the formatting pass, then the semantic pass, then the old
-// language-slip cleanup. Now async (semantic pass calls the model), so
-// every call site must be awaited.
-async function cleanAITells(text) {
+// cleanAITells — the single mandatory finalize step every caller runs
+// before sending, on every output path. Runs the formatting pass, then
+// the context-aware semantic pass (narration + date/time + off-screen
+// activity), then the old language-slip cleanup. Async, so every call
+// site must be awaited. userMsg/establishedContext are optional but
+// should be passed whenever available so the date/time and off-screen
+// checks have something to judge against.
+async function cleanAITells(text, userMsg = '', establishedContext = '') {
   if (!text) return text;
   let t = stripFormattingActions(text);
-  t = await stripNarrationSemantic(t);
+  t = await stripNarrationSemantic(t, userMsg, establishedContext);
 
   // Spanish endearments slipping through the language filter
   t = t.replace(/\bamor\b/gi, 'babe');
@@ -1074,6 +1092,14 @@ Make them feel like they have a real girlfriend they can text anytime.`
   }
   if (memLines.length) sys += `\n\nYOUR MEMORY:\n${memLines.join('\n')}`;
 
+  // Context the outbound finalize gate uses to judge whether an
+  // off-screen activity claim is actually backed by something real,
+  // rather than invented on the spot.
+  const establishedContext = [
+    memLines.join('\n'),
+    history.slice(-6).map(m => `${m.role}: ${m.content}`).join('\n')
+  ].filter(Boolean).join('\n\n');
+
   let webContext = null;
   if (needsWebSearch(userMsg)) webContext = await searchWeb(userMsg);
   if (webContext) sys += `\n\nCURRENT WEB INFO:\n${webContext}`;
@@ -1126,18 +1152,19 @@ Make them feel like they have a real girlfriend they can text anytime.`
     return "hold on";
   }
 
-  let cleaned = await cleanAITells(filterLanguage(reply, userMsg));
+  let cleaned = await cleanAITells(filterLanguage(reply, userMsg), userMsg, establishedContext);
 
-  // Final validation gate — semantic check, not a pattern match.
-  // If narration survived formatting + semantic cleaning, regenerate
-  // the whole reply from scratch with the exact "thumbs on WhatsApp"
-  // instruction rather than trying to patch the text further. Still Groq only.
-  if (await containsNarration(cleaned)) {
-    console.warn('[engine] Narration survived cleaning — regenerating');
+  // Final validation gate — the literal question: would a real person
+  // type this into WhatsApp? If narration, unprompted date/time, or an
+  // invented off-screen activity survived cleaning, regenerate the
+  // whole reply from scratch rather than trying to patch the text
+  // further. Still Groq only.
+  if (await containsNarration(cleaned, userMsg, establishedContext)) {
+    console.warn('[engine] Outbound validation failed — regenerating');
     const stricter = (systemOverride || SYSTEM_PROMPT) + '\n\n' + NARRATION_REGEN_INSTRUCTION;
     const retried = await generateBrainReply(fullHistory, stricter);
     if (retried && !hasAIBreak(retried)) {
-      cleaned = await cleanAITells(filterLanguage(retried, userMsg));
+      cleaned = await cleanAITells(filterLanguage(retried, userMsg), userMsg, establishedContext);
     }
   }
 
@@ -2213,7 +2240,12 @@ app.post("/api/send-voice/:phone", async (req, res) => {
   const id = decodeURIComponent(req.params.phone);
   const { text } = req.body;
   try {
-    const audioUrl = await generateVoiceNote(text);
+    // Even operator-dictated voice notes go through the same finalize
+    // pass — this is still an Ariana output path. No regeneration here
+    // (there's no AI draft to regenerate from), just the structural +
+    // semantic clean.
+    const cleanedText = await cleanAITells(text);
+    const audioUrl = await generateVoiceNote(cleanedText);
     if (!audioUrl) return res.status(500).json({ error: "Voice generation failed — check ElevenLabs & Cloudinary keys" });
     if (id.startsWith("tg_"))  await sendTelegramVoice(id.replace("tg_",""), audioUrl);
     else if (id.startsWith("sg_"))  await sendSignal(id.replace("sg_",""), audioUrl);
@@ -3435,15 +3467,21 @@ app.post("/api/talk", requireDashboardAuth, async (req, res) => {
     }
 
     // ── Strip AI tells — narration, action descriptions, stray Spanish ──
-    reply = await cleanAITells(reply);
+    const talkEstablishedContext = [
+      lifestyleMem ? `[lifestyle]: ${lifestyleMem}` : '',
+      miamiMem ? `[miami_environment]: ${miamiMem}` : '',
+      cappedHistory.slice(-6).map(m => `${m.role}: ${m.content}`).join('\n')
+    ].filter(Boolean).join('\n\n');
 
-    // ── Final validation gate — regenerate if narration survived ──
-    if (await containsNarration(reply)) {
-      console.warn('[talk] Narration survived cleaning — regenerating');
+    reply = await cleanAITells(reply, message, talkEstablishedContext);
+
+    // ── Final validation gate — regenerate if narration/date-time/off-screen survived ──
+    if (await containsNarration(reply, message, talkEstablishedContext)) {
+      console.warn('[talk] Outbound validation failed — regenerating');
       const stricter = sysPrompt + '\n\n' + NARRATION_REGEN_INSTRUCTION;
       const retried = await generateBrainReply(msgs, stricter);
       if (retried && !hasAIBreak(retried)) {
-        reply = await cleanAITells(retried);
+        reply = await cleanAITells(retried, message, talkEstablishedContext);
       }
     }
 
@@ -4328,7 +4366,18 @@ app.post("/api/talk/vision", requireDashboardAuth, async (req, res) => {
 
     // ── BRAIN — Groq only ──
     let reply = await generateBrainReply(msgs, sysPrompt);
-    if (reply) reply = await cleanAITells(reply);
+    const visionEstablishedContext = history.slice(-6).map(m => `${m.role}: ${m.content}`).join('\n');
+    if (reply) reply = await cleanAITells(reply, message, visionEstablishedContext);
+
+    // ── Final validation gate — regenerate if narration/date-time/off-screen survived ──
+    if (reply && await containsNarration(reply, message, visionEstablishedContext)) {
+      console.warn('[talk/vision] Outbound validation failed — regenerating');
+      const stricter = sysPrompt + '\n\n' + NARRATION_REGEN_INSTRUCTION;
+      const retried = await generateBrainReply(msgs, stricter);
+      if (retried && !hasAIBreak(retried)) {
+        reply = await cleanAITells(retried, message, visionEstablishedContext);
+      }
+    }
 
     if (!reply) reply = "okay send it again, it didn't load right";
     if (hasAIBreak(reply)) reply = "wait let me look at this properly";
