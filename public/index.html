@@ -545,7 +545,7 @@ textarea.inp{resize:vertical;min-height:120px}
     <button class="ib" onclick="go('profile')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
     <span class="hdr-title">Settings</span>
   </div>
-  <div class="sbody no-nav" style="padding:0 16px">
+  <div class="sbody no-nav" style="padding:0 16px;display:flex;flex-direction:column">
     <div class="sgroup">
       <div class="sgroup-title">Persona</div>
       <div class="sec"><label class="lbl">Signature font</label>
@@ -598,9 +598,9 @@ textarea.inp{resize:vertical;min-height:120px}
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
       </button>
     </div>
-    <button class="btn" onclick="saveSettings()">Save settings</button>
+    <button class="btn" onclick="saveSettings()" style="margin-top:auto">Save settings</button>
     <button class="btn-ghost" onclick="clearSettings()" style="margin-top:10px;border-color:rgba(255,68,85,.2);color:var(--red)">Clear all</button>
-    <div style="height:16px"></div>
+    <div style="height:calc(16px + env(safe-area-inset-bottom))"></div>
   </div>
 </div>
 
