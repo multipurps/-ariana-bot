@@ -35,11 +35,12 @@
   --red:#FF2D20;--grn:#30b764;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans',system-ui,sans-serif;overflow:hidden;overscroll-behavior:none}
-body::before{content:'';position:fixed;inset:0;background:var(--bg);z-index:-10;pointer-events:none}
+html{height:100%}
+body{position:relative;background:var(--bg);color:var(--txt);font-family:'DM Sans',system-ui,sans-serif;overflow:hidden;overscroll-behavior:none}
+body::before{content:'';position:absolute;inset:0;background:var(--bg);z-index:-10;pointer-events:none}
 ::-webkit-scrollbar{display:none}
 *{scrollbar-width:none}
-.scr{position:fixed;inset:0;display:none;flex-direction:column;background:var(--bg)}
+.scr{position:absolute;inset:0;display:none;flex-direction:column;background:var(--bg)}
 .scr.on{display:flex}
 .hdr{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top) + 10px) 16px 12px;flex-shrink:0}
 .hdr-title{flex:1;font-size:17px;font-weight:600;color:var(--txt)}
@@ -48,7 +49,7 @@ body::before{content:'';position:fixed;inset:0;background:var(--bg);z-index:-10;
 .sbody{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .sbody.with-nav{padding-bottom:68px}
 .sbody.no-nav{padding-bottom:0}
-#bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:0;padding:6px 6px;z-index:90;border-radius:50px;background:rgba(8,8,8,.88);backdrop-filter:blur(40px) saturate(200%);-webkit-backdrop-filter:blur(40px) saturate(200%);box-shadow:0 8px 32px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.06)}
+#bnav{position:absolute;bottom:0;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:0;padding:6px 6px;z-index:90;border-radius:50px;background:rgba(8,8,8,.88);backdrop-filter:blur(40px) saturate(200%);-webkit-backdrop-filter:blur(40px) saturate(200%);box-shadow:0 8px 32px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.06)}
 #bnav.hidden{display:none}
 .bnav-shine{position:absolute;inset:-1px;border-radius:52px;overflow:hidden;pointer-events:none;z-index:0}
 .bnav-shine::before{content:'';position:absolute;inset:0;border-radius:52px;padding:1.5px;background:linear-gradient(105deg,transparent 20%,rgba(180,180,180,.3) 38%,rgba(220,220,220,.6) 46%,rgba(255,255,255,.9) 50%,rgba(220,220,220,.6) 54%,rgba(180,180,180,.3) 62%,transparent 80%) border-box;-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;background-size:250% 100%;background-position:-100% 0;animation:bnav-sweep 2.4s linear infinite}
@@ -127,7 +128,7 @@ body::before{content:'';position:fixed;inset:0;background:var(--bg);z-index:-10;
 .itxt::placeholder{color:var(--txt2)}
 .isend{width:34px;height:34px;border-radius:50%;background:var(--acc);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--bg);flex-shrink:0;transition:opacity .15s}
 .isend:active{opacity:.7}
-#call-overlay{position:fixed;inset:0;background:var(--bg);z-index:200;display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:calc(env(safe-area-inset-top)+40px) 24px 40px}
+#call-overlay{position:absolute;inset:0;background:var(--bg);z-index:200;display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:calc(env(safe-area-inset-top)+40px) 24px 40px}
 #call-overlay.on{display:flex}
 .call-ring{width:96px;height:96px;border-radius:50%;background:var(--s2);border:1.5px solid var(--bdr2);display:flex;align-items:center;justify-content:center;position:relative}
 .call-ring::before{content:'';position:absolute;inset:-12px;border-radius:50%;border:1.5px solid var(--bdr2);animation:cr 2s ease-out infinite}
@@ -212,7 +213,7 @@ textarea.inp{resize:vertical;min-height:120px}
 .mi-audio.playing .mi-audio-icon{background:rgba(139,92,246,.25)}
 .mi-audio-name{flex:1;font-size:13px;font-weight:500;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mgrid-vid .mi video{aspect-ratio:16/9;object-fit:cover}
-#audio-picker{position:fixed;inset:0;z-index:300;display:none;flex-direction:column;justify-content:flex-end}
+#audio-picker{position:absolute;inset:0;z-index:300;display:none;flex-direction:column;justify-content:flex-end}
 #audio-picker.open{display:flex}
 #audio-picker-overlay{position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px)}
 #audio-picker-sheet{position:relative;background:var(--s1);border-radius:24px 24px 0 0;padding-bottom:24px;max-height:65vh;display:flex;flex-direction:column;border-top:1px solid var(--bdr2)}
@@ -229,16 +230,32 @@ textarea.inp{resize:vertical;min-height:120px}
 .tog{width:42px;height:24px;border-radius:12px;border:none;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;background:var(--s3)}
 .fn-great-vibes{font-family:'Great Vibes',cursive!important}.fn-dancing{font-family:'Dancing Script',cursive!important}.fn-pacifico{font-family:'Pacifico',cursive!important}.fn-satisfy{font-family:'Satisfy',cursive!important}
 .tog-k{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
-#preloader{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;transition:opacity .35s}
+#preloader{position:absolute;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;transition:opacity .35s}
 #preloader.hide{opacity:0;pointer-events:none}
 #preloader img{width:56px;height:56px;object-fit:contain;animation:pl 1.3s ease-in-out infinite}
 @keyframes pl{0%,100%{opacity:.3;transform:scale(.9)}50%{opacity:1;transform:scale(1)}}
 #preloader-name{font-size:28px;font-family:'Great Vibes',cursive;color:var(--acc2);text-shadow:0 0 20px var(--acc-glow)}
-#toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--s1);border:1px solid var(--bdr2);border-radius:100px;padding:10px 18px;font-size:13px;font-weight:600;color:var(--txt);box-shadow:0 8px 32px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:all .3s;z-index:500;white-space:nowrap}
+#toast{position:absolute;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--s1);border:1px solid var(--bdr2);border-radius:100px;padding:10px 18px;font-size:13px;font-weight:600;color:var(--txt);box-shadow:0 8px 32px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:all .3s;z-index:500;white-space:nowrap}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
+<script>
+(function(){
+  // iOS PWA standalone mode shrinks the layout viewport that position:fixed
+  // is measured against, capping fixed elements short of the true screen
+  // height no matter what CSS height value you feed them. window.screen.height
+  // reports the real physical screen size, so size body against that and let
+  // position:absolute elements (not fixed) anchor to this correctly-sized body.
+  function setBodyHeight(){
+    var h = window.screen.height || window.innerHeight;
+    document.body.style.height = h + 'px';
+  }
+  setBodyHeight();
+  window.addEventListener('resize', setBodyHeight);
+  window.addEventListener('orientationchange', setBodyHeight);
+})();
+</script>
 <div id="preloader">
   <img src="/icons/icon.png" alt="" onerror="this.style.display='none'">
   <div id="preloader-name">Ariana</div>
@@ -1033,7 +1050,7 @@ function applyTheme(){
 </script>
 
 <!-- AUDIO PICKER MODAL -->
-<div id="audio-picker" style="position:fixed;inset:0;z-index:300;display:none;flex-direction:column;justify-content:flex-end">
+<div id="audio-picker" style="position:absolute;inset:0;z-index:300;display:none;flex-direction:column;justify-content:flex-end">
   <div id="audio-picker-overlay" onclick="closeAudioPicker()" style="position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px)"></div>
   <div style="position:relative;background:var(--s1);border-radius:24px 24px 0 0;padding-bottom:24px;max-height:65vh;display:flex;flex-direction:column;border-top:1px solid var(--bdr2)">
     <div style="width:36px;height:4px;border-radius:2px;background:var(--bdr2);margin:10px auto 0"></div>
