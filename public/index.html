@@ -77,8 +77,6 @@ body::before{content:'';position:absolute;inset:0;background:var(--bg);z-index:-
 .mitra-title{font-size:15px;font-weight:700;color:#fff}
 .mitra-sub{font-size:12px;color:var(--acc3);margin-top:1px}
 .mitra-btn{background:var(--acc);border:none;border-radius:10px;padding:8px 14px;color:var(--bg);font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;white-space:nowrap;box-shadow:0 2px 8px var(--acc-glow)}
-.slbl{display:flex;align-items:center;gap:8px;padding:14px 16px 8px;font-size:14px;font-weight:700;color:var(--txt)}
-.slbl svg{color:var(--acc2)}
 .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px}
 .fc{background:var(--s1);border:1px solid var(--bdr);border-radius:18px;padding:16px 14px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:background .15s}
 .fc:active{background:var(--s2)}
@@ -88,11 +86,6 @@ body::before{content:'';position:absolute;inset:0;background:var(--bg);z-index:-
 .fc-wide{grid-column:1/-1}
 .wd-preview{display:flex;gap:6px;margin-left:auto;align-items:center}
 .wd-thumb{width:36px;height:36px;border-radius:8px;object-fit:cover;background:var(--s3);border:1px solid var(--bdr)}
-.qa-row{display:flex;gap:10px;padding:0 16px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px}
-.qa{background:var(--s2);border:1px solid var(--bdr);border-radius:14px;padding:12px 14px;cursor:pointer;display:flex;flex-direction:column;gap:6px;min-width:110px;transition:background .15s;flex-shrink:0}
-.qa:active{background:var(--s3)}
-.qa-label{font-size:12px;font-weight:600;color:var(--txt);white-space:nowrap}
-.qa svg{color:var(--acc2)}
 .ptabs{display:flex;padding:0 16px 14px;gap:8px;flex-shrink:0;overflow-x:auto}
 .ptab{display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:20px;background:var(--s2);border:1px solid var(--bdr);color:var(--txt2);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;flex-shrink:0}
 .ptab.on{background:rgba(128,128,128,.15);border-color:var(--bdr2);color:var(--acc)}
@@ -183,28 +176,10 @@ textarea.inp{resize:vertical;min-height:120px}
 .btn:active{opacity:.82}
 .btn-ghost{background:transparent;border:1px solid var(--bdr2);border-radius:12px;padding:12px 16px;color:var(--txt);font-size:14px;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;transition:all .18s}
 .btn-ghost:active{background:var(--s2)}
-.gen-result{margin-top:12px}
-.gen-result img,.gen-result video{width:100%;border-radius:16px;display:block}
-.gen-progress{background:var(--s2);border-radius:12px;padding:16px;text-align:center;font-size:13px;color:var(--txt2);margin-top:12px}
-.gen-chip-row{display:flex;gap:8px;padding:0 16px 10px;overflow-x:auto;flex-shrink:0;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-.gen-chip-row::-webkit-scrollbar{display:none}
-.gen-chip{padding:7px 14px;border-radius:20px;font-size:12px;font-weight:600;color:var(--txt2);background:var(--s2);border:1px solid var(--bdr);white-space:nowrap;cursor:pointer;flex-shrink:0;transition:all .18s}
-.gen-chip.active{color:#fff;background:var(--acc);border-color:var(--acc)}
-.gen-prov{padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;color:var(--txt2);background:var(--s2);border:1px solid var(--bdr);cursor:pointer;transition:all .18s}
-.gen-prov.active{color:var(--acc2);border-color:var(--acc);background:rgba(139,92,246,.1)}
-.gen-upload{background:var(--s2);border:1.5px dashed var(--bdr2);border-radius:12px;padding:24px;text-align:center;cursor:pointer;font-size:13px;color:var(--txt2);transition:border-color .18s;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
-.gen-upload:active{border-color:var(--acc)}
-.gen-result-wrap{margin-top:16px}
-.gen-result-wrap img,.gen-result-wrap video{width:100%;border-radius:14px;display:block}
-.gen-result-wrap audio{width:100%;margin-top:8px}
 .tgl{width:44px;height:26px;border-radius:13px;background:var(--s3);border:1px solid var(--bdr2);cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
 .tgl.on{background:var(--acc)}
 .tgl-k{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s}
 .tgl.on .tgl-k{transform:translateX(18px)}
-.gc-voice-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
-.gc-voice-btn{background:var(--s2);border:1px solid var(--bdr);border-radius:10px;padding:10px;text-align:left;color:var(--txt);font-size:13px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;gap:3px;transition:border-color .18s}
-.gc-voice-btn.active,.gc-voice-btn:active{border-color:var(--acc);background:rgba(139,92,246,.08)}
-.gc-voice-sub{font-size:11px;font-weight:400;color:var(--txt2)}
 .media-section-label{font-size:11px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.08em;padding:12px 16px 6px;flex-shrink:0}
 .mgrid-audio{display:flex;flex-direction:column;gap:8px;padding:0 16px 16px}
 .mi-audio{background:var(--s2);border:1px solid var(--bdr);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background .18s;position:relative}
@@ -289,34 +264,6 @@ textarea.inp{resize:vertical;min-height:120px}
       <div class="mitra-info"><div class="mitra-title">Mitra</div><div class="mitra-sub">Call Ariana — AI voice assistant</div></div>
       <button class="mitra-btn">Call now</button>
     </div>
-
-    <div class="slbl" style="margin-top:4px">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      Quick actions
-    </div>
-    <div class="qa-row">
-      <div class="qa" onclick="go('generate');setGenMode('pimg')">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--acc2)" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-        <div class="qa-label">Text to Image</div>
-      </div>
-      <div class="qa" onclick="go('generate');setGenMode('i2i')">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--acc2)" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9l4-4 4 4 4-6 4 6"/></svg>
-        <div class="qa-label">Image to Image</div>
-      </div>
-      <div class="qa" onclick="go('generate');setGenMode('tts')">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--acc2)" stroke-width="1.8" stroke-linecap="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
-        <div class="qa-label">Text to Speech</div>
-      </div>
-      <div class="qa" onclick="go('generate');setGenMode('avatar')">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--acc2)" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 10-16 0"/></svg>
-        <div class="qa-label">Talking Avatar</div>
-      </div>
-      <div class="qa" onclick="go('generate');setGenMode('motion')">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--acc2)" stroke-width="1.8" stroke-linecap="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-        <div class="qa-label">Motion</div>
-      </div>
-    </div>
-    <div style="height:8px"></div>
   </div>
 </div>
 
@@ -440,24 +387,6 @@ textarea.inp{resize:vertical;min-height:120px}
   </div>
   <input type="file" id="wardrobe-file" accept="image/*" hidden onchange="uploadWardrobe(this)">
   <div class="sbody no-nav"><div class="wgrid" id="wardrobe-grid"></div><div id="wardrobe-empty" style="padding:48px 24px;text-align:center;color:var(--txt3);font-size:13px;display:none">No outfits yet</div></div>
-</div>
-
-<!-- GENERATE -->
-<div id="s-generate" class="scr">
-  <div class="hdr">
-    <button class="ib" onclick="go('home')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
-    <span class="hdr-title" id="gen-title">Generate</span>
-  </div>
-  <div class="gen-chip-row">
-    <div class="gen-chip active" data-mode="pimg" onclick="setGenMode('pimg',this)">Text&#8594;Image</div>
-    <div class="gen-chip" data-mode="i2i" onclick="setGenMode('i2i',this)">Img&#8594;Img</div>
-    <div class="gen-chip" data-mode="pvid" onclick="setGenMode('pvid',this)">Text&#8594;Video</div>
-    <div class="gen-chip" data-mode="motion" onclick="setGenMode('motion',this)">Motion</div>
-    <div class="gen-chip" data-mode="tts" onclick="setGenMode('tts',this)">TTS</div>
-    <div class="gen-chip" data-mode="avatar" onclick="setGenMode('avatar',this)">Avatar</div>
-    <div class="gen-chip" data-mode="nsfw" onclick="setGenMode('nsfw',this)">NSFW</div>
-  </div>
-  <div class="sbody no-nav" id="gen-body"></div>
 </div>
 
 <!-- PROFILE -->
@@ -584,23 +513,6 @@ textarea.inp{resize:vertical;min-height:120px}
       <div class="sgroup-title">AI</div>
       <div class="sec"><label class="lbl">Groq API Key</label><input type="password" id="cfg-groq" class="inp" placeholder="gsk_..."></div>
       <div class="sec"><label class="lbl">Gemini API Key</label><input type="password" id="cfg-gemini" class="inp" placeholder="AIza..."></div>
-      <div class="sec"><label class="lbl">Fal.ai Key</label><input type="password" id="cfg-fal" class="inp" placeholder="..."></div>
-      <div class="sec"><label class="lbl">Tensor Art Key</label><input type="password" id="cfg-tensor" class="inp" placeholder="..."></div>
-      <div class="sec"><label class="lbl">Replicate Token</label><input type="password" id="cfg-replicate" class="inp" placeholder="r8_..."></div>
-      <div class="sec"><label class="lbl">Runway ML Key</label><input type="password" id="cfg-runway" class="inp" placeholder="..."></div>
-    </div>
-    <div class="sgroup">
-      <div class="sgroup-title">Voice</div>
-      <div class="sec"><label class="lbl">ElevenLabs Key</label><input type="password" id="cfg-eleven" class="inp" placeholder="sk_..."></div>
-      <div class="sec"><label class="lbl">ElevenLabs Voice ID</label><input type="text" id="cfg-eleven-voice" class="inp" placeholder="voice ID"></div>
-      <div class="sec"><label class="lbl">Cartesia Key</label><input type="password" id="cfg-cartesia" class="inp" placeholder="..."></div>
-      <div class="sec"><label class="lbl">Cartesia Voice ID</label><input type="text" id="cfg-cartesia-voice" class="inp" placeholder="voice ID"></div>
-      <div class="sec"><label class="lbl">TTS Provider</label><select id="cfg-tts-provider" class="inp"><option value="elevenlabs">ElevenLabs</option><option value="cartesia">Cartesia</option></select></div>
-    </div>
-    <div class="sgroup">
-      <div class="sgroup-title">Avatar</div>
-      <div class="sec"><label class="lbl">HeyGen API Key</label><input type="password" id="cfg-heygen" class="inp" placeholder="..."></div>
-      <div class="sec"><label class="lbl">HeyGen Avatar ID</label><input type="text" id="cfg-heygen-avatar" class="inp" placeholder="avatar ID"></div>
     </div>
     <div class="sgroup">
       <div class="sgroup-title">Messaging</div>
@@ -693,7 +605,7 @@ function authH(){const k=cfg.get('dash_key');return k?{'Content-Type':'applicati
 let conversations={},takeoverState={},talkHistory=[],activeBrainKey=null,currentPhone=null,currentCallId=null,currentPlatform='wa',heroPhotos=[],heroIndex=0,heroTimer=null,allMedia=[],wardrobeItems=[],selectedOutfit=null,genOutfitUrl=null;
 const socket=io();
 const HOME_SCREENS=['home','platforms','media','profile'];
-const screenMap={home:'s-home',talk:'s-talk',platforms:'s-platforms',media:'s-media',brain:'s-brain',wardrobe:'s-wardrobe',settings:'s-settings',generate:'s-generate',profile:'s-profile'};
+const screenMap={home:'s-home',talk:'s-talk',platforms:'s-platforms',media:'s-media',brain:'s-brain',wardrobe:'s-wardrobe',settings:'s-settings',profile:'s-profile'};
 const navMap={home:'nb-home',platforms:'nb-platforms',media:'nb-media',profile:'nb-profile'};
 function go(name){
   Object.values(screenMap).forEach(id=>document.getElementById(id)?.classList.remove('on'));
@@ -701,7 +613,6 @@ function go(name){
   document.querySelectorAll('.nb,.nb-center').forEach(b=>b.classList.remove('on'));
   if(navMap[name])document.getElementById(navMap[name])?.classList.add('on');
   document.getElementById('bnav').classList.toggle('hidden',name!=='home'&&name!=='profile');
-  if(name==='generate')setGenMode(_genMode);
   if(name==='platforms')loadPlatforms();
   if(name==='media')loadMedia();
   if(name==='brain')loadBrain();
@@ -860,7 +771,7 @@ function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function _mediaCard(it){const src=it.url||it.cloudinary_url||'';const sid=escAttr(src);const iid=escAttr(it.id);if(_isAudio(it))return`<div class="mi mi-audio" onclick="playLibAudio('${sid}',this)"><div class="mi-audio-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--acc2)" stroke-width="1.8" stroke-linecap="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg></div><div class="mi-audio-name">${escHtml(it.filename||it.name||'Audio')}</div><audio src="${sid}" style="display:none"></audio><button class="mi-menu" onclick="event.stopPropagation();deleteMedia('${iid}')">&#10005;</button></div>`;if(_isVideo(it))return`<div class="mi"><video src="${sid}" controls playsinline></video><button class="mi-menu" onclick="deleteMedia('${iid}')">&#10005;</button></div>`;return`<div class="mi"><img src="${sid}" alt="" loading="lazy"><button class="mi-menu" onclick="deleteMedia('${iid}')">&#10005;</button></div>`;}
 let _libAudioPlaying=null;
 function playLibAudio(src,card){if(_libAudioPlaying&&_libAudioPlaying!==card){_libAudioPlaying.classList.remove('playing');const prev=_libAudioPlaying.querySelector('audio');if(prev){prev.pause();prev.currentTime=0;}}_libAudioPlaying=null;const aud=card.querySelector('audio');if(!aud)return;if(card.classList.contains('playing')){aud.pause();card.classList.remove('playing');}else{aud.play();card.classList.add('playing');_libAudioPlaying=card;aud.onended=()=>{card.classList.remove('playing');_libAudioPlaying=null;};}}
-function openAudioPicker(onSelect){const auds=(allMedia||[]).filter(_isAudio);const list=document.getElementById('audio-picker-list');if(!list)return;if(!auds.length){list.innerHTML='<div style="padding:24px;text-align:center;color:var(--txt2);font-size:13px">No saved audio yet. Generate TTS first.</div>';}else{list.innerHTML=auds.map(it=>{const su=escAttr(it.url||it.cloudinary_url||'');const sn=escAttr(it.filename||it.name||'Audio');return`<div class="mi-audio" onclick="pickAudioFromLib('${su}','${sn}')"><div class="mi-audio-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--acc2)" stroke-width="1.8" stroke-linecap="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg></div><div class="mi-audio-name">${escHtml(it.filename||it.name||'Audio')}</div></div>`;}).join('');}window._audioPicker_onSelect=onSelect;const p=document.getElementById('audio-picker');if(p)p.classList.add('open');}
+function openAudioPicker(onSelect){const auds=(allMedia||[]).filter(_isAudio);const list=document.getElementById('audio-picker-list');if(!list)return;if(!auds.length){list.innerHTML='<div style="padding:24px;text-align:center;color:var(--txt2);font-size:13px">No saved audio yet.</div>';}else{list.innerHTML=auds.map(it=>{const su=escAttr(it.url||it.cloudinary_url||'');const sn=escAttr(it.filename||it.name||'Audio');return`<div class="mi-audio" onclick="pickAudioFromLib('${su}','${sn}')"><div class="mi-audio-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--acc2)" stroke-width="1.8" stroke-linecap="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg></div><div class="mi-audio-name">${escHtml(it.filename||it.name||'Audio')}</div></div>`;}).join('');}window._audioPicker_onSelect=onSelect;const p=document.getElementById('audio-picker');if(p)p.classList.add('open');}
 function closeAudioPicker(){const p=document.getElementById('audio-picker');if(p)p.classList.remove('open');}
 function pickAudioFromLib(url,name){if(window._audioPicker_onSelect)window._audioPicker_onSelect(url,name);closeAudioPicker();}
 async function loadMedia(){try{allMedia=await fetch('/api/media').then(r=>r.json());renderMediaGrid(allMedia,'all');loadProfileStats();loadWardrobePreview();}catch{toast('Could not load media');}}
@@ -887,124 +798,13 @@ async function loadBrain(){try{const brain=await fetch('/api/brain').then(r=>r.j
 function openBrainKey(k){activeBrainKey=k;document.getElementById('brain-edit-title').textContent=k;const v=window._brain?.[k];document.getElementById('brain-edit-val').value=typeof v==='object'?JSON.stringify(v,null,2):String(v||'');document.getElementById('s-brain-edit').classList.add('on');}
 function closeBrainEdit(){document.getElementById('s-brain-edit').classList.remove('on');}
 async function saveBrainKey(){if(!activeBrainKey)return;let v=document.getElementById('brain-edit-val').value;try{v=JSON.parse(v);}catch(e){}try{await fetch(`/api/brain/${activeBrainKey}`,{method:'POST',headers:authH(),body:JSON.stringify({data:v})});toast('Saved');closeBrainEdit();loadBrain();}catch{toast('Save failed');}}
-let _genMode='pimg',_genProv='fal',_genFileSrcs={},_ttsProv='cartesia';
-function selGenProv(el){_genProv=el.dataset.p;document.querySelectorAll('.gen-prov').forEach(b=>b.classList.remove('active'));el.classList.add('active');const ki=document.getElementById('gen-api-key');if(ki)ki.value=cfg.get(_genProv)||'';}
-function previewGenFile(inp,prevId){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{_genFileSrcs[prevId]=e.target.result;const img=document.getElementById(prevId);const ph=document.getElementById(prevId+'-ph');if(img){img.src=e.target.result;img.style.display='block';}if(ph)ph.style.display='none';};r.readAsDataURL(f);}
-function setGenMode(mode,el){
-  _genMode=mode;
-  const titles={pimg:'Text to Image',i2i:'Image to Image',pvid:'Text to Video',motion:'Motion',tts:'Text to Speech',avatar:'Talking Avatar',nsfw:'NSFW'};
-  const t=document.getElementById('gen-title');if(t)t.textContent=titles[mode]||'Generate';
-  document.querySelectorAll('.gen-chip').forEach(c=>c.classList.remove('active'));
-  const chip=el||document.querySelector('.gen-chip[data-mode="'+mode+'"]');if(chip)chip.classList.add('active');
-  const body=document.getElementById('gen-body');if(!body)return;
-  const fk=cfg.get('fal')||'',ek=cfg.get('eleven')||'',ev=cfg.get('eleven_voice')||'',ck=cfg.get('cartesia')||'',cv=cfg.get('cartesia_voice')||'',hk=cfg.get('heygen')||'';
-  _genFileSrcs={};window._genMotAudioUrl=null;
-  if(mode==='pimg'){
-    body.innerHTML='<div style="padding:16px 16px 32px"><div class="sec"><label class="lbl">Prompt</label><textarea id="gen-prompt" class="inp" rows="4" placeholder="Describe the scene, lighting, style..."></textarea></div><div class="sec"><label class="lbl">Provider</label><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="gen-prov active" data-p="fal" onclick="selGenProv(this)">Fal.ai</button><button class="gen-prov" data-p="replicate" onclick="selGenProv(this)">Replicate</button><button class="gen-prov" data-p="stability" onclick="selGenProv(this)">Stability</button></div></div><div class="sec"><label class="lbl">API Key</label><input id="gen-api-key" type="password" class="inp" placeholder="Paste API key..." value="'+fk+'"></div><button class="btn" onclick="runGenerate()">Generate Image</button><div id="gen-result" class="gen-result-wrap"></div></div>';
-  }
-  else if(mode==='i2i'){
-    body.innerHTML='<div style="padding:16px 16px 32px"><div class="sec"><label class="lbl">Source Image</label><input type="file" id="gen-i2i-file" accept="image/*" hidden onchange="previewGenFile(this,\'gen-i2i-prev\')"><div class="gen-upload" onclick="document.getElementById(\'gen-i2i-file\').click()"><img id="gen-i2i-prev" alt="" style="display:none;width:100%;border-radius:10px"><div id="gen-i2i-prev-ph">&#128247; Tap to upload source image</div></div></div><div class="sec"><label class="lbl">Prompt (optional)</label><input id="gen-prompt" class="inp" placeholder="Style, lighting, mood..."></div><div class="sec"><label class="lbl">Strength</label><div style="display:flex;align-items:center;gap:10px"><input type="range" id="gen-strength" min="0.3" max="1" step="0.05" value="0.75" oninput="document.getElementById(\'gen-strength-val\').textContent=this.value" style="flex:1;accent-color:var(--acc)"><span id="gen-strength-val" style="font-size:12px;color:var(--txt2);width:32px">0.75</span></div></div><div class="sec"><label class="lbl">Provider</label><div style="display:flex;gap:8px"><button class="gen-prov active" data-p="fal" onclick="selGenProv(this)">Fal.ai</button><button class="gen-prov" data-p="replicate" onclick="selGenProv(this)">Replicate</button></div></div><div class="sec"><label class="lbl">API Key</label><input id="gen-api-key" type="password" class="inp" placeholder="Paste API key..." value="'+fk+'"></div><button class="btn" onclick="runGenerate()">Generate</button><div id="gen-result" class="gen-result-wrap"></div></div>';
-  }
-  else if(mode==='pvid'){
-    body.innerHTML='<div style="padding:16px 16px 32px"><div class="sec"><label class="lbl">Prompt</label><textarea id="gen-prompt" class="inp" rows="4" placeholder="Describe the video scene..."></textarea></div><div class="sec"><label class="lbl">Provider</label><div style="display:flex;gap:8px"><button class="gen-prov active" data-p="fal" onclick="selGenProv(this)">Fal.ai</button><button class="gen-prov" data-p="runway" onclick="selGenProv(this)">Runway ML</button></div></div><div class="sec"><label class="lbl">API Key</label><input id="gen-api-key" type="password" class="inp" placeholder="Paste API key..." value="'+fk+'"></div><button class="btn" onclick="runGenerate()">Generate Video</button><div id="gen-result" class="gen-result-wrap"></div></div>';
-  }
-  else if(mode==='motion'){
-    body.innerHTML='<div style="padding:16px 16px 32px"><div class="sec"><label class="lbl">Image to Animate</label><input type="file" id="gen-mot-file" accept="image/*" hidden onchange="previewGenFile(this,\'gen-mot-prev\')"><div class="gen-upload" onclick="document.getElementById(\'gen-mot-file\').click()"><img id="gen-mot-prev" alt="" style="display:none;width:100%;border-radius:10px"><div id="gen-mot-prev-ph">&#127916; Tap to upload image to animate</div></div></div><div class="sec"><label class="lbl">Motion prompt (optional)</label><input id="gen-prompt" class="inp" placeholder="speaking naturally, subtle smile..."></div><div class="sec"><label class="lbl">Audio from library (optional)</label><div id="gen-mot-audio-display" style="display:none;background:var(--s2);border:1px solid var(--acc);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--acc2);margin-bottom:6px"></div><button onclick="openAudioPicker(function(url,name){window._genMotAudioUrl=url;var d=document.getElementById(\'gen-mot-audio-display\');d.textContent=\'&#127911; \'+name;d.style.display=\'block\';})" style="padding:9px 14px;border-radius:10px;background:var(--s2);border:1px solid var(--bdr);color:var(--txt2);font-size:12px;font-weight:600;cursor:pointer;width:100%">&#127911; Pick Audio from Library</button></div><div class="sec"><label class="lbl">Provider</label><div style="display:flex;gap:8px"><button class="gen-prov active" data-p="fal" onclick="selGenProv(this)">Fal.ai</button><button class="gen-prov" data-p="runway" onclick="selGenProv(this)">Runway ML</button></div></div><div class="sec"><label class="lbl">API Key</label><input id="gen-api-key" type="password" class="inp" placeholder="Paste API key..." value="'+fk+'"></div><button class="btn" onclick="runGenerate()">Animate</button><div id="gen-result" class="gen-result-wrap"></div></div>';
-  }
-  else if(mode==='tts'){
-    body.innerHTML='<div style="padding:16px 16px 32px"><div class="sec"><label class="lbl">Text to Speak</label><textarea id="gen-tts-text" class="inp" rows="5" placeholder="Enter text for Ariana to speak..."></textarea></div><div class="sec"><label class="lbl">Provider</label><div style="display:flex;gap:8px"><button class="gen-prov active" data-tp="cartesia" onclick="setTtsProvider(this)">Cartesia</button><button class="gen-prov" data-tp="elevenlabs" onclick="setTtsProvider(this)">ElevenLabs</button></div></div><div class="sec"><label class="lbl">API Key</label><input id="gen-api-key" type="password" class="inp" placeholder="Paste API key..." value="'+ck+'"></div><div class="sec"><label class="lbl">Voice ID</label><div style="display:flex;gap:8px;align-items:center"><input id="gen-voice-id" class="inp" placeholder="Paste Voice ID..." value="'+cv+'" style="flex:1"><button onclick="openAudioPicker(function(url,name){var vi=document.getElementById(\'gen-voice-id\');if(vi)vi.value=url;toast(\'Audio: \'+name);})" style="padding:10px 12px;border-radius:10px;background:var(--s2);border:1px solid var(--bdr);color:var(--acc2);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">&#127911; Library</button></div></div><div class="sec" id="tts-presets-wrap"><label class="lbl">Cartesia Presets</label><div class="gc-voice-grid"><button class="gc-voice-btn" data-id="a0e99841-438c-4a64-b679-ae501e7d6091" onclick="pickVoice(this)">Barbra<span class="gc-voice-sub">Warm Female</span></button><button class="gc-voice-btn" data-id="79a125e8-cd45-4c13-8a67-188112f4dd22" onclick="pickVoice(this)">British Lady<span class="gc-voice-sub">Refined Female</span></button><button class="gc-voice-btn" data-id="5c42302c-194b-4d0c-ba1a-8cb485c84ab9" onclick="pickVoice(this)">Newsman<span class="gc-voice-sub">Authoritative Male</span></button><button class="gc-voice-btn" data-id="729651dc-c6b3-4b55-a43c-8f3ae64f5a2d" onclick="pickVoice(this)">Pleasant Man<span class="gc-voice-sub">Conversational</span></button><button class="gc-voice-btn" data-id="21b81c14-f85b-436d-aff5-43072529f9f0" onclick="pickVoice(this)">Laidback<span class="gc-voice-sub">Casual Female</span></button><button class="gc-voice-btn" data-id="e13cae5c-ec59-4f71-b0a6-266df3c9bb8e" onclick="pickVoice(this)">Mischief<span class="gc-voice-sub">Playful Female</span></button></div></div><button class="btn" onclick="runGenerate()">Generate Speech</button><div id="gen-result" class="gen-result-wrap"></div></div>';
-    _ttsProv='cartesia';
-  }
-  else if(mode==='avatar'){
-    body.innerHTML='<div style="padding:16px 16px 32px"><div style="font-size:13px;color:var(--txt2);margin-bottom:16px">Upload Ariana\'s photo &mdash; HeyGen will animate it speaking your script.</div><div class="sec"><label class="lbl">Photo</label><input type="file" id="gen-av-file" accept="image/*" hidden onchange="previewGenFile(this,\'gen-av-prev\')"><div class="gen-upload" onclick="document.getElementById(\'gen-av-file\').click()"><img id="gen-av-prev" alt="" style="display:none;width:100%;border-radius:10px"><div id="gen-av-prev-ph">&#128444; Tap to upload photo</div></div></div><div class="sec"><label class="lbl">Or Photo URL</label><input id="gen-av-url" type="url" class="inp" placeholder="https://..."></div><div class="sec"><label class="lbl">Script</label><textarea id="gen-av-script" class="inp" rows="3" placeholder="What should Ariana say..."></textarea></div><div class="sec"><label class="lbl">ElevenLabs Voice ID</label><input id="gen-voice-id" class="inp" placeholder="voice ID" value="'+ev+'"></div><div class="sec"><label class="lbl">HeyGen API Key</label><input id="gen-api-key" type="password" class="inp" placeholder="..." value="'+hk+'"></div><button class="btn" onclick="runGenerate()">Generate Talking Video</button><div id="gen-result" class="gen-result-wrap"></div></div>';
-  }
-  else if(mode==='nsfw'){
-    body.innerHTML='<div style="padding:16px 16px 32px"><div style="font-size:12px;color:var(--txt2);background:rgba(255,68,85,.08);border:1px solid rgba(255,68,85,.2);border-radius:10px;padding:10px 12px;margin-bottom:16px">&#9888; Adult content. For private use only.</div><div class="sec"><label class="lbl">Prompt</label><textarea id="gen-prompt" class="inp" rows="4" placeholder="Describe the scene..."></textarea></div><div class="sec" style="display:flex;align-items:center;justify-content:space-between"><span class="lbl" style="margin:0">Nude Mode</span><button class="tgl" id="gen-nude-tgl" onclick="this.classList.toggle(\'on\')"><div class="tgl-k"></div></button></div><div class="sec"><label class="lbl">Face Reference (optional)</label><input type="file" id="gen-nsfw-file" accept="image/*" hidden onchange="previewGenFile(this,\'gen-nsfw-prev\')"><div class="gen-upload" onclick="document.getElementById(\'gen-nsfw-file\').click()"><img id="gen-nsfw-prev" alt="" style="display:none;width:100%;border-radius:10px"><div id="gen-nsfw-prev-ph">Upload face reference (optional)</div></div></div><div class="sec"><label class="lbl">Fal.ai Key</label><input id="gen-api-key" type="password" class="inp" placeholder="..." value="'+fk+'"></div><button class="btn" style="background:rgba(255,68,85,.8)" onclick="runGenerate()">Generate NSFW</button><div id="gen-result" class="gen-result-wrap"></div></div>';
-    _genProv='fal';
-  }
-}
-function setTtsProvider(el){_ttsProv=el.dataset.tp;document.querySelectorAll('[data-tp]').forEach(b=>b.classList.remove('active'));el.classList.add('active');const ki=document.getElementById('gen-api-key');const vi=document.getElementById('gen-voice-id');const pw=document.getElementById('tts-presets-wrap');if(ki)ki.value=_ttsProv==='cartesia'?cfg.get('cartesia')||'':cfg.get('eleven')||'';if(vi)vi.value=_ttsProv==='cartesia'?cfg.get('cartesia_voice')||'':cfg.get('eleven_voice')||'';if(pw)pw.style.display=_ttsProv==='cartesia'?'':'none';}
-function pickVoice(btn){document.querySelectorAll('.gc-voice-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const vi=document.getElementById('gen-voice-id');if(vi)vi.value=btn.dataset.id;}
-async function runGenerate(){
-  const apiKey=(document.getElementById('gen-api-key')?.value||'').trim();
-  const prompt=(document.getElementById('gen-prompt')?.value||'').trim();
-  const result=document.getElementById('gen-result');if(!result)return;
-  if(_genMode==='tts'){
-    const text=(document.getElementById('gen-tts-text')?.value||'').trim();
-    const voiceId=(document.getElementById('gen-voice-id')?.value||'').trim();
-    if(!text){toast('Enter text to speak');return;}if(!voiceId){toast('Select or enter a Voice ID');return;}if(!apiKey){toast('Paste your API key');return;}
-    cfg.set(_ttsProv==='cartesia'?'cartesia':'eleven',apiKey);cfg.set(_ttsProv==='cartesia'?'cartesia_voice':'eleven_voice',voiceId);
-    result.innerHTML='<div class="gen-progress">Synthesising speech...</div>';
-    try{const r=await fetch('/api/generate/tts',{method:'POST',headers:authH(),body:JSON.stringify({text,voiceId,provider:_ttsProv,apiKey})});const d=await r.json();if(!d.ok)throw new Error(d.error||'TTS failed');result.innerHTML='<audio controls src="'+d.audioUrl+'" style="width:100%;margin-top:8px"></audio>';saveToGallery(d.audioUrl,'audio/mpeg','ariana-voice.mp3');}
-    catch(e){result.innerHTML='<div class="gen-progress" style="color:var(--red)">'+e.message+'</div>';}
-    return;
-  }
-  if(_genMode==='avatar'){
-    const script=(document.getElementById('gen-av-script')?.value||'').trim();
-    const voiceId=(document.getElementById('gen-voice-id')?.value||'').trim()||cfg.get('eleven_voice');
-    let photoUrl=(document.getElementById('gen-av-url')?.value||'').trim();
-    const pf=document.getElementById('gen-av-file')?.files[0];
-    if(pf){const b64=await toB64(pf);const r=await fetch('/api/media/upload',{method:'POST',headers:authH(),body:JSON.stringify({filename:pf.name,mediaType:pf.type,data:b64})});const d=await r.json();if(d.ok&&d.item?.url)photoUrl=d.item.url;}
-    if(!apiKey){toast('HeyGen key required');return;}if(!script){toast('Enter a script');return;}if(!photoUrl){toast('Upload a photo or enter photo URL');return;}
-    cfg.set('heygen',apiKey);cfg.set('eleven_voice',voiceId);
-    result.innerHTML='<div class="gen-progress">Starting HeyGen render...</div>';
-    try{const r=await fetch('/api/generate/avatar',{method:'POST',headers:authH(),body:JSON.stringify({apiKey,photoUrl,text:script,voiceId})});const d=await r.json();if(!d.ok){result.innerHTML='<div class="gen-progress" style="color:var(--red)">'+(d.error||'Failed')+'</div>';return;}result.innerHTML='<div class="gen-progress">Rendering... (1-2 min)</div>';const poll=setInterval(async()=>{try{const p=await fetch('/api/generate/avatar/poll/'+d.videoId+'?apiKey='+encodeURIComponent(apiKey)).then(r=>r.json());if(p.status==='done'){clearInterval(poll);result.innerHTML='<video src="'+p.url+'" controls playsinline style="width:100%;border-radius:14px"></video>';saveToGallery(p.url,'video/mp4','ariana-avatar.mp4');}if(p.status==='failed'){clearInterval(poll);result.innerHTML='<div class="gen-progress" style="color:var(--red)">'+(p.error||'Render failed')+'</div>';}}catch{clearInterval(poll);}},8000);}
-    catch(e){result.innerHTML='<div class="gen-progress" style="color:var(--red)">'+e.message+'</div>';}
-    return;
-  }
-  if(!apiKey){toast('Paste your API key');return;}
-  cfg.set(_genProv,apiKey);
-  if(_genMode==='pimg'){
-    if(!prompt){toast('Write a prompt first');return;}
-    result.innerHTML='<div class="gen-progress">Generating image...</div>';
-    try{const r=await fetch('/api/generate/image',{method:'POST',headers:authH(),body:JSON.stringify({provider:_genProv,apiKey,prompt})});const d=await r.json();if(d.ok&&d.url){result.innerHTML='<img src="'+d.url+'" alt="">';saveToGallery(d.url,'image/jpeg','ariana-generated.jpg');}else if(d.pollId){result.innerHTML='<div class="gen-progress">Rendering...</div>';await _pollGen(d.pollId,_genProv,apiKey,'image');}else result.innerHTML='<div class="gen-progress" style="color:var(--red)">'+(d.error||'Failed')+'</div>';}
-    catch(e){result.innerHTML='<div class="gen-progress" style="color:var(--red)">'+e.message+'</div>';}
-  }
-  else if(_genMode==='i2i'){
-    const imgData=_genFileSrcs['gen-i2i-prev'];if(!imgData){toast('Upload a source image first');return;}
-    const strength=parseFloat(document.getElementById('gen-strength')?.value||'0.75');
-    result.innerHTML='<div class="gen-progress">Transforming image...</div>';
-    try{const blob=await(await fetch(imgData)).blob();const b64=await toB64(new File([blob],'src.jpg',{type:'image/jpeg'}));const up=await fetch('/api/media/upload',{method:'POST',headers:authH(),body:JSON.stringify({filename:'src.jpg',mediaType:'image/jpeg',data:b64})}).then(r=>r.json());const imageUrl=up.item?.url||imgData;const r=await fetch('/api/generate/image',{method:'POST',headers:authH(),body:JSON.stringify({provider:_genProv,apiKey,prompt:prompt||'high quality photo',imageUrl,strength})});const d=await r.json();if(d.ok&&d.url){result.innerHTML='<img src="'+d.url+'" alt="">';saveToGallery(d.url,'image/jpeg','ariana-i2i.jpg');}else if(d.pollId){result.innerHTML='<div class="gen-progress">Rendering...</div>';await _pollGen(d.pollId,_genProv,apiKey,'image');}else result.innerHTML='<div class="gen-progress" style="color:var(--red)">'+(d.error||'Failed')+'</div>';}
-    catch(e){result.innerHTML='<div class="gen-progress" style="color:var(--red)">'+e.message+'</div>';}
-  }
-  else if(_genMode==='pvid'){
-    if(!prompt){toast('Write a prompt first');return;}
-    result.innerHTML='<div class="gen-progress">Generating video...</div>';
-    try{const r=await fetch('/api/generate/video',{method:'POST',headers:authH(),body:JSON.stringify({provider:_genProv,apiKey,prompt})});const d=await r.json();if(d.ok&&d.url){result.innerHTML='<video src="'+d.url+'" controls playsinline style="width:100%;border-radius:14px"></video>';saveToGallery(d.url,'video/mp4','ariana-video.mp4');}else if(d.pollId){result.innerHTML='<div class="gen-progress">Rendering...</div>';await _pollGen(d.pollId,_genProv,apiKey,'video');}else result.innerHTML='<div class="gen-progress" style="color:var(--red)">'+(d.error||'Failed')+'</div>';}
-    catch(e){result.innerHTML='<div class="gen-progress" style="color:var(--red)">'+e.message+'</div>';}
-  }
-  else if(_genMode==='motion'){
-    const imgData=_genFileSrcs['gen-mot-prev'];if(!imgData){toast('Upload an image to animate');return;}
-    result.innerHTML='<div class="gen-progress">Animating...</div>';
-    try{const blob=await(await fetch(imgData)).blob();const b64=await toB64(new File([blob],'mot.jpg',{type:'image/jpeg'}));const up=await fetch('/api/media/upload',{method:'POST',headers:authH(),body:JSON.stringify({filename:'mot.jpg',mediaType:'image/jpeg',data:b64})}).then(r=>r.json());const imageUrl=up.item?.url||imgData;const r=await fetch('/api/generate/motion',{method:'POST',headers:authH(),body:JSON.stringify({provider:_genProv,apiKey,imageUrl,prompt:prompt||'speaking naturally with a subtle smile',audioUrl:window._genMotAudioUrl||undefined})});const d=await r.json();if(d.ok&&d.url){result.innerHTML='<video src="'+d.url+'" controls playsinline style="width:100%;border-radius:14px"></video>';saveToGallery(d.url,'video/mp4','ariana-motion.mp4');}else if(d.pollId){result.innerHTML='<div class="gen-progress">Rendering...</div>';await _pollGen(d.pollId,_genProv,apiKey,'video');}else result.innerHTML='<div class="gen-progress" style="color:var(--red)">'+(d.error||'Failed')+'</div>';}
-    catch(e){result.innerHTML='<div class="gen-progress" style="color:var(--red)">'+e.message+'</div>';}
-  }
-  else if(_genMode==='nsfw'){
-    const nudeOn=document.getElementById('gen-nude-tgl')?.classList.contains('on');
-    const faceData=_genFileSrcs['gen-nsfw-prev']||null;
-    const base=nudeOn?'NSFW, explicit nudity, fully nude, realistic skin texture, ':'NSFW, sensual, intimate, suggestive, ';
-    let faceUrl=null;
-    if(faceData){try{const blob=await(await fetch(faceData)).blob();const b64=await toB64(new File([blob],'face.jpg',{type:'image/jpeg'}));const up=await fetch('/api/media/upload',{method:'POST',headers:authH(),body:JSON.stringify({filename:'face.jpg',mediaType:'image/jpeg',data:b64})}).then(r=>r.json());faceUrl=up.item?.url;}catch{}}
-    result.innerHTML='<div class="gen-progress">Generating...</div>';
-    try{const r=await fetch('/api/generate/nsfw',{method:'POST',headers:authH(),body:JSON.stringify({provider:'fal',apiKey,prompt:base+(prompt||''),faceUrl})});const d=await r.json();if(d.ok&&d.url){result.innerHTML='<img src="'+d.url+'" alt="">';saveToGallery(d.url,'image/jpeg','ariana-nsfw.jpg');}else if(d.pollId){result.innerHTML='<div class="gen-progress">Rendering...</div>';await _pollGen(d.pollId,'fal',apiKey,'image');}else result.innerHTML='<div class="gen-progress" style="color:var(--red)">'+(d.error||'Failed')+'</div>';}
-    catch(e){result.innerHTML='<div class="gen-progress" style="color:var(--red)">'+e.message+'</div>';}
-  }
-}
-async function _pollGen(pollId,prov,apiKey,type,attempts=0){
-  const result=document.getElementById('gen-result');if(!result)return;
-  if(attempts>60){result.innerHTML='<div class="gen-progress" style="color:var(--red)">Timed out. Try again.</div>';return;}
-  result.innerHTML='<div class="gen-progress">Rendering... '+Math.round(attempts*3)+'s</div>';
-  await new Promise(r=>setTimeout(r,3000));
-  try{const r=await fetch('/api/generate/poll/'+prov+'/'+pollId+'?apiKey='+encodeURIComponent(apiKey));const d=await r.json();const url=d.url||d.urls?.[0];if(url){if(type==='video')result.innerHTML='<video src="'+url+'" controls playsinline style="width:100%;border-radius:14px"></video>';else result.innerHTML='<img src="'+url+'" alt="">';saveToGallery(url,type==='video'?'video/mp4':'image/jpeg','ariana-gen.'+(type==='video'?'mp4':'jpg'));}else if(d.status==='failed'){result.innerHTML='<div class="gen-progress" style="color:var(--red)">Generation failed</div>';}else await _pollGen(pollId,prov,apiKey,type,attempts+1);}
-  catch(e){result.innerHTML='<div class="gen-progress" style="color:var(--red)">'+e.message+'</div>';}
-}
 function loadSettingsUI(){
-  const map={'cfg-dash-key':'dash_key','cfg-phone':'phone','cfg-name':'name','cfg-groq':'groq','cfg-gemini':'gemini','cfg-fal':'fal','cfg-tensor':'tensor','cfg-replicate':'replicate','cfg-runway':'runway','cfg-eleven':'eleven','cfg-eleven-voice':'eleven_voice','cfg-cartesia':'cartesia','cfg-cartesia-voice':'cartesia_voice','cfg-tts-provider':'tts_provider','cfg-heygen':'heygen','cfg-heygen-avatar':'heygen_avatar','cfg-kapso':'kapso','cfg-supa-url':'supa_url','cfg-supa-key':'supa_key'};
+  const map={'cfg-dash-key':'dash_key','cfg-phone':'phone','cfg-name':'name','cfg-groq':'groq','cfg-gemini':'gemini','cfg-kapso':'kapso','cfg-supa-url':'supa_url','cfg-supa-key':'supa_key'};
   Object.entries(map).forEach(([id,k])=>{const el=document.getElementById(id);if(el)el.value=cfg.get(k);});
   const fn=cfg.get('hero_font');if(fn){const el=document.getElementById('hero-sig');if(el)el.className='hero-name '+fn;}
 }
 function saveSettings(){
-  const map={'cfg-dash-key':'dash_key','cfg-phone':'phone','cfg-name':'name','cfg-groq':'groq','cfg-gemini':'gemini','cfg-fal':'fal','cfg-tensor':'tensor','cfg-replicate':'replicate','cfg-runway':'runway','cfg-eleven':'eleven','cfg-eleven-voice':'eleven_voice','cfg-cartesia':'cartesia','cfg-cartesia-voice':'cartesia_voice','cfg-tts-provider':'tts_provider','cfg-heygen':'heygen','cfg-heygen-avatar':'heygen_avatar','cfg-kapso':'kapso','cfg-supa-url':'supa_url','cfg-supa-key':'supa_key'};
+  const map={'cfg-dash-key':'dash_key','cfg-phone':'phone','cfg-name':'name','cfg-groq':'groq','cfg-gemini':'gemini','cfg-kapso':'kapso','cfg-supa-url':'supa_url','cfg-supa-key':'supa_key'};
   Object.entries(map).forEach(([id,k])=>{const el=document.getElementById(id);if(el)cfg.set(k,el.value.trim());});
   const n=cfg.get('name');if(n)document.getElementById('prof-name-display').textContent=n;toast('Saved');
 }
