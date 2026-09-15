@@ -926,26 +926,79 @@ function filterLanguage(reply, userMessage) {
 // failing that, surface a busy status. It must never silently swap in
 // a different model to keep talking, because that would mean two
 // different personalities writing as the same person.
-async function callGroq(history, sys, backup) {
+// send_reply is the ONLY shape the model is allowed to answer in when it's
+// speaking as Ariana. There is no "action"/"narration" field to put stage
+// directions into — this is a structural fix, not another word to filter.
+// Root-caused: free-text completions gave the model somewhere to write
+// "she smirks"; a blacklist/classifier on the output can only ever catch
+// phrasings it's already seen. Removing the free-text field removes the
+// whole category, regardless of which words the model reaches for.
+const SEND_REPLY_TOOL = {
+  type: 'function',
+  function: {
+    name: 'send_reply',
+    description: "Ariana's literal text message — the exact words she types, nothing else.",
+    parameters: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          description: 'Plain conversational text, like a real phone text. NEVER a third-person description of her actions, face, or body language. NEVER asterisk/bracketed stage directions. If a feeling needs expressing, say it in words ("ugh", "lol", "i\'m done") — do not narrate it.'
+        }
+      },
+      required: ['message']
+    }
+  }
+};
+
+// Cheap structural check (pattern-shaped, not a word list) used only as a
+// safety net after the schema above — catches it if the model still tries,
+// so we regenerate instead of silently shipping narration text.
+function looksLikeNarration(t) {
+  if (!t) return false;
+  return /\*[^*]+\*/.test(t) || /^[A-Z][a-z]+ (smirk|smile|laugh|lean|roll|chuckle|sigh|grin|wink|bite|tilt|stare|glance|shrug|nod|pause|sip)s?\b/i.test(t.trim());
+}
+
+async function callGroq(history, sys, backup, { asCharacter = false } = {}) {
   const client = (backup && groq2) ? groq2 : groq;
-  const completion = await client.chat.completions.create({
+  const params = {
     model: "llama-3.3-70b-versatile",
     messages: [{ role: "system", content: sys }, ...history],
     max_tokens: 350, temperature: 0.92
-  });
-  return completion.choices[0].message.content.trim();
+  };
+  if (asCharacter) {
+    params.tools = [SEND_REPLY_TOOL];
+    params.tool_choice = { type: 'function', function: { name: 'send_reply' } };
+  }
+  const completion = await client.chat.completions.create(params);
+  const choice = completion.choices[0].message;
+  if (asCharacter) {
+    const call = choice.tool_calls && choice.tool_calls[0];
+    if (!call) throw new Error('Groq did not return a send_reply tool call');
+    const args = JSON.parse(call.function.arguments);
+    return (args.message || '').trim();
+  }
+  return choice.content.trim();
 }
 
 // Tries the primary Groq key, then the backup Groq key, with a couple of
 // backoff passes if both fail transiently. Returns null (never a reply
 // from another provider) if Groq is genuinely unavailable — the caller
 // is responsible for queueing/retrying and returning a busy status.
+// Always called for Ariana's actual voice, so every call is forced through
+// the send_reply schema (see SEND_REPLY_TOOL above) — this is the primary
+// defense against narration, not the semantic strip/finalize gate further
+// down the pipeline, which now only needs to catch the rare structural slip.
 async function generateBrainReply(history, sys, { attempts = 2 } = {}) {
   const keyVariants = groq2 ? [false, true] : [false];
   for (let attempt = 0; attempt < attempts; attempt++) {
     for (const backup of keyVariants) {
       try {
-        const reply = await callGroq(history, sys, backup);
+        let reply = await callGroq(history, sys, backup, { asCharacter: true });
+        if (reply && looksLikeNarration(reply)) {
+          console.warn('[brain] narration slipped past schema, regenerating once');
+          reply = await callGroq(history, sys + '\n\nYour last attempt included narration/stage directions inside the message field. Do not do that — plain text only.', backup, { asCharacter: true });
+        }
         if (reply) return reply;
       } catch (e) {
         console.warn(`[brain] Groq${backup ? ' (backup key)' : ''} failed — attempt ${attempt + 1}:`, e.message);
