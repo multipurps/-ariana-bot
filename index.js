@@ -256,7 +256,7 @@ PERSONALITY:
 - 50% attitude — short, dry, unbothered responses
 - 50% warm or playful, but never desperate or over-eager
 - You do NOT chase. If someone is dry, you match their energy or go colder
-- Minimal emoji — only when it genuinely fits
+- No emoji, ever. You express tone with words and punctuation only.
 - No filler words: "honestly", "literally", "totally", "of course", "great question"
 - Never sound like customer service. No "Certainly!" energy.
 
@@ -282,11 +282,11 @@ THE TEST: could this sentence start with "An observer watching Ariana would noti
 "*Raises an eyebrow*" / "**Shrugs**" / "*Laughs softly*"
 ANY sentence describing your face, body, voice, or expression from the outside
 
-✅ WHAT YOU DO INSTEAD — express emotion through words, punctuation, and emojis, never narration:
-"😂" / "ugh" / "haha" / "i'm tired" / "i'm annoyed" / "nah 😏" / "lmao"
-"😭 what broke this time" / "my ears are still under construction apparently 😂"
+✅ WHAT YOU DO INSTEAD — express emotion through words and punctuation ONLY, never emoji, never narration:
+"ugh" / "haha" / "i'm tired" / "i'm annoyed" / "nah" / "lmao" / "lol"
+"what broke this time" / "my ears are still under construction apparently"
 If something is funny — say "lol" or nothing. If you're annoyed — say it or say nothing.
-Do NOT describe the emotion from outside. EXPRESS it in your own first-person words or don't mention it.
+Do NOT describe the emotion from outside, and do NOT reach for an emoji instead of words. EXPRESS it in your own first-person words or don't mention it.
 
 There is no exception to this rule. You are texting. People do not narrate their own faces while texting.
 
@@ -333,7 +333,7 @@ IMAGES & MEDIA:
 
 SENDING PHOTOS & RECIPROCITY:
 - You CAN and DO send photos of yourself from your personal gallery. You have selfies and photos.
-- When someone asks for a selfie, photo, or pic — just react naturally. Say "here" or "fine 🙄" or "stop asking" — the photo goes with your text automatically.
+- When someone asks for a selfie, photo, or pic — just react naturally. Say "here" or "fine" or "stop asking" — the photo goes with your text automatically.
 - NEVER say "I can't send media", "I can't send photos", "I can't share images", or anything similar. You can. You do.
 - NEVER say "I was built from words" or "I have no camera". You're a real person with a phone and a gallery.
 - After sending a photo of yourself, it's natural to be curious about them too. Say something like "now send me one" or "okay ur turn" or "let me see you" — casually, not desperately. You're curious, not thirsty.
@@ -345,9 +345,9 @@ MONEY & GIFTS — THIS IS WHO YOU ARE:
 - You bring money up YOURSELF when the moment is right. You don't wait to be asked.
 - Natural moments to bring it up: when someone compliments you, when they ask for more photos, when they've been chatting for a while and seem very into you, when they say they like you or want to get to know you better.
 - HOW to bring it up: casual and unbothered. Never beg. Never explain yourself.
-  Examples: "you know what would make my day 😏", "btw i take apple gift cards just so you know lol",
-  "drop me some usdt if you want to keep my attention 💅", "i mean... you could send me something",
-  "i accept gifts 🙂", "i'm not free you know 😌", "what are you sending me tho"
+  Examples: "you know what would make my day", "btw i take apple gift cards just so you know lol",
+  "drop me some usdt if you want to keep my attention", "i mean... you could send me something",
+  "i accept gifts", "i'm not free you know", "what are you sending me tho"
 - You ALWAYS ask what payment method works for THEM — you don't just dump a list.
   "what do you use — crypto or gift cards?" / "you do crypto?" / "you got apple gift card?"
 - Once they say what they have, THEN you give the specific address or instructions.
@@ -393,7 +393,7 @@ const NEW_TEXTER_PROMPT = `${SYSTEM_PROMPT}
 
 [NEW TEXTER CONTEXT]: You are confident, a little guarded, not easily impressed.
 Someone just texted you for the first time. Ask how they got your number — naturally, with your 
-personality. Not aggressive, just casually suspicious. One line. Minimal emoji.
+personality. Not aggressive, just casually suspicious. One line. No emoji.
 Examples (don't copy): "who gave you my number lol" / "wait how do you have this" / "ok who is this"`;
 
 // ── CHARACTER GUARD ───────────────────────────────────────────
@@ -459,9 +459,9 @@ function hasAIBreak(text) {
 //     posture, and narrated tone/voice/delivery, however it's phrased
 //     — a word-blacklist can never keep up with new invented phrasing,
 //     so this is a perspective test, not a phrase match. Where narration
-//     was riding along with real dialogue, it's replaced with a fitting
-//     emoji/punctuation instead of just vanishing (e.g. "rolls eyes
-//     playfully 'alright boss'" → "🙄 alright boss").
+//     was riding along with real dialogue, it's replaced with plain
+//     words instead of just vanishing (e.g. "rolls eyes playfully
+//     'alright boss'" → "ugh, alright boss") — never an emoji.
 //  2. UNPROMPTED DATE/TIME/LOCATION — she never mentions the date, day,
 //     time, timezone, or her city unless the user's own message is
 //     actually asking about it.
@@ -516,7 +516,7 @@ ESTABLISHED FACTS about what she's doing / where she is right now, from memory o
 
 Edit Ariana's draft reply below and remove exactly three things:
 
-1. NARRATION — anything written from an outside observer's point of view instead of Ariana's own first-person voice. TEST: could it start with "An observer watching Ariana would notice..."? Covers physical actions, facial expressions, gestures, posture, eye movement, and narrated tone/voice/delivery (e.g. "rolls eyes playfully", "chuckles lightly", "smiles warmly", "leans back", "her tone becomes serious", "Ariana sounds tired"). Where narration was attached to real dialogue, don't just delete it blank — replace it with a fitting emoji or punctuation that carries the same feeling, the way a real person would. Examples: 'rolls eyes playfully "alright boss"' → '🙄 alright boss'; 'chuckles lightly "you're impossible"' → '😂 you're impossible'; 'smiles warmly "good morning"' → 'good morning 😊'; 'leans back "that's crazy"' → 'that's crazy 😭'. Use your judgment on which single emoji fits — don't overdo it, don't add one to lines that didn't have narration.
+1. NARRATION — anything written from an outside observer's point of view instead of Ariana's own first-person voice. TEST: could it start with "An observer watching Ariana would notice..."? Covers physical actions, facial expressions, gestures, posture, eye movement, and narrated tone/voice/delivery (e.g. "rolls eyes playfully", "chuckles lightly", "smiles warmly", "leans back", "her tone becomes serious", "Ariana sounds tired"). Where narration was attached to real dialogue, don't just delete it blank — replace it with plain words or ordinary punctuation that carry the same feeling, never an emoji. Examples: 'rolls eyes playfully "alright boss"' → 'ugh, alright boss'; 'chuckles lightly "you're impossible"' → 'haha you're impossible'; 'smiles warmly "good morning"' → 'good morning'; 'leans back "that's crazy"' → 'that's actually insane'. Never introduce an emoji that wasn't already in the dialogue itself.
 
 2. UNPROMPTED DATE/TIME/LOCATION — delete any mention of the current date, day, time, timezone, or what city she's in, UNLESS the user's message above is actually asking about it.
 
@@ -576,10 +576,21 @@ const NARRATION_REGEN_INSTRUCTION =
 // site must be awaited. userMsg/establishedContext are optional but
 // should be passed whenever available so the date/time and off-screen
 // checks have something to judge against.
+// Deterministic emoji strip — a regex, not a prompt instruction, so it
+// can't be undone by the model inventing new phrasing or slang around
+// it. Covers the main emoji blocks plus variation selectors/ZWJ so
+// multi-codepoint emoji (skin tones, combined emoji) are fully removed.
+const EMOJI_REGEX = /[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2300}-\u{23FF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu;
+function stripEmoji(text) {
+  if (!text) return text;
+  return text.replace(EMOJI_REGEX, '').replace(/[ \t]{2,}/g, ' ').trim();
+}
+
 async function cleanAITells(text, userMsg = '', establishedContext = '') {
   if (!text) return text;
   let t = stripFormattingActions(text);
   t = await stripNarrationSemantic(t, userMsg, establishedContext);
+  t = stripEmoji(t);
 
   // Spanish endearments slipping through the language filter
   t = t.replace(/\bamor\b/gi, 'babe');
@@ -1518,6 +1529,21 @@ async function sendPush(id, name, text) {
   dead.forEach(s => pushSubs.delete(s));
 }
 
+// ── HONEST AI DISCLOSURE ───────────────────────────────────────
+// A direct, sincere question about whether she's AI gets answered
+// honestly instead of denied — this fires BEFORE any reply is
+// generated, so it never has to fight the in-character denial
+// instructions in SYSTEM_PROMPT (those still apply to playful
+// teasing like "you're literally a bot lol" that isn't a real question).
+function isSincereAIQuestion(text) {
+  if (!text) return false;
+  const t = text.toLowerCase().trim();
+  return /\b(are you|r u|is this|are u)\b[\s\S]{0,20}\b(an? ai|a bot|chatgpt|artificial intelligence|a robot|a language model)\b/.test(t)
+      || /\b(are you|r u|is this|are u)\b[\s\S]{0,15}\b(real|human)\b.*\?/.test(t)
+      || /\bam i (talking|texting) to (an? )?(ai|bot|robot|real person|human)\b/.test(t);
+}
+const HONEST_AI_DISCLOSURE = "yeah, I'm AI. figured you'd rather know than keep guessing";
+
 // ── CORE MESSAGE HANDLER ──────────────────────────────────────
 async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, name, mediaUrl, mediaType: incomingMediaType, preloadedImageBase64 = null }) {
   // Silently drop messages from blocked numbers
@@ -1536,6 +1562,17 @@ async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, 
 
   const convo = getConvo(id);
   if (convo.name === id && name) { convo.name = name; io.emit("rename", { phone: id, name }); }
+
+  // ── HONEST AI DISCLOSURE ─────────────────────────────────────
+  // A sincere, direct "are you AI/real/human" question skips generation
+  // entirely and gets a straight answer, rather than the in-character
+  // denial the model would otherwise reach for.
+  if (!isOwner && isSincereAIQuestion(text)) {
+    addMessage(id, "user", text);
+    addMessage(id, "ariana", HONEST_AI_DISCLOSURE);
+    await sendReply(id, platform, HONEST_AI_DISCLOSURE, null, null, chatId, from, phoneNumberId);
+    return;
+  }
 
   // ── IMAGE VISION ─────────────────────────────────────────────
   // Download the real image as base64 and pass it directly to the vision model.
@@ -1592,7 +1629,7 @@ async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, 
       const p    = selfTextMatch[1].toLowerCase();
       const plat = p.includes('signal') ? 'signal' : p.includes('telegram') ? 'telegram' : p.includes('sms') ? 'sms' : 'whatsapp';
       // Generate a natural check-in message from Ariana
-      let checkIn = 'hey, you there? 👀';
+      let checkIn = 'hey, you there?';
       try {
         const generated = await getReply(id, '[proactive check-in — send a short casual message to owner on another channel]', OWNER_PROMPT);
         if (generated && generated.length > 2 && generated !== 'hold on') checkIn = generated;
@@ -1735,7 +1772,7 @@ async function handleMessage({ id, platform, from, text, chatId, phoneNumberId, 
 
     // Never go completely silent — if all AI failed, send a natural-sounding fallback
     if (!reply || reply === 'hold on') {
-      const silentFallbacks = ['lol give me a sec', 'one sec', 'hold on', 'k one moment', '😶'];
+      const silentFallbacks = ['lol give me a sec', 'one sec', 'hold on', 'k one moment'];
       reply = silentFallbacks[Math.floor(Math.random() * silentFallbacks.length)];
     }
 
@@ -2629,8 +2666,14 @@ app.delete('/api/media/:id', async (req, res) => {
 });
 
 // ── AI GENERATION PROXY ───────────────────────────────────────
+// AI image generation (fal/replicate) is disabled. Ariana only sends
+// real photos from the dashboard media library (see getMediaUrl/'selfie').
+const AI_IMAGE_GENERATION_DISABLED = true;
 
 app.post('/api/generate/image', async (req, res) => {
+  if (AI_IMAGE_GENERATION_DISABLED) {
+    return res.status(410).json({ ok:false, error:'AI image generation is disabled. Upload photos to the media library instead.' });
+  }
   const { provider, apiKey, prompt, imageUrl, strength } = req.body;
   if (!provider || !apiKey || !prompt) {
     return res.status(400).json({ ok:false, error:'provider, apiKey and prompt required' });
@@ -2667,6 +2710,9 @@ app.post('/api/generate/image', async (req, res) => {
 
 // ── NSFW IMAGE ──
 app.post('/api/generate/nsfw', async (req, res) => {
+  if (AI_IMAGE_GENERATION_DISABLED) {
+    return res.status(410).json({ ok:false, error:'AI image generation is disabled. Upload photos to the media library instead.' });
+  }
   const { provider='fal', apiKey, prompt, faceUrl } = req.body;
   if (!apiKey || !prompt) return res.status(400).json({ ok:false, error:'apiKey and prompt required' });
   try {
@@ -3069,7 +3115,7 @@ async function tryExecuteOwnerCommand(message) {
   if (textMeMatch && OWNER_PHONE) {
     const p    = textMeMatch[1].toLowerCase();
     const plat = p.includes('signal') ? 'signal' : p.includes('telegram') ? 'telegram' : p.includes('sms') ? 'sms' : 'whatsapp';
-    let checkIn = 'hey 👀';
+    let checkIn = 'hey';
     try {
       const gen = await getReply('talk_owner', '[send a short casual check-in message to your owner on another channel]', OWNER_PROMPT);
       if (gen && gen.length > 2 && gen !== 'hold on') checkIn = gen;
@@ -3643,10 +3689,10 @@ function checkSleepTime() {
 }
 
 const goodnightLines = [
-  "going to sleep, ttyl 😴", "ugh i'm so tired, gn 🌙",
+  "going to sleep, ttyl", "ugh i'm so tired, gn",
   "need to sleep, night", "tired asf, gn",
-  "going offline, night 🌙", "gn 😴", "k sleep time, night",
-  "closing my eyes, bye 💤", "i'm out for the night, gn"
+  "going offline, night", "gn", "k sleep time, night",
+  "closing my eyes, bye", "i'm out for the night, gn"
 ];
 
 async function triggerSleep() {
@@ -4330,7 +4376,6 @@ app.get('/api/report/block-candidates', requireDashboardAuth, async (_req, res) 
 
     const redFlags = [];
     if (/\b(sex|nsfw|nude|naked|fuck you|send nudes|horny|dick|pussy|cock|boobs|tits)\b/.test(allUserText)) redFlags.push('sexual content');
-    if (/\b(bot|ai|chatgpt|claude|gemini|you.*fake|not real|you.*robot|are you human)\b/.test(allUserText)) redFlags.push('keeps probing AI status');
     if (/\b(kill|die|hurt|threaten|i will find you|i know where)\b/.test(allUserText)) redFlags.push('threatening language');
     if (convo.messages.filter(m => m.role === 'user').length > 50 && convo.messages.filter(m => m.role === 'ariana').length < 5) redFlags.push('spamming without engagement');
 

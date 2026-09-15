@@ -1,0 +1,100 @@
+// openclaw.json5 — full config for Ariana on OpenClaw
+// Place at ~/.openclaw/openclaw.json (or OPENCLAW_STATE_DIR/openclaw.json on Railway).
+// Fill in the placeholder values, then `openclaw gateway restart`.
+
+{
+  // ── MODEL PROVIDER — your own Groq key, nothing routes through OpenClaw's servers ──
+  env: {
+    vars: {
+      GROQ_API_KEY: "gsk_...", // same key you already use in ariana-bot
+    },
+  },
+  agents: {
+    defaults: {
+      model: { primary: "groq/openai/gpt-oss-120b" },
+    },
+  },
+
+  // ── WEB ACCESS ─────────────────────────────────────────────────
+  // web_search: live lookups so she can reference real current info instead
+  //   of guessing. DuckDuckGo needs no API key/account at all.
+  // web_fetch: reads a specific URL's content, always runs locally, no key.
+  // Both are read-only information retrieval — NOT posting/commenting/
+  // liking on her behalf. That's a distinct, much bigger ask (see README).
+  tools: {
+    web: {
+      search: { provider: "duckduckgo" },
+    },
+  },
+
+  // ── CHANNELS — every one of these defaults to pairing/allowlist, so a
+  // stranger cannot reach the agent until YOU approve them. This is the
+  // native fix for the "random people keep texting her" problem — no
+  // custom code needed.
+  //
+  // Channels below need only a bot token/QR scan to activate (fill in
+  // and run `openclaw channels login --channel <name>` for each):
+  channels: {
+    whatsapp: {
+      dmPolicy: "allowlist",
+      allowFrom: ["+1XXXXXXXXXX"], // numbers allowed to DM without approval
+      groupPolicy: "allowlist",
+      groupAllowFrom: [],
+    },
+    telegram: {
+      dmPolicy: "pairing", // first-time senders need your approval
+      allowFrom: [],
+    },
+    signal: {
+      dmPolicy: "allowlist",
+      allowFrom: ["+1XXXXXXXXXX"],
+    },
+    discord: {
+      dmPolicy: "pairing",
+    },
+    slack: {
+      dmPolicy: "pairing",
+    },
+    msteams: {
+      dmPolicy: "pairing",
+    },
+    matrix: {
+      dmPolicy: "pairing",
+    },
+    mattermost: {
+      dmPolicy: "pairing",
+    },
+    googlechat: {
+      dmPolicy: "pairing",
+    },
+    irc: {
+      dmPolicy: "pairing",
+    },
+    line: {
+      dmPolicy: "pairing",
+    },
+    feishu: {
+      dmPolicy: "pairing",
+    },
+    twitch: {
+      dmPolicy: "pairing",
+    },
+    sms: {
+      // Twilio-backed — reuses the TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN /
+      // TWILIO_NUMBER you already have from ariana-bot.
+      dmPolicy: "allowlist",
+      allowFrom: ["+1XXXXXXXXXX"],
+    },
+    "nextcloud-talk": {
+      dmPolicy: "pairing",
+    },
+    "synology-chat": {
+      dmPolicy: "pairing",
+    },
+    // iMessage is deliberately NOT included here — it requires a real
+    // macOS host (the plugin shells out to `imsg`), which a Railway/Render
+    // Linux container can't provide. Only add this if you pair a separate
+    // Mac to the gateway. See README.
+  },
+}
+
