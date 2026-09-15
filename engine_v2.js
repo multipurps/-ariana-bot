@@ -22,6 +22,7 @@ const stateEngine   = require('./state_engine');
 const attractEngine = require('./attraction_engine');
 const secretsEngine = require('./secrets_engine');
 const creatorEngine = require('./creator_engine');
+const skillsEngine  = require('./skills_engine');
 
 // ── STATIC BRAIN CACHE ────────────────────────────────────────────────────────
 const brain = {};
@@ -139,7 +140,7 @@ function analyzeMessage(message, profile) {
 }
 
 // ── AUTO-UPDATES FROM MESSAGE ─────────────────────────────────────────────────
-function processMessageUpdates(userId, message, analysis, profile) {
+async function processMessageUpdates(userId, message, analysis, profile, recentHistory = [], channel = null) {
   // Trust nudge from genuine questions
   if (analysis.isDeepQuestion) {
     updateUserProfile(userId, { trust_level: Math.min(10, (profile.trust_level || 1) + 0.3) });
@@ -165,6 +166,15 @@ function processMessageUpdates(userId, message, analysis, profile) {
     stateEngine.recordViolation(userId, v);
     attractEngine.recordEmotionalMoment(userId, 'disrespect', `Violation: ${v}`, -1.0);
   });
+
+  // Positive follow-up right after a substantive exchange -> candidate skill.
+  // Never throws into the reply path — a failed save/lookup here should
+  // never be the reason a message doesn't get a reply.
+  try {
+    await skillsEngine.maybeLearnSkill(userId, message, recentHistory, channel);
+  } catch (e) {
+    console.warn('[engine_v2] skill learning failed:', e.message);
+  }
 }
 
 // ── REPLY DELAY ───────────────────────────────────────────────────────────────
@@ -202,7 +212,7 @@ function getReplyDelay(userId, messageLength, platform) {
  * @param {string} [platform]  — Override platform detection
  * @returns {string}           — Complete system prompt string
  */
-function buildSystemPrompt(userId, userMessage = '', platform = null) {
+async function buildSystemPrompt(userId, userMessage = '', platform = null, recentHistory = []) {
   // ── 1. Detect platform ─────────────────────────────────────────
   const channel   = platform || detectPlatform(userId);
   const isCreator = creatorEngine.isCreator(userId);
@@ -226,7 +236,19 @@ function buildSystemPrompt(userId, userMessage = '', platform = null) {
 
   // ── 4. Analyze message ─────────────────────────────────────────
   const analysis = analyzeMessage(userMessage, profile);
-  processMessageUpdates(userId, userMessage, analysis, profile);
+  await processMessageUpdates(userId, userMessage, analysis, profile, recentHistory, channel);
+
+  // ── 4b. Relevant skills — situations she's handled well before ──
+  let skillsBlock = '';
+  try {
+    const skills = await skillsEngine.findRelevantSkills(userMessage, 2);
+    if (skills.length) {
+      skillsBlock = `SITUATIONS LIKE THIS YOU'VE HANDLED WELL BEFORE (use as a starting point, don't repeat verbatim):\n` +
+        skills.map(s => `- When someone said something like "${s.trigger_text}", this worked: "${s.procedure}"`).join('\n');
+    }
+  } catch (e) {
+    console.warn('[engine_v2] skill retrieval failed:', e.message);
+  }
 
   // ── 5. Guard: blocked user ─────────────────────────────────────
   if (profile.blocked && !isCreator) {
@@ -349,6 +371,7 @@ TEXTING RULES — NEVER BREAK:
     '═'.repeat(50),
     personBlock,
     memBlock,
+    skillsBlock,
     xPlatformBlock,
     violationBlock,
     '═'.repeat(50),
@@ -366,7 +389,7 @@ TEXTING RULES — NEVER BREAK:
  * Static base prompt — backward compatible.
  * Use this when no userId is available (e.g. vision endpoint).
  */
-function buildBasePrompt() {
+async function buildBasePrompt() {
   return buildSystemPrompt('_base_', '', 'unknown');
 }
 
@@ -384,5 +407,6 @@ module.exports = {
   stateEngine,
   attractEngine,
   secretsEngine,
-  creatorEngine
+  creatorEngine,
+  skillsEngine
 };

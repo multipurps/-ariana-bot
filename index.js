@@ -1054,8 +1054,12 @@ async function getReply(id, userMsg, systemOverride, imageBase64 = null) {
   }
 
   // Build system prompt — use engine_v2 dynamic prompt when available, else static SYSTEM_PROMPT
+  const skillHistory = convo.messages.slice(-4).map(m => ({
+    role: m.role === 'user' ? 'user' : 'assistant',
+    content: String(m.text || '').trim()
+  }));
   let sys = systemOverride || (engineV2
-    ? engineV2.buildSystemPrompt(id, userMsg, convo.platform || 'whatsapp')
+    ? await engineV2.buildSystemPrompt(id, userMsg, convo.platform || 'whatsapp', skillHistory)
     : SYSTEM_PROMPT);
 
   // ── Inject live Miami time at the TOP of the prompt ──────────
@@ -4062,7 +4066,7 @@ async function runProactiveCheck() {
         content: m.text || ''
       }));
 
-      const proactiveSys = (engineV2 ? engineV2.buildSystemPrompt(id, '[proactive]', platform) : SYSTEM_PROMPT) +
+      const proactiveSys = (engineV2 ? await engineV2.buildSystemPrompt(id, '[proactive]', platform, recentHistory) : SYSTEM_PROMPT) +
         `\n\nYou are texting ${name} first — unprompted. Look at the conversation history for context.
 You just felt like reaching out. Be natural. Could be: something random you thought of,
 asking what they're up to, referencing something from earlier in the chat, or just checking in.
@@ -4093,12 +4097,25 @@ DO NOT be needy or desperate. One to two casual lines max. Sound like you just p
 function startProactiveMessaging() {
   // Run 5 minutes after boot (let everything connect first), then every 60 minutes
   setTimeout(() => {
-    runProactiveCheck().catch(e => console.warn('[proactive] check error:', e.message));
     setInterval(() => {
       runProactiveCheck().catch(e => console.warn('[proactive] check error:', e.message));
     }, 60 * 60 * 1000);
   }, 5 * 60 * 1000);
   console.log('💬 Proactive messaging started (checks every 60 min)');
+}
+
+function startSkillsCurator() {
+  if (!engineV2) return;
+  const skillsEngine = engineV2.skillsEngine;
+  // Run once shortly after boot, then once a day — prunes candidate skills
+  // that never got reused (see skills_engine.js pruneUnusedCandidates).
+  setTimeout(() => {
+    skillsEngine.pruneUnusedCandidates().catch(e => console.warn('[skills] curator error:', e.message));
+    setInterval(() => {
+      skillsEngine.pruneUnusedCandidates().catch(e => console.warn('[skills] curator error:', e.message));
+    }, 24 * 60 * 60 * 1000);
+  }, 10 * 60 * 1000);
+  console.log('🧠 Skills curator started (prunes unused candidates daily)');
 }
 
 // API endpoint to trigger proactive check immediately (from dashboard)
@@ -4346,6 +4363,7 @@ server.listen(PORT, async () => {
   startSleepCheck();
   startProactiveMessaging();
   startKeepAlive();
+  startSkillsCurator();
   console.log(`📶 Signal fix: add  SIGNAL_CLI_OPTS=--trust-new-identities always  to your signal-cli Render service env vars`);
   console.log(`📞 Vapi calling:    ${process.env.VAPI_API_KEY ? "✅" : "— set VAPI_API_KEY + VAPI_PHONE_ID to enable"}`);
 });
