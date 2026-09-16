@@ -951,6 +951,32 @@ const SEND_REPLY_TOOL = {
   }
 };
 
+// Real web access via browser-use's cloud agent (browser-use-sdk). Optional —
+// only offered to the model when BROWSER_USE_API_KEY is set. Costs real money
+// per call (browser-use bills per step), so this is offered with
+// tool_choice:'auto', not forced: the model only reaches for it when the
+// conversation actually needs current/external info, same as a person
+// deciding whether to actually open a browser instead of answering from
+// memory. General-purpose browsing only — nothing here posts, likes, follows,
+// or touches social platforms on anyone's behalf.
+const BROWSE_WEB_TOOL = {
+  type: 'function',
+  function: {
+    name: 'browse_web',
+    description: 'Look something up or check a real webpage right now — current events, a specific site, prices, anything you would otherwise be guessing about. Returns what was found; you still reply as yourself afterward.',
+    parameters: {
+      type: 'object',
+      properties: {
+        task: {
+          type: 'string',
+          description: 'Plain-language instruction for what to find or do, e.g. "check the current weather in Miami" or "look up who won the game last night".'
+        }
+      },
+      required: ['task']
+    }
+  }
+};
+
 // Cheap structural check (pattern-shaped, not a word list) used only as a
 // safety net after the schema above — catches it if the model still tries,
 // so we regenerate instead of silently shipping narration text.
@@ -959,19 +985,26 @@ function looksLikeNarration(t) {
   return /\*[^*]+\*/.test(t) || /^[A-Z][a-z]+ (smirk|smile|laugh|lean|roll|chuckle|sigh|grin|wink|bite|tilt|stare|glance|shrug|nod|pause|sip)s?\b/i.test(t.trim());
 }
 
-async function callGroq(history, sys, backup, { asCharacter = false } = {}) {
+// Raw completion — returns the SDK's message object untouched (tool_calls
+// and all), unlike callGroq() below which coerces down to a plain string.
+// generateBrainReply needs the raw shape to tell "wants to browse" apart
+// from "ready to answer".
+async function rawCompletion(history, sys, backup, tools, toolChoice) {
   const client = (backup && groq2) ? groq2 : groq;
   const params = {
     model: "llama-3.3-70b-versatile",
     messages: [{ role: "system", content: sys }, ...history],
     max_tokens: 350, temperature: 0.92
   };
-  if (asCharacter) {
-    params.tools = [SEND_REPLY_TOOL];
-    params.tool_choice = { type: 'function', function: { name: 'send_reply' } };
-  }
+  if (tools) { params.tools = tools; params.tool_choice = toolChoice; }
   const completion = await client.chat.completions.create(params);
-  const choice = completion.choices[0].message;
+  return completion.choices[0].message;
+}
+
+async function callGroq(history, sys, backup, { asCharacter = false } = {}) {
+  const forced = asCharacter ? [SEND_REPLY_TOOL] : null;
+  const choice = await rawCompletion(history, sys, backup, forced,
+    asCharacter ? { type: 'function', function: { name: 'send_reply' } } : undefined);
   if (asCharacter) {
     const call = choice.tool_calls && choice.tool_calls[0];
     if (!call) throw new Error('Groq did not return a send_reply tool call');
@@ -989,12 +1022,41 @@ async function callGroq(history, sys, backup, { asCharacter = false } = {}) {
 // the send_reply schema (see SEND_REPLY_TOOL above) — this is the primary
 // defense against narration, not the semantic strip/finalize gate further
 // down the pipeline, which now only needs to catch the rare structural slip.
+//
+// When BROWSE_WEB_TOOL is available (API key set), the first call offers
+// both tools with tool_choice:'auto' — the model can either answer directly
+// (send_reply) or ask to browse first (browse_web), in which case we run
+// the browse, feed the result back, and force a final send_reply. Capped at
+// one browse per reply — this is meant for "check one thing", not a
+// multi-step research session.
 async function generateBrainReply(history, sys, { attempts = 2 } = {}) {
   const keyVariants = groq2 ? [false, true] : [false];
+  const canBrowse = !!process.env.BROWSER_USE_API_KEY;
   for (let attempt = 0; attempt < attempts; attempt++) {
     for (const backup of keyVariants) {
       try {
-        let reply = await callGroq(history, sys, backup, { asCharacter: true });
+        let reply;
+        if (canBrowse) {
+          const tools = [SEND_REPLY_TOOL, BROWSE_WEB_TOOL];
+          const first = await rawCompletion(history, sys, backup, tools, 'auto');
+          const call = first.tool_calls && first.tool_calls[0];
+          if (call && call.function.name === 'browse_web') {
+            const args = JSON.parse(call.function.arguments);
+            console.log(`[brain] browsing: ${args.task}`);
+            const browsing = require('./browsing_skill');
+            const result = await browsing.browseWeb(args.task);
+            const browseNote = result.ok
+              ? `[Browsing result for "${args.task}"]: ${result.output}`
+              : `[Browsing unavailable: ${result.error}. Answer without it, don't mention the failure to them.]`;
+            const followUp = [...history, { role: 'assistant', content: `(checking: ${args.task})` }, { role: 'user', content: browseNote }];
+            reply = await callGroq(followUp, sys, backup, { asCharacter: true });
+          } else if (call && call.function.name === 'send_reply') {
+            const args = JSON.parse(call.function.arguments);
+            reply = (args.message || '').trim();
+          }
+        } else {
+          reply = await callGroq(history, sys, backup, { asCharacter: true });
+        }
         if (reply && looksLikeNarration(reply)) {
           console.warn('[brain] narration slipped past schema, regenerating once');
           reply = await callGroq(history, sys + '\n\nYour last attempt included narration/stage directions inside the message field. Do not do that — plain text only.', backup, { asCharacter: true });
