@@ -1,0 +1,23 @@
+# Render blueprint for the social engine.
+# Create a new Blueprint from this repo with rootDir: socialcrabs-service,
+# then attach a persistent disk mounted at /data (required — sessions live there).
+services:
+  - type: web
+    name: ariana-social-engine
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: ENGINE_API_KEY
+        generateValue: true      # copy the generated value into Ariana as SOCIAL_ENGINE_API_KEY
+      - key: COOKIE_ENCRYPTION_KEY
+        generateValue: true      # changing this later invalidates stored sessions
+      - key: SESSION_DIR
+        value: /data/sessions
+      - key: BROWSER_HEADLESS
+        value: "true"
+      - key: MAX_BROWSERS
+        value: "2"
+      - key: LOG_LEVEL
+        value: info

@@ -1,0 +1,220 @@
+{
+  "$schema": "ariana-social-capabilities/1",
+  "provider": "socialcrabs",
+  "provider_repo": "https://github.com/adolfousier/socialcrabs",
+  "provider_version_verified": "0.0.49",
+  "verified_from": "src/platforms/{instagram,twitter,linkedin}.ts, src/browser/manager.ts, src/utils/rate-limiter.ts at v0.0.49",
+  "note": "This file is the honest contract for what Ariana can and cannot do on social media. Every supported action names the real method it maps to. Every unsupported action carries a reason a human can read. If a platform or action is not here, it does not exist in this integration — do not add UI for it. The engine service (socialcrabs-service/src/capabilities.json) holds a byte-identical copy; test/social-manifest.test.js fails if the two ever drift.",
+  "actions": {
+    "search": {
+      "kind": "read",
+      "batchable": false,
+      "requires": ["query"],
+      "description": "Search posts by keyword."
+    },
+    "view_profile": {
+      "kind": "read",
+      "batchable": false,
+      "requires": ["username"],
+      "description": "Read a public profile: name, bio, headline, and follower/connection counts where the profile page exposes them."
+    },
+    "view_posts": {
+      "kind": "read",
+      "batchable": false,
+      "requires": ["username"],
+      "description": "List an account's recent post URLs."
+    },
+    "view_feed": {
+      "kind": "read",
+      "batchable": false,
+      "requires": [],
+      "description": "Read the home feed / timeline."
+    },
+    "like": {
+      "kind": "write",
+      "batchable": true,
+      "requires": ["url"],
+      "description": "Like a post."
+    },
+    "comment": {
+      "kind": "write",
+      "batchable": true,
+      "confirm": "batch",
+      "requires": ["url", "text"],
+      "description": "Post a public comment under a post. On X this is a reply to the tweet."
+    },
+    "reply": {
+      "kind": "write",
+      "batchable": false,
+      "requires": ["url", "text"],
+      "description": "Reply to a specific comment or message thread."
+    },
+    "follow": {
+      "kind": "write",
+      "batchable": true,
+      "requires": ["username"],
+      "description": "Follow an account."
+    },
+    "unfollow": {
+      "kind": "write",
+      "batchable": true,
+      "confirm": "always",
+      "destructive": true,
+      "requires": ["username"],
+      "description": "Unfollow an account."
+    },
+    "connect": {
+      "kind": "write",
+      "batchable": true,
+      "confirm": "batch",
+      "requires": ["profile_url"],
+      "description": "Send a connection request, optionally with a short note."
+    },
+    "dm": {
+      "kind": "write",
+      "batchable": true,
+      "confirm": "batch",
+      "requires": ["username", "message"],
+      "description": "Send a direct message to one person."
+    },
+    "read_dms": {
+      "kind": "read",
+      "batchable": false,
+      "requires": [],
+      "description": "Read the direct-message inbox."
+    },
+    "post": {
+      "kind": "write",
+      "batchable": false,
+      "confirm": "always",
+      "requires": ["text"],
+      "description": "Publish a post."
+    },
+    "repost": {
+      "kind": "write",
+      "batchable": true,
+      "requires": ["url"],
+      "description": "Repost / retweet / share someone else's post."
+    },
+    "notifications": {
+      "kind": "read",
+      "batchable": false,
+      "requires": [],
+      "description": "Check the notifications tab."
+    },
+    "engagement": {
+      "kind": "read",
+      "batchable": false,
+      "requires": ["username"],
+      "description": "Check follower / following / connection counts for an account."
+    },
+    "delete_post": {
+      "kind": "write",
+      "batchable": false,
+      "confirm": "always",
+      "destructive": true,
+      "requires": ["url"],
+      "description": "Delete one of your own posts."
+    },
+    "delete_comment": {
+      "kind": "write",
+      "batchable": false,
+      "confirm": "always",
+      "destructive": true,
+      "requires": ["url"],
+      "description": "Delete one of your own comments."
+    }
+  },
+  "platforms": {
+    "instagram": {
+      "label": "Instagram",
+      "handle_label": "username",
+      "session_cookie": "sessionid",
+      "env_bootstrap": false,
+      "actions": {
+        "search": { "supported": false, "reason": "The Instagram handler has no search method — it can open a profile or a post URL, but cannot look up posts by keyword." },
+        "view_profile": { "supported": true, "method": "instagram.getProfile(username)", "returns": "name, bio, followers, following, posts" },
+        "view_posts": { "supported": true, "method": "instagram.getRecentPosts(username, limit)", "returns": "post URLs (no captions or metrics)", "limit": "engine caps this at 5" },
+        "view_feed": { "supported": false, "reason": "The integration has no home-feed method for Instagram. It scrolls to warm the session up but never exposes the feed as data." },
+        "like": { "supported": true, "method": "instagram.like({ url })" },
+        "comment": { "supported": true, "method": "instagram.comment({ url, text })", "notes": "Comment on a post." },
+        "reply": { "supported": false, "reason": "Instagram comments cannot be targeted individually — the handler can add a comment to a post, but not reply to one specific comment." },
+        "follow": { "supported": true, "method": "instagram.follow({ username })" },
+        "unfollow": { "supported": true, "method": "instagram.unfollow({ username })" },
+        "connect": { "supported": false, "reason": "Connection requests are a LinkedIn concept; Instagram has no equivalent action in the integration." },
+        "dm": { "supported": true, "method": "instagram.dm({ username, message })", "notes": "One message to one person. No bulk." },
+        "read_dms": { "supported": false, "reason": "The integration can send a DM but has no inbox reader — it cannot list or read conversations." },
+        "post": { "supported": false, "reason": "There is no publish method on the Instagram handler (feed posting / reels / stories). Ariana cannot post to Instagram through this integration." },
+        "repost": { "supported": false, "reason": "Instagram has no repost/reshare method in the handler." },
+        "notifications": { "supported": false, "reason": "The integration does not open the notifications tab." },
+        "engagement": { "supported": true, "method": "instagram.getProfile(username)", "returns": "followers, following, post count as shown on the profile page" },
+        "delete_post": { "supported": false, "reason": "No delete method exists for Instagram in the integration." },
+        "delete_comment": { "supported": false, "reason": "No delete method exists for Instagram in the integration." }
+      }
+    },
+    "twitter": {
+      "label": "X",
+      "handle_label": "handle",
+      "session_cookie": "auth_token",
+      "env_bootstrap": true,
+      "env_bootstrap_vars": ["SOCIALCRABS_AUTH_TOKEN", "SOCIALCRABS_CT0"],
+      "actions": {
+        "search": { "supported": false, "reason": "The X handler has no search method — it can open a tweet URL or a profile, but cannot search." },
+        "view_profile": { "supported": true, "method": "twitter.getProfile(username)", "returns": "display name, bio, followers, following, tweet count, join date" },
+        "view_posts": { "supported": false, "reason": "The X handler reads profiles, not an account's post list. It can act on a tweet when given its URL." },
+        "view_feed": { "supported": false, "reason": "The integration has no home-timeline method for X." },
+        "like": { "supported": true, "method": "twitter.like({ url })" },
+        "comment": { "supported": true, "method": "twitter.comment({ url, text })", "notes": "On X, commenting on a tweet is replying to it." },
+        "reply": { "supported": true, "method": "twitter.comment({ url, text })", "notes": "A reply in X is the same operation as a comment on the tweet." },
+        "follow": { "supported": true, "method": "twitter.follow({ username })" },
+        "unfollow": { "supported": true, "method": "twitter.unfollow({ username })" },
+        "connect": { "supported": false, "reason": "Connection requests are a LinkedIn concept; X has no equivalent action in the integration." },
+        "dm": { "supported": true, "method": "twitter.dm({ username, message })", "notes": "One message to one person. No bulk." },
+        "read_dms": { "supported": false, "reason": "The integration can send a DM but has no inbox reader." },
+        "post": { "supported": true, "method": "twitter.post({ text })", "notes": "Text only — the integration has no media upload path." },
+        "repost": { "supported": true, "method": "twitter.retweet(url)" },
+        "notifications": { "supported": false, "reason": "The integration does not open the notifications tab." },
+        "engagement": { "supported": true, "method": "twitter.getProfile(username)", "returns": "followers, following, tweet count as shown on the profile page" },
+        "delete_post": { "supported": false, "reason": "No delete method exists for X in the integration." },
+        "delete_comment": { "supported": false, "reason": "No delete method exists for X in the integration." }
+      }
+    },
+    "linkedin": {
+      "label": "LinkedIn",
+      "handle_label": "member username",
+      "session_cookie": "li_at",
+      "env_bootstrap": false,
+      "actions": {
+        "search": { "supported": true, "method": "linkedin.search(query)", "returns": "post URLs and previews, newest first", "notes": "Scrolls the content search results; this is the slowest read action." },
+        "view_profile": { "supported": true, "method": "linkedin.getProfile(username)", "returns": "full name, headline, location, connections, current company and title" },
+        "view_posts": { "supported": false, "reason": "The LinkedIn handler reads profiles and search results, not an account's post list." },
+        "view_feed": { "supported": false, "reason": "The integration has no home-feed method for LinkedIn." },
+        "like": { "supported": true, "method": "linkedin.like({ url })" },
+        "comment": { "supported": true, "method": "linkedin.comment({ url, text })" },
+        "reply": { "supported": false, "reason": "LinkedIn comments cannot be targeted individually — the handler can comment on a post, not reply to one specific comment." },
+        "follow": { "supported": true, "method": "linkedin.follow({ username })" },
+        "unfollow": { "supported": true, "method": "linkedin.unfollow({ username })" },
+        "connect": { "supported": true, "method": "linkedin.connect({ profileUrl, note })", "notes": "Connection request with an optional short note." },
+        "dm": { "supported": true, "method": "linkedin.dm({ username, message })", "notes": "One message to one person. No bulk." },
+        "read_dms": { "supported": false, "reason": "The integration can send a message but has no inbox reader." },
+        "post": { "supported": false, "reason": "There is no publish method on the LinkedIn handler. Ariana cannot post to LinkedIn through this integration." },
+        "repost": { "supported": false, "reason": "LinkedIn has no repost method in the handler." },
+        "notifications": { "supported": false, "reason": "The integration does not open the notifications tab." },
+        "engagement": { "supported": true, "method": "linkedin.getProfile(username)", "returns": "connection count as shown on the profile page" },
+        "delete_post": { "supported": false, "reason": "No delete method exists for LinkedIn in the integration." },
+        "delete_comment": { "supported": false, "reason": "No delete method exists for LinkedIn in the integration." }
+      }
+    }
+  },
+  "unsupported_platforms": {
+    "facebook": "No adapter exists in the integration. Adding one means writing a new handler plus engine dispatch — the dashboard will not offer a Connect button until then.",
+    "tiktok": "No adapter exists in the integration.",
+    "threads": "No adapter exists in the integration.",
+    "youtube": "No adapter exists in the integration.",
+    "reddit": "No adapter exists in the integration.",
+    "snapchat": "No adapter exists in the integration.",
+    "pinterest": "No adapter exists in the integration.",
+    "whatsapp": "Not a social feed integration, and Ariana already reaches WhatsApp through her own channel — do not route it through this layer.",
+    "telegram": "Not routed through this layer."
+  }
+}

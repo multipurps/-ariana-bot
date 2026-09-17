@@ -231,6 +231,14 @@ try {
   console.log('✅ Engine V2 loaded — dynamic human-state prompts active');
 } catch (e) { console.warn('⚠️  engine_v2.js not found — using static SYSTEM_PROMPT. Drop engine_v2.js + subsystems to activate.'); }
 
+// ── SOCIAL ACTION LAYER (Ariana's hands) ──────────────────────
+// Adds real social tools (like / comment / follow / DM / post / …) that run
+// through connected accounts. Her brain and personality are untouched: this
+// only gives her the ability to act, and only for accounts the creator has
+// explicitly enabled. Without a deployed engine it reports "not connected" and
+// everything else carries on exactly as before.
+const social = require('./social');
+
 let mediaLib = { ariana_photos: [], triggers: {
   selfie: [
     "send me a pic","send pic","send me photo","send me a photo","send me one",
@@ -1032,27 +1040,61 @@ async function callGroq(history, sys, backup, { asCharacter = false } = {}) {
 async function generateBrainReply(history, sys, { attempts = 2 } = {}) {
   const keyVariants = groq2 ? [false, true] : [false];
   const canBrowse = !!process.env.BROWSER_USE_API_KEY;
+  // Social tools are only offered when there is a real, enabled account behind
+  // them — buildToolSchemas() returns [] otherwise, so she is never handed a
+  // button that does nothing. Max 3 tool rounds per reply keeps a single
+  // message from turning into an unbounded automation loop.
+  const socialTools = await social.buildToolSchemas().catch(() => []);
+  const autoTools = [SEND_REPLY_TOOL, ...(canBrowse ? [BROWSE_WEB_TOOL] : []), ...socialTools];
+  const canUseTools = autoTools.length > 1;
   for (let attempt = 0; attempt < attempts; attempt++) {
     for (const backup of keyVariants) {
       try {
         let reply;
-        if (canBrowse) {
-          const tools = [SEND_REPLY_TOOL, BROWSE_WEB_TOOL];
-          const first = await rawCompletion(history, sys, backup, tools, 'auto');
-          const call = first.tool_calls && first.tool_calls[0];
-          if (call && call.function.name === 'browse_web') {
-            const args = JSON.parse(call.function.arguments);
-            console.log(`[brain] browsing: ${args.task}`);
-            const browsing = require('./browsing_skill');
-            const result = await browsing.browseWeb(args.task);
-            const browseNote = result.ok
-              ? `[Browsing result for "${args.task}"]: ${result.output}`
-              : `[Browsing unavailable: ${result.error}. Answer without it, don't mention the failure to them.]`;
-            const followUp = [...history, { role: 'assistant', content: `(checking: ${args.task})` }, { role: 'user', content: browseNote }];
-            reply = await callGroq(followUp, sys, backup, { asCharacter: true });
-          } else if (call && call.function.name === 'send_reply') {
+        if (canUseTools) {
+          const first = await rawCompletion(history, sys, backup, autoTools, 'auto');
+          let call = first.tool_calls && first.tool_calls[0];
+          let working = history;
+          let browsed = 0;
+          let rounds = 0;
+          // Tool loop: she may browse (once) and/or act through her accounts
+          // (a few times), then she answers as herself. Every tool result is
+          // fed back verbatim, failures included, so she can tell the truth
+          // about what happened instead of assuming it worked.
+          while (call && call.function.name !== 'send_reply' && rounds < 3) {
+            const name = call.function.name;
+            let args = {};
+            try { args = JSON.parse(call.function.arguments || '{}'); } catch (_) { args = {}; }
+            let note;
+            if (name === 'browse_web') {
+              if (browsed >= 1) break;
+              browsed++;
+              console.log(`[brain] browsing: ${args.task}`);
+              const browsing = require('./browsing_skill');
+              const result = await browsing.browseWeb(args.task);
+              note = result.ok
+                ? `[Browsing result for "${args.task}"]: ${result.output}`
+                : `[Browsing unavailable: ${result.error}. Answer without it, don't mention the failure to them.]`;
+            } else if (name.startsWith('social_')) {
+              console.log(`[brain] social: ${name}`, JSON.stringify(args).slice(0, 200));
+              const result = await social.executeTool(name, args, { source: 'chat', actor: 'ariana' });
+              note = social.toolResultForModel(result);
+              console.log(`[brain] social result: ${result.ok ? 'ok' : result.code || 'failed'} — ${result.summary || result.error}`);
+            } else {
+              note = `[Unknown tool ${name} — nothing was executed.]`;
+            }
+            working = [...working, { role: 'assistant', content: `(using ${name})` }, { role: 'user', content: note }];
+            rounds++;
+            const next = await rawCompletion(working, sys, backup, autoTools, 'auto');
+            call = next.tool_calls && next.tool_calls[0];
+          }
+          if (call && call.function.name === 'send_reply') {
             const args = JSON.parse(call.function.arguments);
             reply = (args.message || '').trim();
+          } else {
+            // Tool rounds exhausted (or a non-reply tool was requested again):
+            // force the actual message so the person always gets a reply.
+            reply = await callGroq(working, sys, backup, { asCharacter: true });
           }
         } else {
           reply = await callGroq(history, sys, backup, { asCharacter: true });
@@ -1135,6 +1177,15 @@ async function getReply(id, userMsg, systemOverride, imageBase64 = null) {
 
   if (extrasMood && !systemOverride) {
     sys += `\n\nCURRENT MOOD OVERRIDE: You are feeling ${extrasMood} right now. Let this genuinely influence your tone, energy, and word choice.`;
+  }
+
+  // Which social accounts she can act through (only when the creator enabled
+  // some). Purely additive — nothing about who she is changes here.
+  if (!systemOverride) {
+    try {
+      const socialBlock = await social.socialPromptBlock();
+      if (socialBlock) sys += socialBlock;
+    } catch (_) { /* social layer must never break the reply path */ }
   }
 
   // Language lock — detect the conversation language and enforce it
@@ -4403,6 +4454,33 @@ server.listen(PORT, async () => {
   await loadWhitelist();
   await loadBlocked();
   await autoFetchVoiceId();
+
+  // ── SOCIAL ACTION LAYER ─────────────────────────────────────
+  // Dashboard routes (behind the same auth as /api/talk) + the optional
+  // autonomy scheduler. askBrain hands the autonomy pass Ariana's real prompt
+  // — there is no second personality anywhere in this feature.
+  try {
+    social.attach(app, {
+      requireAuth: requireDashboardAuth,
+      // The autonomy pass asks HER prompt — engine_v2's base prompt is the same
+      // identity the conversations use. There is no second system prompt in the
+      // social layer, only this callback.
+      askBrain: async ({ system, user }) => {
+        const base = engineV2 && typeof engineV2.buildBasePrompt === 'function'
+          ? await engineV2.buildBasePrompt()
+          : SYSTEM_PROMPT;
+        return await callGroq([{ role: 'user', content: user }], `${base}\n\n${system}`, false, { asCharacter: false });
+      },
+    });
+    await social.boot();
+    const socialState = await social.readiness();
+    const autonomyCfg = await social.autonomy.getConfig();
+    console.log(`📣 Social layer: ${socialState.accounts} account(s), ${socialState.enabled} with actions enabled, autonomy ${autonomyCfg.enabled ? 'ON' : 'off'}`);
+    for (const line of await social.startupLines()) console.log(`   ${line}`);
+  } catch (e) {
+    console.warn('⚠️  Social layer failed to start (everything else is unaffected):', e.message);
+  }
+
   console.log(`\n🌸 Ariana LIVE on port ${PORT}`);
   console.log(`📱 WhatsApp:    ${getKapsoKey()                   ? "✅" : "❌"}`);
   console.log(`🧠 Groq (BRAIN, sole reply generator): ${GROQ_API_KEY ? "✅" : "❌ — Ariana cannot reply without this"}`);
