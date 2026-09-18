@@ -2,3 +2,9 @@ node_modules/
 .env
 .DS_Store
 *.log
+
+# Social layer state (account registry, activity log) — never commit
+social_data/
+sessions/
+browser-data/
+*.json.enc

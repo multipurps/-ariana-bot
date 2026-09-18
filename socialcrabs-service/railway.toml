@@ -1,0 +1,10 @@
+# Deploy settings for the social engine on Railway.
+# Root directory for this service: socialcrabs-service
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+numReplicas = 1

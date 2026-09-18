@@ -418,3 +418,42 @@ All existing env vars work as before. The engine uses:
 - Your whitelist / blocklist Supabase tables (creator engine can sync to them)
 
 The engine drops **in front of** your LLM calls. Everything behind stays the same.
+
+---
+
+## Social Action Layer (added)
+
+Ariana can operate real Instagram, X and LinkedIn accounts. Her brain is
+unchanged — this is an addition in front of it, not a rewrite.
+
+```
+Ariana's brain (engine_v2 prompt + her Groq tool loop in index.js)
+      │  social_* tool calls, results fed back verbatim
+      ▼
+social/  — capability check → creator permission → limits → confirmation → activity log
+      ▼
+socialcrabs-service/  — the engine: real sessions, real browsers (Playwright)
+      ▼
+Instagram · X · LinkedIn
+```
+
+- **Her tools**: `social_like`, `social_comment`, `social_follow`, `social_dm`,
+  `social_post`, `social_search`, … built only for actions the capability
+  manifest says exist on a platform she has an *enabled* account on. No enabled
+  accounts → no social tools offered.
+- **Her prompt**: a short block listing her accounts and the rules (name the
+  account, never claim an action she didn't take, say when a platform can't do
+  something) is appended to the dynamic prompt. Nothing about who she is changes.
+- **Multi-account**: `account_id = platform:handle`; each account has its own
+  session in the engine, its own permission switch, its own activity trail.
+- **Safety**: per-account daily caps, 5-target ceiling per call, confirmation
+  tokens for unfollow / batches / publishing, engine-side pacing and its own
+  rate limiter.
+- **Honesty**: capability manifest is the single source of truth for the
+  dashboard, the tool list and the engine's dispatch table; a test fails if the
+  two copies drift, and another fails if a supported action has no dispatch.
+- **Failure modes are visible**: no engine → "Backend not connected" in the
+  dashboard and a plain "I couldn't do that right now" from her; expired session
+  → `Error` + reason in the dashboard and in her tool result.
+
+See `SOCIAL.md` for the platform matrix, deployment and the security model.

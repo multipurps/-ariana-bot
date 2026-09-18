@@ -173,6 +173,39 @@ textarea.inp{resize:vertical;min-height:120px}
 .tgl.on{background:var(--acc)}
 .tgl-k{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s}
 .tgl.on .tgl-k{transform:translateX(18px)}
+/* ── SOCIAL ─────────────────────────────────────────────────────────────
+   Same vocabulary as the rest of the app: hairline borders, .sgroup sections,
+   one accent. Status is a small dot + word, never a wall of colour. */
+.s-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:var(--txt3)}
+.s-dot.on{background:var(--grn)}
+.s-dot.err{background:var(--red)}
+.s-dot.warn{background:#d9a441}
+.s-chip{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:20px;border:1px solid var(--bdr2);color:var(--txt2)}
+.s-chip.ok{color:var(--grn);border-color:rgba(51,204,136,.35)}
+.s-chip.err{color:var(--red);border-color:rgba(255,68,85,.35)}
+.s-chip.acc{color:var(--acc);border-color:var(--bdr2)}
+.s-acct{background:var(--s1);border:1px solid var(--bdr);border-radius:16px;padding:14px 16px;margin-bottom:10px}
+.s-acct-top{display:flex;align-items:center;gap:8px}
+.s-acct-handle{font-size:14.5px;font-weight:600;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.s-acct-note{font-size:11.5px;color:var(--txt2);line-height:1.5;margin-top:6px}
+.s-acct-actions{display:flex;gap:8px;margin-top:12px;align-items:center}
+.s-mini{flex:1;background:transparent;border:1px solid var(--bdr2);border-radius:10px;padding:9px 10px;color:var(--txt);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.s-mini:active{background:var(--s2)}
+.s-mini.on{background:var(--acc);color:var(--bg);border-color:var(--acc)}
+.s-mini.danger{color:var(--red);border-color:rgba(255,68,85,.25);flex:0 0 auto}
+.s-cap{font-size:11px;color:var(--txt2);line-height:1.6;margin-top:6px}
+.s-cap b{color:var(--txt3);font-weight:600}
+.s-act{background:var(--s1);border:1px solid var(--bdr);border-radius:14px;padding:12px 14px;margin-bottom:8px}
+.s-act-top{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--txt2)}
+.s-act-sum{font-size:13.5px;color:var(--txt);margin-top:5px;line-height:1.45}
+.s-act-err{font-size:11.5px;color:var(--txt2);margin-top:5px;line-height:1.5}
+.s-details{font-size:11.5px;color:var(--txt2);background:var(--s2);border-radius:10px;padding:10px 12px;margin-top:8px;line-height:1.6;white-space:pre-wrap}
+.s-link{background:none;border:none;color:var(--txt2);font-size:11px;text-decoration:underline;cursor:pointer;padding:0;font-family:inherit}
+.s-addrow{display:flex;gap:8px;margin:2px 0 14px}
+.s-addrow .inp{flex:1;padding:10px 12px;font-size:13px;border-radius:12px}
+.s-plat{display:flex;align-items:center;gap:8px;padding:14px 2px 8px}
+.s-plat-name{font-size:13.5px;font-weight:700;color:var(--txt)}
+.s-plat-sub{font-size:11px;color:var(--txt2);margin-left:auto}
 .media-section-label{font-size:11px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.08em;padding:12px 16px 6px;flex-shrink:0}
 .mgrid-audio{display:flex;flex-direction:column;gap:8px;padding:0 16px 16px}
 .mi-audio{background:var(--s2);border:1px solid var(--bdr);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background .18s;position:relative}
@@ -469,6 +502,11 @@ textarea.inp{resize:vertical;min-height:120px}
         <div class="pmenu-body"><div class="pmenu-title">Wardrobe</div><div class="pmenu-sub">Outfits &amp; style library</div></div>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--txt3)" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
+      <div class="pmenu-item" onclick="go('social')">
+        <div class="pmenu-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--acc2)" stroke-width="1.8" stroke-linecap="round"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg></div>
+        <div class="pmenu-body"><div class="pmenu-title">Social</div><div class="pmenu-sub">Connected accounts &amp; activity</div></div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--txt3)" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
       <div class="pmenu-item" onclick="go('settings')">
         <div class="pmenu-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--acc2)" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
         <div class="pmenu-body"><div class="pmenu-title">Settings</div><div class="pmenu-sub">API keys &amp; preferences</div></div>
@@ -523,6 +561,31 @@ textarea.inp{resize:vertical;min-height:120px}
     <button class="btn" onclick="saveSettings()" style="margin-top:auto">Save settings</button>
     <button class="btn-ghost" onclick="clearSettings()" style="margin-top:10px;border-color:rgba(255,68,85,.2);color:var(--red)">Clear all</button>
     <div style="height:calc(16px + env(safe-area-inset-bottom))"></div>
+  </div>
+</div>
+
+<!-- SOCIAL — connected accounts, what they can really do, and what Ariana did -->
+<div id="s-social" class="scr">
+  <div class="hdr">
+    <button class="ib" onclick="go('profile')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+    <span class="hdr-title">Social</span>
+    <button class="ib" onclick="loadSocial(true)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg></button>
+  </div>
+  <div class="sbody no-nav" style="padding:0 16px">
+    <div id="social-engine"></div>
+    <div class="sgroup">
+      <div class="sgroup-title">Social accounts</div>
+      <div id="social-accounts"></div>
+    </div>
+    <div class="sgroup">
+      <div class="sgroup-title">Social activity</div>
+      <div id="social-activity"></div>
+    </div>
+    <div class="sgroup">
+      <div class="sgroup-title">Autonomy</div>
+      <div id="social-autonomy"></div>
+    </div>
+    <div style="height:28px"></div>
   </div>
 </div>
 
@@ -597,7 +660,7 @@ function authH(){const k=cfg.get('dash_key');return k?{'Content-Type':'applicati
 let conversations={},takeoverState={},talkHistory=[],activeBrainKey=null,currentPhone=null,currentCallId=null,currentPlatform='wa',heroPhotos=[],heroIndex=0,heroTimer=null,allMedia=[],wardrobeItems=[],selectedOutfit=null,genOutfitUrl=null;
 const socket=io();
 const HOME_SCREENS=['home','platforms','media','profile'];
-const screenMap={home:'s-home',talk:'s-talk',platforms:'s-platforms',media:'s-media',brain:'s-brain',wardrobe:'s-wardrobe',settings:'s-settings',profile:'s-profile'};
+const screenMap={home:'s-home',talk:'s-talk',platforms:'s-platforms',media:'s-media',brain:'s-brain',wardrobe:'s-wardrobe',settings:'s-settings',profile:'s-profile',social:'s-social'};
 const navMap={home:'nb-home',platforms:'nb-platforms',media:'nb-media',profile:'nb-profile'};
 function go(name){
   Object.values(screenMap).forEach(id=>document.getElementById(id)?.classList.remove('on'));
@@ -610,6 +673,7 @@ function go(name){
   if(name==='brain')loadBrain();
   if(name==='wardrobe')loadWardrobe();
   if(name==='settings')loadSettingsUI();
+  if(name==='social')loadSocial();
   if(name==='profile')loadProfileStats();
 }
 let _tt;
@@ -847,6 +911,248 @@ function applyTheme(){
   });
   setTimeout(()=>{const p=document.getElementById('preloader');if(p){p.classList.add('hide');setTimeout(()=>p.remove(),400);}},5000);
 })();
+
+// ── SOCIAL ──────────────────────────────────────────────────────────────────
+// Connected accounts, their real capabilities, and what Ariana actually did.
+// Every state below maps to something the backend reported: nothing here shows
+// "Online", "Completed" or a capability the engine did not confirm.
+let soc={status:null,accounts:[],activity:[],autonomy:null,caps:null,details:{},adding:{},busy:false,error:null};
+
+async function loadSocial(manual){
+  try{
+    const [status,acct,act,caps]=await Promise.all([
+      fetch('/api/social/status',{headers:authH()}).then(r=>r.json()),
+      fetch('/api/social/accounts',{headers:authH()}).then(r=>r.json()),
+      fetch('/api/social/activity?limit=40',{headers:authH()}).then(r=>r.json()),
+      fetch('/api/social/capabilities',{headers:authH()}).then(r=>r.json())
+    ]);
+    soc.status=status; soc.accounts=acct.accounts||[]; soc.activity=act.activity||[]; soc.caps=caps;
+    soc.error=null;
+  }catch(e){ soc.error='Could not reach Ariana\'s backend.'; }
+  try{ const a=await fetch('/api/social/autonomy',{headers:authH()}).then(r=>r.json()); soc.autonomy=a.autonomy; }catch{}
+  renderSocial();
+  if(manual)toast('Social updated');
+}
+
+// Errors from the engine are written for a person: one sentence, never a stack
+// trace. Anything longer is trimmed at the first line break and shown in full
+// behind "View details".
+function socReasonText(text, max) {
+  if (!text) return '';
+  const first = String(text).split('\n').find(l => l.trim()) || '';
+  const clean = first.replace(/\s+/g, ' ').trim();
+  const limit = max || 240;
+  return clean.length > limit ? clean.slice(0, limit - 1) + '…' : clean;
+}
+function socEsc(s){return escHTML(String(s==null?'':s));}
+function socAgo(iso){
+  if(!iso)return '';
+  const t=Date.parse(iso);if(!t)return '';
+  const s=Math.max(0,Math.floor((Date.now()-t)/1000));
+  if(s<60)return 'just now';
+  if(s<3600)return Math.floor(s/60)+' min ago';
+  if(s<86400)return Math.floor(s/3600)+' hr ago';
+  return Math.floor(s/86400)+'d ago';
+}
+function socToggleDetail(k){soc.details[k]=!soc.details[k];renderSocial();}
+
+function socEngineStrip(){
+  const st=soc.status;
+  if(soc.error) return `<div class="s-details">${socEsc(soc.error)}</div>`;
+  if(!st) return '';
+  if(!st.engine.configured){
+    const steps=(st.setup&&st.setup.steps||[]).map(s=>socEsc(s)).join('\n');
+    return `<div class="s-act" style="border-color:var(--bdr2)">
+      <div class="s-act-top"><span class="s-dot err"></span>Backend not connected</div>
+      <div class="s-act-err">Ariana's social engine is not deployed yet, so no account can be connected and no action can run. Everything else about her works as normal.</div>
+      <button class="s-link" onclick="socToggleDetail('engine')" style="margin-top:8px">${soc.details.engine?'Hide setup':'View details'}</button>
+      ${soc.details.engine?`<div class="s-details">${steps}\n\nEnv vars Ariana needs: SOCIAL_ENGINE_URL, SOCIAL_ENGINE_API_KEY\nEnv vars the engine needs: ENGINE_API_KEY, COOKIE_ENCRYPTION_KEY, SESSION_DIR (volume), MAX_BROWSERS</div>`:''}
+    </div>`;
+  }
+  if(!st.engine.reachable){
+    return `<div class="s-act" style="border-color:var(--bdr2)">
+      <div class="s-act-top"><span class="s-dot err"></span>Engine configured but unreachable</div>
+      <div class="s-act-err">${socEsc(st.engine.error||'')}</div>
+      <button class="s-link" onclick="loadSocial(true)" style="margin-top:8px">Try again</button>
+    </div>`;
+  }
+  const dry=st.dry_run?' · dry run':'';
+  return `<div class="s-act" style="border-color:var(--bdr2)">
+    <div class="s-act-top"><span class="s-dot on"></span>Engine connected${socEsc(dry)}</div>
+    <div class="s-act-err">${st.engine.health?('provider '+socEsc(st.engine.health.provider||'')+' · '+(st.engine.health.browsers_open||0)+' browser(s) open'):''}${st.storage&&st.storage.supabase?' · state in Supabase':' · state in local files'}</div>
+  </div>`;
+}
+
+function socPlatformBlocks(){
+  const caps=(soc.caps&&soc.caps.capabilities)||null;
+  if(!caps)return '<div class="s-act-err">Capability manifest unavailable.</div>';
+  return caps.platforms.map(p=>{
+    const mine=soc.accounts.filter(a=>a.platform===p.id);
+    const can=p.supported.map(s=>s.action).join(' · ');
+    const cannot=p.unsupported.map(u=>u.action).join(' · ');
+    const accounts=mine.length?mine.map(socAccountCard).join(''):'';
+    const platKey='plat-'+p.id;
+    const reasons=p.unsupported.filter(u=>u.reason).map(u=>socEsc(u.action)+' — '+socEsc(u.reason)).join('\n\n');
+    return `<div class="s-plat"><span class="s-plat-name">${socEsc(p.label)}</span><span class="s-plat-sub">${mine.length?mine.length+' connected':'not connected'}</span></div>
+      ${accounts}
+      <div class="s-cap"><b>Can:</b> ${socEsc(can)||'—'}<br><b>Cannot:</b> ${socEsc(cannot)||'—'}</div>
+      ${reasons?`<button class="s-link" onclick="socToggleDetail('${platKey}')" style="margin-top:6px">${soc.details[platKey]?'Hide reasons':'Why not'}</button>`:''}
+      ${reasons&&soc.details[platKey]?`<div class="s-details">${reasons}</div>`:''}
+      <div class="s-addrow" style="margin-top:10px">
+        <input class="inp" id="soc-add-${p.id}" placeholder="@${p.handle_label}" autocapitalize="off" autocorrect="off">
+        <button class="s-mini" onclick="socAdd('${p.id}')">Add</button>
+      </div>`;
+  }).join('');
+}
+
+function socAccountCard(a){
+  const state=a.status;
+  const canPublish=((a.capabilities&&a.capabilities.supported)||[]).some(s=>s.action==='post');
+  const dot=state==='online'?'on':(state==='error'?'err':(state==='not_connected'?'warn':''));
+  const label=state==='online'?'Online':(state==='error'?'Error':(state==='not_connected'?'Needs session':'Unknown'));
+  const detail=a.status_detail||'';
+  const unsupported=(a.capabilities&&a.capabilities.unsupported)||[];
+  return `<div class="s-acct">
+    <div class="s-acct-top">
+      <span class="s-dot ${dot}"></span>
+      <span class="s-acct-handle">@${socEsc(a.handle)}</span>
+      <span class="s-chip ${state==='online'?'ok':(state==='error'?'err':'')}" style="margin-left:auto">${label}</span>
+    </div>
+    ${detail?`<div class="s-acct-note">${socEsc(socReasonText(detail,300))}</div>`:''}
+    <div style="display:flex;align-items:center;gap:10px;margin-top:12px">
+      <div style="font-size:12px;color:var(--txt2);flex:1">Actions ${a.actions_enabled?'enabled':'disabled'}${a.actions_enabled?' — Ariana can act through this account':''}</div>
+      <button class="tgl ${a.actions_enabled?'on':''}" onclick="socToggleActions('${socEsc(a.account_id)}',${a.actions_enabled?false:true})"><span class="tgl-k"></span></button>
+    </div>
+    ${canPublish?`<div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+      <div style="font-size:12px;color:var(--txt2);flex:1">Publishing ${a.autopublish?'automatic — she can post without asking':'asks you first'}</div>
+      <button class="tgl ${a.autopublish?'on':''}" onclick="socToggleAutopublish('${socEsc(a.account_id)}',${a.autopublish?false:true})"><span class="tgl-k"></span></button>
+    </div>`:''}
+    <div class="s-acct-actions">
+      ${state==='online'
+        ? `<button class="s-mini" onclick="socReconnect('${socEsc(a.account_id)}')">Re-check</button>`
+        : `<button class="s-mini on" onclick="socConnect('${socEsc(a.account_id)}')">Connect</button>`}
+      <button class="s-mini" onclick="socDisconnect('${socEsc(a.account_id)}')">Disconnect</button>
+      <button class="s-mini danger" onclick="socRemove('${socEsc(a.account_id)}')">Remove</button>
+    </div>
+    ${unsupported.length?`<button class="s-link" onclick="socToggleDetail('${socEsc(a.account_id)}')" style="margin-top:10px">${soc.details[a.account_id]?'Hide limitations':'What this account cannot do'}</button>`:''}
+    ${soc.details[a.account_id]?`<div class="s-details">${unsupported.map(u=>socEsc(u.action)+' — '+socEsc(u.reason)).join('\n\n')}</div>`:''}
+  </div>`;
+}
+
+function socAutonomyBlock(){
+  const cfg=soc.autonomy;if(!cfg)return '<div class="s-act-err">Autonomy config unavailable.</div>';
+  const wl=(cfg.watchlist&&cfg.watchlist.instagram||[]).join(', ');
+  const searches=(cfg.linkedin_searches||[]).join(', ');
+  return `<div class="s-act" style="border:none;background:transparent;padding:0">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="flex:1;font-size:12.5px;color:var(--txt2);line-height:1.5">When on, Ariana may look at posts from the accounts you list and decide — using her own judgement — whether to like or comment. Nothing is sent while this is off.</div>
+      <button class="tgl ${cfg.enabled?'on':''}" onclick="socSaveAutonomy({enabled:${cfg.enabled?false:true}})"><span class="tgl-k"></span></button>
+    </div>
+    <div class="sec" style="margin-top:12px"><label class="lbl">Check every (minutes)</label><input class="inp" id="soc-auto-interval" value="${socEsc(cfg.interval_minutes)}"></div>
+    <div class="sec"><label class="lbl">Max actions per pass</label><input class="inp" id="soc-auto-max" value="${socEsc(cfg.max_actions_per_tick)}"></div>
+    <div class="sec"><label class="lbl">Instagram accounts to watch (comma separated)</label><input class="inp" id="soc-auto-watch" value="${socEsc(wl)}" placeholder="handle1, handle2"></div>
+    <div class="sec"><label class="lbl">LinkedIn searches (comma separated)</label><input class="inp" id="soc-auto-search" value="${socEsc(searches)}" placeholder="ai agents, product design"></div>
+    <div class="s-act-actions" style="display:flex;gap:8px"><button class="s-mini" onclick="socSaveAutonomy({})">Save</button><button class="s-mini" onclick="socRunAutonomy()">Run one pass now</button></div>
+  </div>`;
+}
+
+function socActivityList(){
+  if(!soc.activity.length)return '<div class="s-act"><div class="s-act-err">Nothing yet. When Ariana likes, comments, follows or posts, it shows up here — successes and failures both.</div></div>';
+  return soc.activity.map(e=>{
+    const cls=e.status==='completed'?'ok':(e.status==='partial'?'warn':(e.status==='failed'?'err':''));
+    const key='act-'+e.created_at+e.action;
+    const needsConfirm=e.status==='needs_confirmation';
+    const failed=e.status==='failed';
+    // Older entries may predate account_id being recorded — reconstruct it
+    // rather than sending a confirmation scoped to nothing.
+    const acctId=e.account_id||(e.platform&&e.handle?e.platform+':'+String(e.handle).toLowerCase():'');
+    return `<div class="s-act">
+      <div class="s-act-top">${socEsc(e.platform_label||e.platform)} · @${socEsc(e.handle||'')}<span class="s-chip ${cls}" style="margin-left:auto">${e.status==='completed'?'✓ ':''}${socEsc(e.status_label)}</span></div>
+      <div class="s-act-sum">${socEsc(e.summary)}</div>
+      ${failed&&e.error?`<div class="s-act-err">Reason: ${socEsc(socReasonText(e.error))}</div>`:''}
+      <div class="s-act-top" style="margin-top:6px"><span style="font-size:10.5px;color:var(--txt3)">${socAgo(e.created_at)}</span>${e.actor==='creator'?'<span style="font-size:10.5px;color:var(--txt3);margin-left:6px">· from you</span>':''}</div>
+      ${needsConfirm&&acctId?`<button class="s-link" onclick="socConfirmAction('${socEsc(acctId)}','${socEsc(e.action)}','${socEsc(key)}')" style="margin-top:8px">Confirm and send</button>`:''}
+      ${(failed||e.status==='blocked'||e.status==='unsupported')?`<button class="s-link" onclick="socToggleDetail('${socEsc(key)}')" style="margin-top:8px;margin-left:${needsConfirm?'10px':'0'}">${soc.details[key]?'Hide details':'View details'}</button>`:''}
+      ${soc.details[key]?`<div class="s-details">${socEsc(socReasonText(e.error||e.summary,600))}${e.detail&&e.detail.code?'\ncode: '+socEsc(e.detail.code):''}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderSocial(){
+  const el=document.getElementById('social-engine');if(!el)return;
+  el.innerHTML=socEngineStrip();
+  document.getElementById('social-accounts').innerHTML=socPlatformBlocks();
+  document.getElementById('social-activity').innerHTML=socActivityList();
+  document.getElementById('social-autonomy').innerHTML=socAutonomyBlock();
+}
+
+async function socPost(url,body){
+  const r=await fetch(url,{method:'POST',headers:authH(),body:body?JSON.stringify(body):undefined});
+  return r.json();
+}
+async function socAdd(platform){
+  const inp=document.getElementById('soc-add-'+platform);
+  const handle=(inp&&inp.value||'').trim();
+  if(!handle)return toast('Enter the account handle');
+  const r=await socPost('/api/social/accounts',{platform,handle});
+  if(!r.ok)return toast((r.error||'Could not add').slice(0,140));
+  toast('Added — now provision its session, then press Connect');
+  loadSocial();
+}
+async function socConnect(id){
+  toast('Checking the session on the engine…');
+  const r=await socPost('/api/social/accounts/'+encodeURIComponent(id)+'/connect');
+  if(!r.ok){soc.details[id]=true;toast((r.error||'Connect failed').slice(0,140));}
+  else if(r.needs_provisioning)toast('No session yet — see Social → setup steps');
+  else toast('Connected');
+  loadSocial();
+}
+async function socReconnect(id){ await socConnect(id); }
+async function socDisconnect(id){
+  if(!confirm('Disconnect this account? The stored session is deleted from the engine.'))return;
+  const r=await socPost('/api/social/accounts/'+encodeURIComponent(id)+'/disconnect');
+  toast(r.ok?'Disconnected':(r.error||'Failed').slice(0,120));loadSocial();
+}
+async function socToggleAutopublish(id,on){
+  const r=await socPost('/api/social/accounts/'+encodeURIComponent(id)+'/autopublish',{enabled:on});
+  toast(r.ok?(on?'She can publish without asking':'Publishing asks you first'):(r.error||'Not supported on this platform').slice(0,140));
+  loadSocial();
+}
+async function socToggleActions(id,on){
+  const r=await socPost('/api/social/accounts/'+encodeURIComponent(id)+(on?'/enable':'/disable'));
+  toast(r.ok?(on?'Actions enabled':'Actions disabled'):(r.error||'Failed').slice(0,120));loadSocial();
+}
+async function socRemove(id){
+  if(!confirm('Remove this account from Ariana?'))return;
+  const r=await fetch('/api/social/accounts/'+encodeURIComponent(id),{method:'DELETE',headers:authH()}).then(r=>r.json());
+  toast(r.ok?'Removed':(r.error||'Failed').slice(0,120));loadSocial();
+}
+async function socSaveAutonomy(patch){
+  const num=(id,fallback)=>{const v=document.getElementById(id);const n=v?parseInt(v.value,10):NaN;return Number.isFinite(n)?n:fallback;};
+  const list=id=>{const v=document.getElementById(id);return v?v.value.split(',').map(s=>s.trim()).filter(Boolean):[];};
+  const body=Object.assign({},patch);
+  if('enabled' in patch){body.interval_minutes=num('soc-auto-interval',180);body.max_actions_per_tick=num('soc-auto-max',2);}
+  else{body.interval_minutes=num('soc-auto-interval',180);body.max_actions_per_tick=num('soc-auto-max',2);body.watchlist={instagram:list('soc-auto-watch')};body.linkedin_searches=list('soc-auto-search');}
+  const r=await socPost('/api/social/autonomy',body);
+  toast(r.ok?(body.enabled===true?'Autonomy on':(body.enabled===false?'Autonomy off':'Saved')):(r.error||'Failed').slice(0,120));
+  loadSocial();
+}
+async function socRunAutonomy(){
+  toast('Running one pass…');
+  const r=await socPost('/api/social/autonomy/run');
+  if(!r.ok)return toast((r.error||'Nothing to run').slice(0,140));
+  toast(`Looked at ${r.summary.considered}, acted on ${r.summary.acted}`);
+  loadSocial();
+}
+async function socConfirmAction(accountId,action,key){
+  const c=await socPost('/api/social/confirmations',{account_id:accountId,action,max_targets:1});
+  if(!c.ok)return toast((c.error||'Could not create a confirmation').slice(0,140));
+  const entry=soc.activity.find(e=>('act-'+e.created_at+e.action)===key);
+  const req=(entry&&entry.detail&&entry.detail.request)||{};
+  const r=await socPost('/api/social/actions/'+encodeURIComponent(action),Object.assign({},req,{account:accountId,confirmation_token:c.token}));
+  toast(r.ok?'Sent':'Not sent — '+(r.error||'').slice(0,120));
+  loadSocial();
+}
 </script>
 
 <!-- AUDIO PICKER MODAL -->

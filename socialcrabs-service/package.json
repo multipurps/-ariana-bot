@@ -1,0 +1,21 @@
+{
+  "name": "ariana-social-engine",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Social action engine for Ariana — real Instagram / X / LinkedIn actions through SocialCrabs, sessions encrypted at rest.",
+  "license": "MIT",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "build:socialcrabs": "node scripts/build-socialcrabs.js",
+    "connect": "node scripts/connect-session.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "socialcrabs": "github:adolfousier/socialcrabs#v0.0.49",
+    "typescript": "^5.9.3"
+  }
+}
